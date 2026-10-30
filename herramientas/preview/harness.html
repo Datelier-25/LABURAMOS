@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Laburamos (vista previa)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet" />
+<script>
+// Supabase de mentira con datos de ejemplo. ?as=guest|worker|company
+const QS = new URLSearchParams(location.search);
+const AS = QS.get('as') || 'none';
+const PAY = QS.get('pay') || 'off';
+const mock = `
+const AS = ${JSON.stringify(AS)};
+const PAY = ${JSON.stringify(PAY)};
+const now = Date.now();
+const iso = (d) => new Date(now - d * 3600e3).toISOString();
+const later = new Date(now + 20 * 86400e3).toISOString();
+const DATA = {
+  jobs: [
+    { id: 'j1', title: 'Se busca vendedor/a', company_name: 'Comercio El Sol', category: 'Comercio', job_type: 'Part-time', salary: '$450.000', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Atención al público, reposición y caja. Lunes a sábado por la mañana.', status: 'active', expires_at: later, created_at: iso(3), is_urgent: true, company_id: 'c1' },
+    { id: 'j2', title: 'Ayudante de cocina', company_name: 'Parrilla Don Pepe', category: 'Gastronomía', job_type: 'Full-time', salary: '', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Turno noche, con experiencia.', status: 'active', expires_at: later, created_at: iso(30), is_urgent: false, company_id: 'c1' },
+    { id: 'j3', title: 'Peón rural', company_name: 'Estancia La Paz', category: 'Agro / Campo', job_type: 'Temporal', salary: 'A convenir', location: 'Mechita', province: 'Buenos Aires', phone: '2342112233', description: 'Cosecha gruesa, 3 meses.', status: 'active', expires_at: later, created_at: iso(70), is_urgent: false, company_id: 'c2' },
+    { id: 'j4', title: 'Chofer de reparto', company_name: 'Distribuidora Norte', category: 'Transporte', job_type: 'Full-time', salary: '$600.000', location: 'Córdoba', province: 'Córdoba', phone: '2342112233', description: 'Registro profesional.', status: 'active', expires_at: later, created_at: iso(5), is_urgent: false, company_id: 'c3' },
+  ],
+  services: [
+    { id: 's1', intent: 'ofrece', title: 'Contador Público', provider_name: 'Facundo Ontivero', category: 'Profesionales', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Monotributo, responsables inscriptos, certificaciones y balances.', status: 'active', expires_at: later, created_at: iso(10), owner_id: 'u1' },
+    { id: 's2', intent: 'busca', title: 'Busco parquero', provider_name: 'Facundo Ontivero', category: 'Otros', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Necesito alguien que corte el pasto, son 50 m2 en sección quinta.', status: 'active', expires_at: later, created_at: iso(2), owner_id: 'u1', is_urgent: true },
+    { id: 's3', intent: 'ofrece', title: 'Plomería y gas matriculado', provider_name: 'Juan Pérez', category: 'Oficios', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Instalaciones, pérdidas y destapaciones. Urgencias.', status: 'active', expires_at: later, created_at: iso(50), owner_id: 'u2' },
+  ],
+  resumes: [
+    { user_id: 'w1', full_name: 'Ana Pereyra', profession: 'Vendedora', summary: 'Tengo experiencia en atención al público y caja.', birth_date: '1998-04-10', city: 'Bragado', province: 'Buenos Aires', phone: '2342556677', email: 'ana@example.com', availability: 'Media jornada', skills_list: ['Atención al público', 'Caja'], education: [{ title: 'Secundario completo', place: 'Escuela Normal', from: '2011', to: '2016' }], experience_list: [{ role: 'Vendedora', place: 'Kiosco Central', from: '2021-03', to: '', current: true, tasks: 'Caja y reposición' }], theme: { bg: 'azul', title: 'naranja' }, updated_at: iso(20) },
+  ],
+  applications: [
+    { id: 'a1', job_id: 'j1', worker_id: 'w1', company_id: 'me', created_at: iso(4), jobs: { title: 'Se busca vendedor/a', location: 'Bragado' } },
+    { id: 'a2', job_id: 'j2', worker_id: 'w9', company_id: 'me', created_at: iso(30), jobs: { title: 'Ayudante de cocina', location: 'Bragado' } },
+  ],
+  app_settings: [{ id: 1, cv_paid_enabled: PAY !== 'off', cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 45, service_days: 20 }],
+  cv_purchases: [
+    { id: 'p1', user_id: 'a1b2c3d4-0000', status: 'approved', amount: 3000, mode: 'por_dias', days: 30, created_at: iso(5) },
+    { id: 'p2', user_id: 'e5f6a7b8-0000', status: 'pending', amount: 3000, mode: 'por_dias', days: 30, created_at: iso(1) },
+  ],
+  profiles: [{ id: 'me', is_admin: AS === 'admin', full_name: AS === 'company' ? 'Comercio El Sol' : 'Luis Gómez', role: AS === 'company' ? 'company' : 'worker', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233' }],
+};
+const SESSION = AS === 'worker' || AS === 'company' || AS === 'admin' ? { user: { id: 'me', email: 'luis@example.com', user_metadata: {} } } : null;
+function builder(table) {
+  const st = { filters: [], single: false, limit: 0 };
+  const api = {
+    select() { return api; },
+    eq(c, v) { st.filters.push((r) => r[c] === v); return api; },
+    gt() { return api; },
+    in(c, vals) { st.filters.push((r) => vals.includes(r[c])); return api; },
+    order() { return api; },
+    limit(n) { st.limit = n; return api; },
+    maybeSingle() { st.single = true; return api; },
+    insert() { return Promise.resolve({ error: null }); },
+    update() { return api; },
+    upsert() { return Promise.resolve({ error: null }); },
+    delete() { return api; },
+    then(res, rej) {
+      let rows = (DATA[table] || []).filter((r) => st.filters.every((f) => f(r)));
+      const count = rows.length;
+      if (st.limit) rows = rows.slice(0, st.limit);
+      const out = st.single ? { data: rows[0] || null, error: null } : { data: rows, count, error: null };
+      return Promise.resolve(out).then(res, rej);
+    },
+  };
+  return api;
+}
+export function createClient() {
+  return {
+    from: builder,
+    rpc: async (name) => {
+      if (name === 'cv_access') return { data: { paid_enabled: PAY !== 'off', price: 3000, mode: 'por_dias', days: 30, has_access: PAY === 'paid', access_mode: 'por_dias', valid_until: new Date(now + 25 * 86400e3).toISOString() }, error: null };
+      if (name === 'consume_cv_download') return { data: PAY !== 'on', error: null };
+      return { data: null, error: null };
+    },
+    functions: { invoke: async () => ({ data: null, error: { context: { json: async () => ({ error: 'pago_no_configurado' }) } } }) },
+    auth: {
+      getSession: async () => ({ data: { session: SESSION } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      signOut: async () => ({}),
+      signUp: async () => ({ data: {}, error: null }),
+      signInWithPassword: async () => ({ error: null }),
+      resetPasswordForEmail: async () => ({ error: null }),
+    },
+    storage: { from: () => ({ upload: async () => ({ error: null }), remove: async () => ({ error: null }), createSignedUrl: async () => ({ data: { signedUrl: '/marca/isotipo.png' } }), getPublicUrl: () => ({ data: { publicUrl: '/marca/isotipo.png' } }) }) },
+  };
+}`;
+const mockUrl = URL.createObjectURL(new Blob([mock], { type: 'text/javascript' }));
+const map = document.createElement('script');
+map.type = 'importmap';
+map.textContent = JSON.stringify({
+  imports: {
+    react: 'https://esm.sh/react@19.1.0',
+    'react/jsx-runtime': 'https://esm.sh/react@19.1.0/jsx-runtime',
+    'react-dom': 'https://esm.sh/react-dom@19.1.0?external=react',
+    'react-dom/client': 'https://esm.sh/react-dom@19.1.0/client?external=react',
+    'lucide-react': 'https://esm.sh/lucide-react@0.511.0?external=react',
+    '@supabase/supabase-js': mockUrl,
+  },
+});
+document.currentScript.after(map);
+</script>
+<script src="https://unpkg.com/@babel/standalone@7.26.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+const cache = new Map();
+const errors = [];
+window.__previewErrors = errors;
+const resolveRel = (from, spec) => new URL(spec, location.origin + from).pathname;
+async function fetchFirst(path) {
+  for (const p of [path, path + '.jsx', path + '.js']) {
+    const r = await fetch(p);
+    if (r.ok && !(r.headers.get('content-type') || '').includes('text/html')) return [p, await r.text()];
+  }
+  throw new Error('No existe ' + path);
+}
+async function load(path) {
+  if (cache.has(path)) return cache.get(path);
+  const promise = (async () => {
+    const [real, code] = await fetchFirst(path);
+    if (real.endsWith('.css')) {
+      const st = document.createElement('style');
+      st.textContent = code;
+      document.head.appendChild(st);
+      return URL.createObjectURL(new Blob(['export default {}'], { type: 'text/javascript' }));
+    }
+    let out;
+    try {
+      out = Babel.transform(code, { filename: real, presets: [['react', { runtime: 'automatic' }]], sourceType: 'module' }).code;
+    } catch (e) {
+      errors.push(real + ': ' + e.message);
+      throw e;
+    }
+    const specs = [...out.matchAll(/(?:from|import)\s*['"](\.{1,2}\/[^'"]+)['"]/g)].map((m) => m[1]);
+    for (const spec of new Set(specs)) {
+      const url = await load(resolveRel(real, spec));
+      out = out.split(`'${spec}'`).join(`'${url}'`).split(`"${spec}"`).join(`"${url}"`);
+    }
+    return URL.createObjectURL(new Blob([out + `\n//# sourceURL=${real}`], { type: 'text/javascript' }));
+  })();
+  cache.set(path, promise);
+  return promise;
+}
+try {
+  await import(await load('/src/main.jsx'));
+} catch (e) {
+  errors.push(String(e && e.stack || e));
+  document.body.insertAdjacentHTML('beforeend', '<pre style="color:#b42318;padding:20px;white-space:pre-wrap">' + errors.join('\n') + '</pre>');
+}
+</script>
+</body>
+</html>
