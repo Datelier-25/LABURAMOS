@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LocateFixed, Search } from 'lucide-react';
+import { ChevronDown, LocateFixed, Search } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { SERVICE_CATEGORIES, friendlyError, intentOf, plural } from '../lib/utils';
 import { applyZone, withinKm, zoneText } from '../lib/geo';
@@ -23,6 +23,7 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin })
   const [intent, setIntent] = useState('todos');
   const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [distanceKm, setDistanceKm] = useState(0); // Radio máximo (km); 0 = sin límite
+  const [distOpen, setDistOpen] = useState(false); // El filtro de distancia es desplegable, como los demás
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,30 +108,36 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin })
           onClear={clear}
           total={filtered.length}
         />
-        <div className="distbar">
-          <div className="dist-top">
-            <span className="dist-tx">
-              <LocateFixed size={16} aria-hidden="true" /> Cerca de <b>{place}</b>
-              {distanceKm ? <b> · hasta {distanceKm} km</b> : null}
-            </span>
-            <button type="button" className="btn btn-line btn-xs" onClick={() => setDistanceKm(0)}>
-              Sin límite
-            </button>
-          </div>
-          <input
-            type="range"
-            className="dist"
-            min={20}
-            max={500}
-            step={10}
-            value={distanceKm || 20}
-            onChange={(e) => setDistanceKm(Math.min(500, Math.max(20, Number(e.target.value))))}
-            aria-label="Distancia máxima en kilómetros"
-          />
-          <div className="dist-scale" aria-hidden="true">
-            <span>20 km</span>
-            <span>500 km</span>
-          </div>
+        <div className="fdrop">
+          <button type="button" className={`fbtn${distanceKm ? ' on' : ''}`} onClick={() => setDistOpen((v) => !v)} aria-expanded={distOpen} aria-haspopup="true">
+            <LocateFixed size={16} aria-hidden="true" />
+            <span>Distancia</span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+          {distOpen && (
+            <div className="dist-pop" role="menu" aria-label="Distancia">
+              <div className="dist-in">
+                <input
+                  type="range"
+                  className="dist"
+                  min={20}
+                  max={500}
+                  step={10}
+                  value={distanceKm || 20}
+                  onChange={(e) => setDistanceKm(Math.min(500, Math.max(20, Number(e.target.value))))}
+                  aria-label="Distancia máxima en kilómetros"
+                />
+                <div className="dist-scale" aria-hidden="true">
+                  <span>20 km</span>
+                  <span>500 km</span>
+                </div>
+                <p className="dist-hint">{distanceKm ? `Mostrando lo que hay hasta a ${distanceKm} km de tu zona.` : 'Sin límite: sin filtro de distancia.'}</p>
+              </div>
+              <button type="button" className="btn btn-line btn-sm" onClick={() => { setDistanceKm(0); setDistOpen(false); }}>
+                Sin límite
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

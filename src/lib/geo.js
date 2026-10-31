@@ -175,6 +175,13 @@ function position() {
       reject(new Error('Tu navegador no permite compartir la ubicación.'));
       return;
     }
+    // Si ya se negó el permiso, no insistimos pidiéndoselo de nuevo
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((st) => {
+        if (st && st.state === 'denied') reject(new Error('No diste permiso para usar tu ubicación. Podés escribir tu ciudad.'));
+      })
+      .catch(() => {});
     navigator.geolocation.getCurrentPosition(resolve, (err) => {
       reject(
         new Error(
