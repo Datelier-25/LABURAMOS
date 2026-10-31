@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
+import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import JobSign, { ServiceCard } from './Sign';
 import { PlaceField } from './Place';
 
@@ -28,10 +29,44 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     phone: user.phone || '',
     place: startPlace(user, zone),
     is_urgent: false,
+    photos: [], // { path, url } — hasta 3, solo en servicios
   });
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const isAsk = !isJob && form.intent === 'busca';
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  // Sube las fotos elegidas (máx. 3). Se guardan en la carpeta de la persona.
+  const onPhotos = async (e) => {
+    const files = Array.from(e.target.files || []).slice(0, MAX_SERVICE_PHOTOS - form.photos.length);
+    e.target.value = '';
+    if (!files.length) return;
+    setError('');
+    setPhotoBusy(true);
+    const added = [];
+    for (const file of files) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+        setError('Las fotos tienen que ser JPG, PNG o WebP.');
+        continue;
+      }
+      try {
+        const blob = await compressImage(file);
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+        const { error: upErr } = await supabase.storage.from(SERVICE_PHOTO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+        if (upErr) throw upErr;
+        added.push({ path, url: servicePhotoUrl(path) });
+      } catch (err) {
+        setError(friendlyError(err.message || 'No pudimos subir la foto.'));
+      }
+    }
+    if (added.length) set({ photos: [...form.photos, ...added].slice(0, MAX_SERVICE_PHOTOS) });
+    setPhotoBusy(false);
+  };
+
+  const removePhoto = (path) => {
+    set({ photos: form.photos.filter((p) => p.path !== path) });
+    supabase.storage.from(SERVICE_PHOTO_BUCKET).remove([path]);
+  };
 
   // Cerrar con Escape y bloquear el scroll de fondo
   useEffect(() => {
@@ -85,6 +120,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           city: form.place.city,
           province: form.place.province,
           is_urgent: isAsk && form.is_urgent,
+          photos: form.photos.map((p) => p.path),
         });
 
     if (err) {
@@ -113,6 +149,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     description: form.description,
     city,
     is_urgent: isAsk && form.is_urgent,
+    photos: form.photos.map((p) => p.url),
   };
 
   const heading = isJob ? 'Publicá tu aviso' : isAsk ? 'Pedí un servicio' : 'Anunciá tu servicio';
@@ -206,6 +243,29 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
               <span>Requisitos (opcional)</span>
               <input placeholder="Experiencia previa, edad mínima, etc." value={form.requirements} onChange={(e) => set({ requirements: e.target.value })} />
             </label>
+          )}
+          {!isJob && (
+            <div className="field">
+              <span>Fotos (opcional)</span>
+              <div className="photo-pick">
+                {form.photos.map((p, i) => (
+                  <div className="photo-slot" key={p.path}>
+                    <img src={p.url} alt={`Foto ${i + 1}`} />
+                    <button type="button" onClick={() => removePhoto(p.path)} aria-label={`Quitar foto ${i + 1}`}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {form.photos.length < MAX_SERVICE_PHOTOS && (
+                  <label className="photo-add">
+                    <ImagePlus size={20} aria-hidden="true" />
+                    <span>{photoBusy ? 'Subiendo…' : `Agregar foto`}</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr" disabled={photoBusy} onChange={onPhotos} />
+                  </label>
+                )}
+              </div>
+              <small>Hasta {MAX_SERVICE_PHOTOS} fotos. Se achican solas para que carguen rápido.</small>
+            </div>
           )}
           <label className="field">
             <span>WhatsApp para que te escriban</span>

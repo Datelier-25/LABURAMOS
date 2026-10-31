@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { Check, ChevronDown, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
 import { initials } from '../lib/utils';
 
 export function SkeletonGrid({ n = 6 }) {
@@ -10,6 +10,38 @@ export function SkeletonGrid({ n = 6 }) {
         <div key={i} className="skel" />
       ))}
     </div>
+  );
+}
+
+// Campo de contraseña con botón para mostrarla u ocultarla
+export function PasswordField({ label, value, onChange, autoComplete, hint, minLength = 6, required = true, children }) {
+  const [show, setShow] = useState(false);
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <div className="pw">
+        <input
+          type={show ? 'text' : 'password'}
+          required={required}
+          minLength={minLength}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={onChange}
+        />
+        <button
+          type="button"
+          className="pw-eye"
+          onClick={() => setShow((s) => !s)}
+          aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          aria-pressed={show}
+          title={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        >
+          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+      {hint && <small>{hint}</small>}
+      {children}
+    </label>
   );
 }
 

@@ -1,8 +1,8 @@
 // Constantes y funciones compartidas de Laburamos
 
-export const JOB_CATEGORIES = ['Comercio', 'Gastronomía', 'Agro / Campo', 'Oficios / Técnico', 'Administración', 'Salud y cuidados', 'Transporte', 'Otros'];
+export const JOB_CATEGORIES = ['Comercio', 'Gastronomía', 'Agro / Campo', 'Oficios / Técnico', 'Administración', 'Salud y cuidados', 'Transporte', 'Moda', 'Otros'];
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Por horas', 'Temporal', 'Changa'];
-export const SERVICE_CATEGORIES = ['Oficios', 'Profesionales', 'Clases particulares', 'Cuidados', 'Limpieza', 'Tecnología', 'Eventos', 'Otros'];
+export const SERVICE_CATEGORIES = ['Oficios', 'Profesionales', 'Clases particulares', 'Cuidados', 'Limpieza', 'Tecnología', 'Eventos', 'Moda', 'Otros'];
 // Un servicio puede ser alguien que ofrece su oficio o alguien que busca quién le haga un trabajo
 export const INTENTS = { ofrece: 'Ofrece', busca: 'Busca' };
 export const intentOf = (s) => (s?.intent === 'busca' ? 'busca' : 'ofrece');
@@ -32,6 +32,7 @@ const TONES = {
   Limpieza: 'sky',
   Tecnología: 'field',
   Eventos: 'tomato',
+  Moda: 'pink',
 };
 export const toneOf = (category) => `t-${TONES[category] || 'stone'}`;
 

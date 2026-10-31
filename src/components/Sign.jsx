@@ -1,6 +1,28 @@
 import { useState } from 'react';
 import { Bookmark, MapPin, MessageCircle, Phone, Search } from 'lucide-react';
 import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
+import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
+
+// Fotos del aviso (hasta 3). En la vista previa no son enlaces.
+function ServicePhotos({ service, preview }) {
+  const photos = (service.photos || []).filter(Boolean).slice(0, MAX_SERVICE_PHOTOS);
+  if (!photos.length) return null;
+  return (
+    <div className={`scard-photos n${photos.length}`}>
+      {photos.map((p, i) =>
+        preview ? (
+          <span key={p}>
+            <img src={servicePhotoUrl(p)} alt="" />
+          </span>
+        ) : (
+          <a key={p} href={servicePhotoUrl(p)} target="_blank" rel="noreferrer" aria-label={`Foto ${i + 1} de ${service.title}`}>
+            <img src={servicePhotoUrl(p)} alt="" loading="lazy" />
+          </a>
+        )
+      )}
+    </div>
+  );
+}
 
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
 export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, compact = false, preview = false, wide = false, style }) {
@@ -118,6 +140,7 @@ export function ServiceCard({ service, user, onLogin, preview = false }) {
         </span>
       </p>
       {service.description && <p className="desc">{service.description}</p>}
+      <ServicePhotos service={service} preview={preview} />
       <div className="scard-foot">
         {service.created_at && !preview ? <span className="when">{timeAgo(service.created_at)}</span> : <span />}
         {action}

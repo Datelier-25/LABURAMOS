@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Download, Lock, Mail, MapPin, Phone, Plus, Share2, Trash2, X } from 'lucide-react';
+import { Camera, Check, Download, Lock, Mail, MapPin, Phone, Plus, Share2, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { AVAILABILITY, ageFrom, cleanPhone, friendlyError, isValidPhone, money } from '../lib/utils';
+import { SKILL_GROUPS } from '../lib/skills';
 import { placeLabel } from '../lib/geo';
 import { BG_COLORS, TITLE_COLORS, themeVars } from '../lib/cvTheme';
 import { PlaceField } from './Place';
@@ -106,6 +107,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [skillDraft, setSkillDraft] = useState('');
+  const [skillTab, setSkillTab] = useState(SKILL_GROUPS[0].id);
   const [access, setAccess] = useState(null); // lo que devuelve cv_access()
   const [paying, setPaying] = useState(false);
   const [payNote, setPayNote] = useState(null); // { type, text }
@@ -203,6 +205,15 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
     }
     set({ skills: [...form.skills, s] });
     setSkillDraft('');
+  };
+
+  // Las habilidades sugeridas se suman o se sacan con un toque
+  const toggleSkill = (s) => {
+    if (form.skills.some((x) => x.toLowerCase() === s.toLowerCase())) {
+      set({ skills: form.skills.filter((x) => x.toLowerCase() !== s.toLowerCase()) });
+    } else {
+      addSkill(s);
+    }
   };
 
   const onPhoto = async (e) => {
@@ -359,6 +370,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
   }, [printing]);
 
   const age = ageFrom(form.birth_date);
+  const skillGroup = SKILL_GROUPS.find((g) => g.id === skillTab) || SKILL_GROUPS[0];
   const checks = [form.full_name, form.profession, form.summary, form.photo_path, form.skills.length, form.experience.length || form.education.length, isValidPhone(form.phone)];
   const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
   const canShare = form.profession && isValidPhone(form.phone);
@@ -521,7 +533,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
               </ul>
               {form.skills.length < MAX_SKILLS && (
                 <Ed
-                  placeholder="Escribí una y tocá Enter"
+                  placeholder="O escribí la tuya y tocá Enter"
                   value={skillDraft}
                   maxLength={40}
                   onChange={(e) => (e.target.value.endsWith(',') ? addSkill(e.target.value) : setSkillDraft(e.target.value))}
@@ -534,6 +546,39 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
                   onBlur={() => addSkill()}
                 />
               )}
+              <div className="skill-pick">
+                <div className="skill-tabs" role="group" aria-label="Áreas de habilidades">
+                  {SKILL_GROUPS.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={skillTab === g.id ? 'on' : ''}
+                      onClick={() => setSkillTab(g.id)}
+                      aria-pressed={skillTab === g.id}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="skill-opts">
+                  {skillGroup.items.map((s) => {
+                    const on = form.skills.some((x) => x.toLowerCase() === s.toLowerCase());
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`skill-opt${on ? ' on' : ''}`}
+                        onClick={() => toggleSkill(s)}
+                        disabled={!on && form.skills.length >= MAX_SKILLS}
+                        aria-pressed={on}
+                      >
+                        {on ? <Check size={12} aria-hidden="true" /> : <Plus size={12} aria-hidden="true" />}
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="cv-block">

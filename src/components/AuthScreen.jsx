@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
 import JobSign from './Sign';
 import Logo from './Logo';
+import { PasswordField } from './ui';
 import { PlaceField } from './Place';
 
 export default function AuthScreen({ onGuest }) {
@@ -132,18 +133,13 @@ export default function AuthScreen({ onGuest }) {
             </label>
 
             {mode !== 'forgot' && (
-              <label className="field">
-                <span>Contraseña</span>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  value={form.password}
-                  onChange={(e) => set({ password: e.target.value })}
-                />
-                {mode === 'register' && <small>Mínimo 6 caracteres.</small>}
-              </label>
+              <PasswordField
+                label="Contraseña"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                value={form.password}
+                onChange={(e) => set({ password: e.target.value })}
+                hint={mode === 'register' ? 'Mínimo 6 caracteres.' : undefined}
+              />
             )}
 
             <button className="btn btn-ink btn-lg btn-block" disabled={loading}>

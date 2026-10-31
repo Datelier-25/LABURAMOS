@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
 import Logo from './Logo';
+import { PasswordField } from './ui';
 
 // Se muestra cuando la persona entra desde el enlace de "Olvidé mi contraseña"
 export default function ResetPassword({ onDone }) {
@@ -52,14 +53,18 @@ export default function ResetPassword({ onDone }) {
               <p>Escribí una contraseña de al menos 6 caracteres.</p>
               {message && <p className={`note ${message.type}`}>{message.text}</p>}
               <form onSubmit={handleSubmit}>
-                <label className="field">
-                  <span>Contraseña nueva</span>
-                  <input type="password" required minLength={6} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                </label>
-                <label className="field">
-                  <span>Repetila</span>
-                  <input type="password" required minLength={6} autoComplete="new-password" value={repeat} onChange={(e) => setRepeat(e.target.value)} />
-                </label>
+                <PasswordField
+                  label="Contraseña nueva"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <PasswordField
+                  label="Repetila"
+                  autoComplete="new-password"
+                  value={repeat}
+                  onChange={(e) => setRepeat(e.target.value)}
+                />
                 <button className="btn btn-ink btn-lg btn-block" disabled={loading}>
                   {loading ? 'Guardando…' : 'Guardar contraseña'}
                 </button>

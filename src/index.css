@@ -704,3 +704,53 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   .ticker-track { animation: none; }
   .ticker { overflow-x: auto; }
 }
+
+
+/* ==========================================================================
+   Mostrar contraseña, fotos de servicios y habilidades sugeridas del CV
+   ========================================================================== */
+
+/* ---------- campo de contraseña con ojo ---------- */
+.pw { position: relative; }
+.pw input { padding-right: 56px; }
+.pw-eye { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 11px; background: transparent; color: var(--muted); }
+.pw-eye:hover { background: #fff; color: var(--ink); }
+.pw-eye:focus-visible { outline: 2px solid var(--ultra); outline-offset: 1px; }
+
+/* ---------- fotos en la tarjeta del servicio ---------- */
+.scard-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 2px 0 4px; }
+.scard-photos > * { display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--mist); }
+.scard-photos.n1 { grid-template-columns: 1fr; }
+.scard-photos.n1 > * { aspect-ratio: 16 / 9; }
+.scard-photos.n2 { grid-template-columns: repeat(2, 1fr); }
+.scard-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scard-photos a { transition: transform 0.25s var(--ease-pop); }
+.scard-photos a:hover { transform: scale(1.02); }
+
+/* ---------- elegir fotos al publicar ---------- */
+.photo-pick { display: flex; flex-wrap: wrap; gap: 10px; }
+.photo-slot, .photo-add { width: 92px; height: 92px; border-radius: 14px; }
+.photo-slot { position: relative; overflow: hidden; background: var(--mist); }
+.photo-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-slot button { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(14, 26, 75, 0.78); color: #fff; }
+.photo-slot button:hover { background: var(--ink); }
+.photo-add { display: grid; place-items: center; align-content: center; gap: 3px; border: 2px dashed var(--line); background: #fff; color: var(--muted); font-size: 0.74rem; font-weight: 700; text-align: center; cursor: pointer; }
+.photo-add span { padding: 0 6px; line-height: 1.15; }
+.photo-add:hover { border-color: var(--ultra); color: var(--ultra); }
+
+/* ---------- habilidades sugeridas en el CV ---------- */
+.skill-pick { display: grid; gap: 7px; margin-top: 2px; }
+.skill-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.skill-tabs button { padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: inherit; font-size: 0.74rem; font-weight: 700; opacity: 0.7; }
+.skill-tabs button:hover { opacity: 1; }
+.skill-tabs button.on { background: var(--ultra); border-color: var(--ultra); color: #fff; opacity: 1; }
+.skill-opts { display: flex; flex-wrap: wrap; gap: 5px; max-height: 124px; overflow-y: auto; padding-right: 2px; }
+.skill-opt { display: inline-flex; align-items: center; gap: 3px; padding: 4px 9px; border: 1px dashed var(--line); border-radius: 999px; background: transparent; color: inherit; font-size: 0.8rem; font-weight: 600; }
+.skill-opt:hover:not(:disabled) { border-color: var(--ultra); }
+.skill-opt.on { background: var(--ultra); border-color: var(--ultra); color: #fff; }
+.skill-opt:disabled { opacity: 0.35; }
+
+@media (max-width: 560px) {
+  .photo-slot, .photo-add { width: 78px; height: 78px; }
+  .skill-opts { max-height: 108px; }
+}

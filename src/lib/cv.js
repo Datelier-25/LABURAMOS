@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { AVAILABILITY } from './utils';
 import { DEFAULT_THEME } from './cvTheme';
 
-export const MAX_SKILLS = 5;
+export const MAX_SKILLS = 8;
 export const PHOTO_BUCKET = 'cv-photos';
 export const emptyEdu = () => ({ title: '', place: '', from: '', to: '' });
 export const emptyExp = () => ({ role: '', place: '', from: '', to: '', current: false, tasks: '' });
