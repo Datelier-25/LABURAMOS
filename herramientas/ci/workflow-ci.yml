@@ -1,0 +1,39 @@
+# Integración continua en GitHub Actions.
+# Para activarla, copiar este archivo a .github/workflows/ci.yml en el repositorio
+# (hace falta un token con permiso "Workflows" o crearlo desde la web de GitHub).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+        env:
+          # Valores de relleno: el build no necesita una base real, solo que
+          # las variables existan (el cliente de Supabase valida en runtime).
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
