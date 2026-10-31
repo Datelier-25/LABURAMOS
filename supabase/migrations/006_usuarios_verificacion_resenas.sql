@@ -199,6 +199,16 @@ end $$;
 revoke all on function public.admin_set_user(uuid, text, boolean, boolean, boolean) from public;
 grant execute on function public.admin_set_user(uuid, text, boolean, boolean, boolean) to authenticated;
 
+-- Solo el dueño (trabajador) ve su postulación; la empresa recibe las postulaciones
+-- de sus avisos si está verificada (o el admin). El candado aplica a los CVs.
+drop policy if exists applications_read on public.applications;
+create policy applications_read on public.applications for select to authenticated
+  using (
+    worker_id = auth.uid()
+    or (company_id = auth.uid() and public.can_see_cvs())
+    or public.is_admin()
+  );
+
 -- ============================================================================
 -- 5. Reseñas: cada parte califica a la otra después de una postulación
 -- ============================================================================
