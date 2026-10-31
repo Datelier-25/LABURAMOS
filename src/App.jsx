@@ -175,30 +175,33 @@ export default function App() {
       return;
     }
     // La ventana se abre dentro del clic (si esperamos al insert, el navegador
-    // puede bloquear la pestaña nueva). Si el insert falla, se cierra.
+    // puede bloquear la pestaña nueva). Si el insert falla de verdad, se cierra.
     const win = window.open('', '_blank');
+    const openWhatsApp = () => {
+      if (win && !win.closed) win.location.href = waUrl;
+      else window.location.href = waUrl;
+    };
+
     const { error } = await supabase.from('applications').insert({ job_id: job.id });
 
-    if (error) {
-      if (win && !win.closed) win.close();
-      if (error.code === '23505') {
-        // Ya estaba postulado: la empresa ya tiene su CV, así que sí abrimos WhatsApp.
-        if (win) win.location.href = waUrl;
-        else window.location.href = waUrl;
-        notify('Ya te habías postulado a este aviso.');
-        return;
-      }
-      if ((error.message || '').includes('aviso_no_disponible')) {
-        notify('Este aviso ya no está disponible.');
-        return;
-      }
-      notify('No pudimos registrar tu postulación. Probá de nuevo en un rato.');
+    if (!error) {
+      notify('Postulación enviada. Tu CV ya está en Postulantes.');
+      openWhatsApp();
+      return;
+    }
+    if (error.code === '23505') {
+      // Ya estaba postulado: la empresa ya tiene su CV, así que igual abrimos WhatsApp.
+      notify('Ya te habías postulado a este aviso.');
+      openWhatsApp();
       return;
     }
 
-    notify('Postulación enviada. Tu CV ya está en Postulantes.');
-    if (win) win.location.href = waUrl;
-    else window.location.href = waUrl;
+    if (win && !win.closed) win.close();
+    if ((error.message || '').includes('aviso_no_disponible')) {
+      notify('Este aviso ya no está disponible.');
+      return;
+    }
+    notify('No pudimos registrar tu postulación. Probá de nuevo en un rato.');
   };
 
   const handleCreated = () => {
