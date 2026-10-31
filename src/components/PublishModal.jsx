@@ -202,14 +202,16 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             <input required value={form.name} onChange={(e) => set({ name: e.target.value })} />
           </label>
           <div className="two">
-            <label className="field">
+            <div className="field">
               <span>Rubro</span>
-              <select value={form.category} onChange={(e) => set({ category: e.target.value })}>
+              <div className="fchips" role="group" aria-label="Rubro">
                 {(isJob ? JOB_CATEGORIES : SERVICE_CATEGORIES).map((c) => (
-                  <option key={c}>{c}</option>
+                  <button key={c} type="button" className={`chip${form.category === c ? ' on' : ''}`} onClick={() => set({ category: c })} aria-pressed={form.category === c}>
+                    {c}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
             <PlaceField value={form.place} onChange={(place) => set({ place })} required />
           </div>
           {isJob && (

@@ -49,6 +49,76 @@ export function applyZone(q, zone, cityCol = 'city') {
   return q.eq('province', zone.province);
 }
 
+// ---------- distancia (haversine) ----------
+// Coordenadas aproximadas (lat, lng) por provincia y por localidad destacada,
+// para calcular distancias entre la zona del usuario y los avisos.
+export const DISTANCE_MAX_KM = 500;
+const PROV_COORDS = {
+  'Buenos Aires': [-36.68, -59.86],
+  'Ciudad Autónoma de Buenos Aires': [-34.6, -58.38],
+  Catamarca: [-28.46, -65.78],
+  Chaco: [-26.31, -60.33],
+  Chubut: [-43.28, -67.65],
+  Corrientes: [-28.78, -57.75],
+  Córdoba: [-32.45, -63.62],
+  'Entre Ríos': [-31.97, -59.67],
+  Formosa: [-24.89, -59.89],
+  Jujuy: [-23.32, -65.3],
+  'La Pampa': [-36.65, -64.4],
+  'La Rioja': [-29.41, -66.86],
+  Mendoza: [-34.66, -68.2],
+  Misiones: [-27.43, -55.97],
+  Neuquén: [-38.98, -70.25],
+  'Río Negro': [-40.79, -67.96],
+  Salta: [-24.78, -65.41],
+  'San Juan': [-30.9, -68.32],
+  'San Luis': [-33.3, -66.34],
+  'Santa Cruz': [-48.58, -69.25],
+  'Santa Fe': [-30.68, -60.98],
+  'Santiago del Estero': [-27.78, -63.25],
+  'Tierra del Fuego': [-54.8, -68.3],
+  Tucumán: [-26.82, -65.22],
+};
+const CITY_COORDS = {
+  bragado: [-37.25, -58.5],
+  rosario: [-34.6, -58.75],
+  'ciudad autonoma de buenos aires': [-34.6, -58.38],
+  'buenos aires': [-34.6, -58.38],
+  laplata: [-37.02, -58.46],
+  'mar del plata': [-37.8, -58.16],
+  cordoba: [-31.42, -64.18],
+  mendoza: [-34.66, -68.2],
+  salta: [-24.78, -65.41],
+  tucuman: [-26.82, -65.22],
+  corrientes: [-28.78, -57.75],
+  'santa fe': [-31.0, -60.98],
+  'santiago del estero': [-27.78, -63.25],
+};
+export function coordsOf(zone) {
+  if (!zone) return null;
+  if (zone.city) {
+    const c = CITY_COORDS[norm(zone.city)] || (zone.province ? PROV_COORDS[zone.province] || null : null);
+    return c;
+  }
+  return (zone.province && PROV_COORDS[zone.province]) || null;
+}
+export function haversineKm(a, b) {
+  const rad = (x) => (x * Math.PI) / 180;
+  const dLat = rad(b[0] - a[0]);
+  const dLon = rad(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  return 6371 * c;
+}
+// ¿Está el ítem (zona) dentro del radio? Si no hay coordenadas conocidas, no lo descarta.
+export function withinKm(zoneA, zoneB, km) {
+  if (!km) return true;
+  const a = coordsOf(zoneA);
+  const b = coordsOf(zoneB);
+  if (!a || !b) return true;
+  return haversineKm(a, b) <= km;
+}
+
 // ---------- lista de localidades (se baja una sola vez, cuando hace falta) ----------
 let cache = null;
 export function loadPlaces() {

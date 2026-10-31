@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bookmark, Search } from 'lucide-react';
+import { Bookmark, LocateFixed, Search } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_TYPES, friendlyError, plural } from '../lib/utils';
-import { applyZone, zoneText } from '../lib/geo';
+import { applyZone, withinKm, zoneText } from '../lib/geo';
 import { attachReputation, loadReputation } from '../lib/reputation';
 import JobSign from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
@@ -18,6 +18,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
   const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [onlySaved, setOnlySaved] = useState(false);
   const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
+  const [distanceKm, setDistanceKm] = useState(0); // Radio máximo (km); 0 = sin límite
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,7 +31,8 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
         .gt('expires_at', new Date().toISOString())
         .order('is_urgent', { ascending: false })
         .order('created_at', { ascending: false }),
-      zone,
+      // Con distancia elegida, buscamos a nivel de provincia para llegar a las zonas cercanas
+      distanceKm > 0 && zone?.province ? { city: null, province: zone.province } : zone,
       'location'
     );
     const { data, error: err } = await q;
@@ -46,7 +48,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
       setApplied(new Set((myApps || []).map((a) => a.job_id)));
     }
     setLoading(false);
-  }, [zone, user?.id]);
+  }, [zone, user?.id, distanceKm]);
 
   useEffect(() => {
     load();
@@ -81,10 +83,11 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
         (!category || j.category === category) &&
         (!jobType || j.job_type === jobType) &&
         (!onlyUrgent || j.is_urgent) &&
-        (!onlySaved || saved.includes(j.id))
+        (!onlySaved || saved.includes(j.id)) &&
+        (!distanceKm || withinKm(zone, { city: j.location, province: j.province }, distanceKm))
       );
     });
-  }, [jobs, search, category, jobType, onlyUrgent, onlySaved, saved]);
+  }, [jobs, search, category, jobType, onlyUrgent, onlySaved, saved, zone, distanceKm]);
 
   const clear = () => {
     setSearch('');
@@ -92,6 +95,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
     setJobType(null);
     setOnlyUrgent(false);
     setOnlySaved(false);
+    setDistanceKm(0);
   };
 
   const place = zoneText(zone);
@@ -140,6 +144,31 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
           onClear={clear}
           total={filtered.length}
         />
+        <div className="distbar">
+          <div className="dist-top">
+            <span className="dist-tx">
+              <LocateFixed size={16} aria-hidden="true" /> Cerca de <b>{place}</b>
+              {distanceKm ? <b> · hasta {distanceKm} km</b> : null}
+            </span>
+            <button type="button" className="btn btn-line btn-xs" onClick={() => setDistanceKm(0)}>
+              Sin límite
+            </button>
+          </div>
+          <input
+            type="range"
+            className="dist"
+            min={20}
+            max={500}
+            step={10}
+            value={distanceKm || 20}
+            onChange={(e) => setDistanceKm(Math.min(500, Math.max(20, Number(e.target.value))))}
+            aria-label="Distancia máxima en kilómetros"
+          />
+          <div className="dist-scale" aria-hidden="true">
+            <span>20 km</span>
+            <span>500 km</span>
+          </div>
+        </div>
       </div>
 
       {loading ? (
