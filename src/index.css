@@ -565,6 +565,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 
 /* postulantes: acciones y CV en ventana */
 .row-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.row-channels { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .cv-modal { position: relative; width: min(900px, 100%); max-height: calc(100svh - 40px); overflow: auto; border-radius: 26px; background: #fff; animation: pop 0.35s var(--ease-pop); }
 .cv-modal .cvdoc { border: 0; box-shadow: none; }
 .cv-modal .cv-mark { opacity: 0.05; }

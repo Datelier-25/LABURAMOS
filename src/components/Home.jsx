@@ -64,6 +64,7 @@ function SignStack({ items, total, onMore }) {
 
 export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave }) {
   const [data, setData] = useState({ jobs: [], services: [], jobsN: 0, servN: 0, loading: true, error: false });
+  const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
 
   useEffect(() => {
     let off = false;
@@ -97,6 +98,10 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
         ...(j.data || []).map((x) => x.company_id),
         ...(s.data || []).map((x) => x.owner_id),
       ]);
+      if (user?.id) {
+        const { data: myApps } = await supabase.from('applications').select('job_id').eq('worker_id', user.id);
+        setApplied(new Set((myApps || []).map((a) => a.job_id)));
+      }
       if (!off) {
         setData({
           jobs: attachReputation(j.data || [], rep, 'company_id'),
@@ -111,7 +116,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
     return () => {
       off = true;
     };
-  }, [zone]);
+  }, [zone, user?.id]);
 
   const { jobs, services, jobsN, servN, loading, error } = data;
   const place = zoneText(zone);
@@ -232,6 +237,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
                 onSave={onSave}
                 onLogin={onLogin}
                 onApply={onApply}
+                applied={applied?.has(job.id) ?? false}
                 wide={i === 0 && jobs.length >= 3}
               />
             ))}

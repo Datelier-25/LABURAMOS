@@ -26,7 +26,7 @@ function ServicePhotos({ service, preview }) {
 }
 
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
-export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, compact = false, preview = false, wide = false, style }) {
+export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, applied = false, compact = false, preview = false, wide = false, style }) {
   const [open, setOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const interactive = !compact && !preview;
@@ -93,9 +93,15 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
             </button>
             {user ? (
-              <button type="button" className="btn btn-ink btn-sm" onClick={apply} disabled={applying}>
-                <Phone size={16} /> {applying ? 'Enviando…' : 'Postularme'}
-              </button>
+              applied ? (
+                <button type="button" className="btn btn-line btn-sm" disabled>
+                  Ya postulaste
+                </button>
+              ) : (
+                <button type="button" className="btn btn-ink btn-sm" onClick={apply} disabled={applying}>
+                  <Phone size={16} /> {applying ? 'Enviando…' : 'Postularme'}
+                </button>
+              )
             ) : (
               <button type="button" className="btn btn-ink btn-sm" onClick={onLogin}>
                 Ingresá para postularte

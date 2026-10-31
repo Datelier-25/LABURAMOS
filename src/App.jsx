@@ -240,7 +240,8 @@ export default function App() {
       else window.location.href = waUrl;
     };
 
-    const { error } = await supabase.from('applications').insert({ job_id: job.id });
+    // email: para que la empresa pueda mandar el CV por Gmail. cv_contact: por qué canal se entregó.
+    const { error } = await supabase.from('applications').insert({ job_id: job.id, email: user?.email || null, cv_contact: 'whatsapp' });
 
     if (!error) {
       notify('Postulación enviada. Tu CV ya está en Postulantes.');

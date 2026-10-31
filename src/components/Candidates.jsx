@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
+import { FileText, Mail, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ageFrom, friendlyError, plural, timeAgo, toneFromName, waLink } from '../lib/utils';
 import { resumeToForm, useSignedPhoto } from '../lib/cv';
@@ -47,6 +47,8 @@ export default function Candidates({ user, notify }) {
   const [open, setOpen] = useState(null);
   const [reviewFor, setReviewFor] = useState(null);
   const [requesting, setRequesting] = useState(false);
+  const [channels, setChannels] = useState({});
+  const [cvBusy, setCvBusy] = useState('');
 
   const verified = !!user?.isVerified;
   const requested = !!user?.verificationRequested;
@@ -56,7 +58,7 @@ export default function Candidates({ user, notify }) {
     setError('');
     const { data, error: err } = await supabase
       .from('applications')
-      .select('id, created_at, worker_id, job_id, jobs(title, location)')
+      .select('id, created_at, worker_id, job_id, email, cv_contact, jobs(title, location)')
       .order('created_at', { ascending: false });
     if (err) {
       setError(friendlyError(err.message));
@@ -90,6 +92,18 @@ export default function Candidates({ user, notify }) {
     else {
       notify?.('Pedido enviado. El administrador lo revisa y te avisamos.');
       load();
+    }
+  };
+
+  // La empresa decide cómo recibe el CV de cada postulante: WhatsApp, Gmail o ambas.
+  const setChannel = async (applicationId, channel) => {
+    setCvBusy(applicationId);
+    const { error: err } = await supabase.rpc('set_cv_contact', { p_application_id: applicationId, p_channel: channel });
+    setCvBusy('');
+    if (err) setError(friendlyError(err.message));
+    else {
+      setChannels((m) => ({ ...m, [applicationId]: channel }));
+      notify?.('Vía de recepción guardada');
     }
   };
 
@@ -184,6 +198,12 @@ export default function Candidates({ user, notify }) {
               const r = resumes[a.worker_id];
               const age = ageFrom(r?.birth_date);
               const reviewed = mine[a.id];
+              const cur = channels[a.id] || a.cv_contact || 'whatsapp';
+              const waAllowed = cur !== 'email';
+              const emAllowed = cur !== 'whatsapp';
+              const mailto = a.email
+                ? `mailto:${a.email}?subject=${encodeURIComponent(`CV para ${a.jobs?.title || 'tu aviso'} en LaburamosApp`)}&body=${encodeURIComponent(`Hola ${r?.full_name || 'hola'}, acá está el CV que te enviamos por tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}`
+                : '';
               return (
                 <Row
                   key={a.id}
@@ -199,31 +219,56 @@ export default function Candidates({ user, notify }) {
                   desc={r?.summary}
                   extra={<Reputation data={rep[a.worker_id]} />}
                   action={
-                    r ? (
-                      <div className="row-acts">
-                        <button className="btn btn-line" onClick={() => setOpen(r)}>
-                          <FileText size={18} /> Ver CV
-                        </button>
-                        <button
-                          className="btn btn-line"
-                          disabled={!!reviewed}
-                          title={reviewed ? `Ya lo calificaste con ${reviewed.rating} estrellas` : 'Calificar a esta persona'}
-                          onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
-                        >
-                          <Star size={18} /> {reviewed ? `${reviewed.rating}/5` : 'Calificar'}
-                        </button>
-                        {r.phone && (
-                          <a
-                            className="btn btn-ink"
-                            href={waLink(r.phone, `Hola ${r.full_name}, vi tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}
-                            target="_blank"
-                            rel="noreferrer"
+                    <div className="row-acts">
+                      <div className="row-channels" role="group" aria-label="Cómo recibir el CV">
+                        {[
+                          { id: 'whatsapp', label: 'WhatsApp' },
+                          { id: 'email', label: 'Gmail' },
+                          { id: 'both', label: 'Ambas' },
+                        ].map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`btn btn-xs ${cur === c.id ? 'btn-ink' : 'btn-line'}`}
+                            onClick={() => setChannel(a.id, c.id)}
+                            disabled={cvBusy === a.id}
+                            aria-pressed={cur === c.id}
                           >
-                            <Phone size={18} /> Escribir
-                          </a>
-                        )}
+                            {c.label}
+                          </button>
+                        ))}
                       </div>
-                    ) : null
+                      {r ? (
+                        <>
+                          <button className="btn btn-line" onClick={() => setOpen(r)}>
+                            <FileText size={18} /> Ver CV
+                          </button>
+                          <button
+                            className="btn btn-line"
+                            disabled={!!reviewed}
+                            title={reviewed ? `Ya lo calificaste con ${reviewed.rating} estrellas` : 'Calificar a esta persona'}
+                            onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
+                          >
+                            <Star size={18} /> {reviewed ? `${reviewed.rating}/5` : 'Calificar'}
+                          </button>
+                          {r.phone && waAllowed && (
+                            <a
+                              className="btn btn-ink"
+                              href={waLink(r.phone, `Hola ${r.full_name}, vi tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Phone size={18} /> Escribir por WhatsApp
+                            </a>
+                          )}
+                          {emAllowed && a.email && (
+                            <a className="btn btn-line" href={mailto} target="_blank" rel="noreferrer">
+                              <Mail size={18} /> Enviar por Gmail
+                            </a>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
                   }
                 />
               );

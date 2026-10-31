@@ -17,6 +17,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
   const [jobType, setJobType] = useState(null);
   const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [onlySaved, setOnlySaved] = useState(false);
+  const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,8 +41,12 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
       const rep = await loadReputation((data || []).map((j) => j.company_id));
       setJobs(attachReputation(data || [], rep, 'company_id'));
     }
+    if (user?.id) {
+      const { data: myApps } = await supabase.from('applications').select('job_id').eq('worker_id', user.id);
+      setApplied(new Set((myApps || []).map((a) => a.job_id)));
+    }
     setLoading(false);
-  }, [zone]);
+  }, [zone, user?.id]);
 
   useEffect(() => {
     load();
@@ -175,6 +180,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
                 onSave={onSave}
                 onLogin={onLogin}
                 onApply={onApply}
+                applied={applied?.has(job.id) ?? false}
                 wide={i === 0 && filtered.length >= 3 && !search}
               />
             ))}
