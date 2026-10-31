@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
-export const DEFAULT_SETTINGS = { job_days: 15, service_days: 15, cv_paid_enabled: false, cv_price: 3000, cv_mode: 'por_dias', cv_days: 30 };
+export const DEFAULT_SETTINGS = { job_days: 15, service_days: 15, cv_paid_enabled: false, cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, contact_email: 'laburamosapp@gmail.com' };
 
 export function useSettings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);

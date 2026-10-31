@@ -14,6 +14,7 @@ const TABS = [
   { id: 'cvs', label: 'CVs' },
   { id: 'users', label: 'Usuarios' },
   { id: 'pagos', label: 'Pagos' },
+  { id: 'recibidos', label: 'Recibidos' },
 ];
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
 const stateOf = (item) => (item.status === 'active' && new Date(item.expires_at) < new Date() ? 'expired' : item.status);
@@ -32,7 +33,7 @@ function SettingsTab({ notify, onSaved }) {
       .maybeSingle()
       .then(({ data, error: err }) => {
         if (err) setError(friendlyError(err.message));
-        setCfg({ cv_paid_enabled: false, cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 30, service_days: 30, ...data });
+        setCfg({ cv_paid_enabled: false, cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 30, service_days: 30, contact_email: 'laburamosapp@gmail.com', ...data });
       });
   }, []);
 
@@ -56,6 +57,7 @@ function SettingsTab({ notify, onSaved }) {
         cv_days: days[0],
         job_days: days[1],
         service_days: days[2],
+        contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
         updated_at: new Date().toISOString(),
       })
       .eq('id', 1);
@@ -72,6 +74,13 @@ function SettingsTab({ notify, onSaved }) {
   return (
     <form className="admin-card" onSubmit={save}>
       {error && <p className="note err">{error}</p>}
+
+      <h2 className="block-title">Contacto</h2>
+      <p className="lede">Correo donde llegan las sugerencias y denuncias del sitio.</p>
+      <div className="field">
+        <span>Correo de contacto</span>
+        <input type="email" value={cfg.contact_email || ''} onChange={(e) => set({ contact_email: e.target.value })} />
+      </div>
 
       <h2 className="block-title">Duración de las publicaciones</h2>
       <p className="lede">Se aplica a lo que se publique o renueve de ahora en adelante. Para cambiar una publicación puntual, editala en su pestaña.</p>
@@ -696,6 +705,59 @@ function PaymentsTab() {
 }
 
 // Panel del administrador: control de la configuración y de todo el contenido de la app
+function ReportsTab({ notify }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const { data, error: err } = await supabase
+      .from('reports')
+      .select('id, type, job_id, message, status, created_at, jobs(title)')
+      .order('created_at', { ascending: false });
+    if (err) setError(friendlyError(err.message));
+    setRows(data || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+  const setStatus = async (id, status) => {
+    const { error: err } = await supabase.from('reports').update({ status }).eq('id', id);
+    if (err) notify(friendlyError(err.message));
+    else {
+      notify('Estado actualizado');
+      load();
+    }
+  };
+  if (loading) return <p className="count">Cargando…</p>;
+  if (error) return <p className="note err">{error}</p>;
+  if (rows.length === 0) return <p className="count">Todavía no hay sugerencias ni denuncias.</p>;
+  return (
+    <div className="admin-card">
+      {rows.map((r) => (
+        <div key={r.id} className="admin-row" style={{ gridTemplateColumns: '1fr' }}>
+          <div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className="pill">{r.type === 'denuncia' ? 'Denuncia' : 'Sugerencia'}</span>
+              <span className="pill">{r.status}</span>
+              <small className="cv-hint">{new Date(r.created_at).toLocaleString('es-AR')}</small>
+            </div>
+            {r.jobs?.title && <p style={{ margin: '6px 0 4px' }}><b>{r.jobs.title}</b></p>}
+            <p style={{ margin: '4px 0 8px', whiteSpace: 'pre-wrap' }}>{r.message}</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {r.status !== 'enviada' && <button type="button" className="btn btn-line btn-xs" onClick={() => setStatus(r.id, 'enviada')}>Marcar enviada</button>}
+              {r.status !== 'cerrada' && <button type="button" className="btn btn-ink btn-xs" onClick={() => setStatus(r.id, 'cerrada')}>Cerrar</button>}
+              {r.status !== 'nueva' && <button type="button" className="btn btn-line btn-xs" onClick={() => setStatus(r.id, 'nueva')}>Reabrir</button>}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Admin({ notify, onSettingsSaved }) {
   const [tab, setTab] = useState('config');
   return (
@@ -719,6 +781,7 @@ export default function Admin({ notify, onSettingsSaved }) {
       {tab === 'cvs' && <ResumesTab notify={notify} />}
       {tab === 'users' && <UsersTab notify={notify} />}
       {tab === 'pagos' && <PaymentsTab />}
+      {tab === 'recibidos' && <ReportsTab notify={notify} />}
     </section>
   );
 }

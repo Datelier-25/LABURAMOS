@@ -16,9 +16,10 @@ import MyPosts from './components/MyPosts';
 import PublishModal from './components/PublishModal';
 import Admin from './components/Admin';
 import Safety from './components/Safety';
+import Contacto from './components/Contacto';
 import { Footer } from './components/ui';
 
-const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin', 'seguridad'];
+const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin', 'seguridad', 'contacto'];
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
 const PAY_RETURN = (() => {
   if (typeof window === 'undefined') return null;
@@ -51,6 +52,7 @@ const TITLES = {
   avisos: 'Mis avisos · LaburamosApp',
   admin: 'Administración · LaburamosApp',
   seguridad: 'Consejos para operar seguro · LaburamosApp',
+  contacto: 'Sugerencias y denuncias · LaburamosApp',
 };
 const DESCRIPTIONS = {
   home: 'Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos y el contacto es directo por WhatsApp.',
@@ -61,6 +63,7 @@ const DESCRIPTIONS = {
   avisos: 'Tus publicaciones y tus postulaciones en LaburamosApp.',
   admin: 'Panel de administración de LaburamosApp.',
   seguridad: 'Cómo cuidarte al buscar o publicar un trabajo: señales de alerta, pagos y referencias.',
+  contacto: 'Enviá sugerencias, recomendaciones o denuncias sobre avisos y conductas a LaburamosApp.',
 };
 
 export default function App() {
@@ -330,9 +333,10 @@ export default function App() {
         {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} />}
         {view === 'avisos' && user && <MyPosts key={refreshKey} user={user} settings={settings} onPublish={openPublish} notify={notify} />}
         {view === 'seguridad' && <Safety go={go} />}
+        {view === 'contacto' && <Contacto settings={settings} notify={notify} />}
       </main>
 
-      <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }]} />
+      <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }, { id: 'contacto', label: 'Sugerencias / Denuncias' }]} />
 
       {!modal && (
         <button className="fab" onClick={() => openPublish(defaultPublish)} aria-label="Publicar un aviso">
