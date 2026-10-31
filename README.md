@@ -46,3 +46,10 @@ migraciones 003/004 sobre la base de Workeo**. El detalle está en
 python herramientas/preview/server.py . 5199
 ```
 Abrir `http://localhost:5199/?as=worker` (también `as=company`, `as=admin`, `pay=on`, `pay=paid`). Usa datos de ejemplo: no toca Supabase.
+
+## Deploy
+El sitio de producción es **https://laburamosapp.netlify.app** y está conectado a este repositorio:
+cada push a `main` dispara un build automático en Netlify (`npm run build` → `dist`).
+
+Las credenciales de Supabase se cargan como variables de entorno en Netlify
+(`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`); no se commitea ningún `.env`.
