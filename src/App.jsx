@@ -165,16 +165,40 @@ export default function App() {
     return setModal(type);
   };
 
-  // Al tocar "Postularme" queda registrada la postulación: así la empresa puede ver el CV.
-  // WhatsApp se abre igual aunque falle (por ejemplo, si ya se había postulado).
-  const applyTo = (job) => {
-    if (!user || !job?.id || job.company_id === user.id) return;
-    supabase
-      .from('applications')
-      .insert({ job_id: job.id })
-      .then(({ error }) => {
-        if (!error) notify('Postulación enviada');
-      });
+  // "Postularme": primero queda registrada la postulación (así la empresa ve el CV)
+  // y recién después se abre WhatsApp. Si el registro falla no se abre nada, para
+  // que nadie crea que se postuló cuando en realidad no quedó anotado.
+  const applyTo = async (job, waUrl) => {
+    if (!user || !job?.id) return;
+    if (job.company_id === user.id) {
+      notify('No podés postularte a un aviso propio.');
+      return;
+    }
+    // La ventana se abre dentro del clic (si esperamos al insert, el navegador
+    // puede bloquear la pestaña nueva). Si el insert falla, se cierra.
+    const win = window.open('', '_blank');
+    const { error } = await supabase.from('applications').insert({ job_id: job.id });
+
+    if (error) {
+      if (win && !win.closed) win.close();
+      if (error.code === '23505') {
+        // Ya estaba postulado: la empresa ya tiene su CV, así que sí abrimos WhatsApp.
+        if (win) win.location.href = waUrl;
+        else window.location.href = waUrl;
+        notify('Ya te habías postulado a este aviso.');
+        return;
+      }
+      if ((error.message || '').includes('aviso_no_disponible')) {
+        notify('Este aviso ya no está disponible.');
+        return;
+      }
+      notify('No pudimos registrar tu postulación. Probá de nuevo en un rato.');
+      return;
+    }
+
+    notify('Postulación enviada. Tu CV ya está en Postulantes.');
+    if (win) win.location.href = waUrl;
+    else window.location.href = waUrl;
   };
 
   const handleCreated = () => {

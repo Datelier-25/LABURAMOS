@@ -27,9 +27,22 @@ function ServicePhotos({ service, preview }) {
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
 export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, compact = false, preview = false, wide = false, style }) {
   const [open, setOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
   const interactive = !compact && !preview;
   const long = (job.description || '').length > 130 || !!job.requirements;
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
+
+  // Primero se registra la postulación y después se abre WhatsApp (ver applyTo en App.jsx).
+  // Si el registro falla, no se navega y además se muestra el motivo.
+  const apply = async () => {
+    if (applying) return;
+    setApplying(true);
+    try {
+      await onApply?.(job, waLink(job.phone, message));
+    } finally {
+      setApplying(false);
+    }
+  };
 
   return (
     <article
@@ -78,9 +91,9 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
             </button>
             {user ? (
-              <a className="btn btn-ink btn-sm" href={waLink(job.phone, message)} target="_blank" rel="noreferrer" onClick={() => onApply && onApply(job)}>
-                <Phone size={16} /> Postularme
-              </a>
+              <button type="button" className="btn btn-ink btn-sm" onClick={apply} disabled={applying}>
+                <Phone size={16} /> {applying ? 'Enviando…' : 'Postularme'}
+              </button>
             ) : (
               <button type="button" className="btn btn-ink btn-sm" onClick={onLogin}>
                 Ingresá para postularte
