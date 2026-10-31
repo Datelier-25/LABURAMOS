@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { SERVICE_CATEGORIES, friendlyError, intentOf, plural } from '../lib/utils';
 import { applyZone, zoneText } from '../lib/geo';
+import { attachReputation, loadReputation } from '../lib/reputation';
 import { ServiceCard } from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
 import { ZonePicker } from './Place';
@@ -31,8 +32,13 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin })
       'city'
     );
     const { data, error: err } = await q;
-    if (err) setError(friendlyError(err.message));
-    else setServices(data || []);
+    if (err) {
+      setError(friendlyError(err.message));
+      setServices([]);
+    } else {
+      const rep = await loadReputation((data || []).map((s) => s.owner_id));
+      setServices(attachReputation(data || [], rep, 'owner_id'));
+    }
     setLoading(false);
   }, [zone]);
 

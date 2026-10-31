@@ -1,7 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { BadgeCheck, Check, ChevronDown, Eye, EyeOff, SlidersHorizontal, Star, X } from 'lucide-react';
 import { initials } from '../lib/utils';
+
+// Reputación de una cuenta: sello de verificado y promedio de estrellas.
+// No muestra nada si la persona todavía no tiene reseñas ni verificación.
+export function Reputation({ data, className = '' }) {
+  const reviews = Number(data?.reviews || 0);
+  const rating = Number(data?.rating || 0);
+  const verified = !!data?.is_verified;
+  if (!verified && !reviews) return null;
+  return (
+    <span className={`rep ${className}`.trim()}>
+      {verified && (
+        <span className="rep-ver" title="Verificado por LaburamosApp">
+          <BadgeCheck size={15} aria-hidden="true" /> Verificado
+        </span>
+      )}
+      {reviews > 0 && (
+        <span className="rep-stars" title={`${rating.toFixed(1)} de 5 según ${reviews} ${reviews === 1 ? 'reseña' : 'reseñas'}`}>
+          <Star size={14} fill="currentColor" aria-hidden="true" />
+          {rating.toFixed(1)}
+          <small>({reviews})</small>
+        </span>
+      )}
+    </span>
+  );
+}
 
 export function SkeletonGrid({ n = 6 }) {
   return (
@@ -56,7 +81,7 @@ export function Empty({ title, text, children }) {
 }
 
 // Fila de la guía de candidatos
-export function Row({ tone, name, tag, title, by, desc, action }) {
+export function Row({ tone, name, tag, title, by, desc, action, extra }) {
   return (
     <article className={`row ${tone}`}>
       <div className="disc" aria-hidden="true">
@@ -66,6 +91,7 @@ export function Row({ tone, name, tag, title, by, desc, action }) {
         <span className="chip-s">{tag}</span>
         <h3>{title}</h3>
         <p className="by">{by}</p>
+        {extra}
         {desc && <p className="rdesc">{desc}</p>}
       </div>
       <div className="act">{action}</div>

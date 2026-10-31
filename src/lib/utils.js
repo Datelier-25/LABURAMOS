@@ -116,6 +116,8 @@ export function friendlyError(message = '') {
   if (m.includes('rate limit')) return 'Demasiados intentos. Esperá unos minutos y probá de nuevo.';
   if (m.includes('permission denied')) return 'No tenés permiso para hacer esto. Si el problema sigue, avisanos.';
   if (m.includes('no_permitido')) return 'No tenés permiso para modificar este aviso.';
+  if (m.includes('no_podes_bloquearte')) return 'No podés bloquear tu propia cuenta.';
+  if (m.includes('duplicate key')) return 'Ya calificaste esta postulación.';
   if (m.includes('estado_invalido') || m.includes('tipo_invalido')) return 'No se pudo cambiar el aviso. Probá de nuevo.';
   if (m.includes('row-level security')) return 'Tu cuenta no tiene permiso para hacer esto.';
   if (m.includes('aviso_no_disponible')) return 'Este aviso ya no está disponible.';

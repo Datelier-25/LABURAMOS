@@ -3,6 +3,7 @@ import { Bookmark, Search } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_TYPES, friendlyError, plural } from '../lib/utils';
 import { applyZone, zoneText } from '../lib/geo';
+import { attachReputation, loadReputation } from '../lib/reputation';
 import JobSign from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
 import { ZonePicker } from './Place';
@@ -32,8 +33,13 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
       'location'
     );
     const { data, error: err } = await q;
-    if (err) setError(friendlyError(err.message));
-    else setJobs(data || []);
+    if (err) {
+      setError(friendlyError(err.message));
+      setJobs([]);
+    } else {
+      const rep = await loadReputation((data || []).map((j) => j.company_id));
+      setJobs(attachReputation(data || [], rep, 'company_id'));
+    }
     setLoading(false);
   }, [zone]);
 

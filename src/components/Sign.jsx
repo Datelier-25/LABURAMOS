@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Bookmark, MapPin, MessageCircle, Phone, Search } from 'lucide-react';
 import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
+import { Reputation } from './ui';
 
 // Fotos del aviso (hasta 3). En la vista previa no son enlaces.
 function ServicePhotos({ service, preview }) {
@@ -60,6 +61,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       <h3>{job.title}</h3>
       <p className="sign-meta">
         <span>{job.company_name}</span>
+        <Reputation data={job.reputation} />
         <span className="loc">
           <MapPin size={15} aria-hidden="true" /> {job.location}
         </span>
@@ -148,6 +150,7 @@ export function ServiceCard({ service, user, onLogin, preview = false }) {
       <h3>{service.title}</h3>
       <p className="by">
         {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
+        <Reputation data={service.reputation} />
         <span className="loc">
           <MapPin size={15} aria-hidden="true" /> {service.city}
         </span>

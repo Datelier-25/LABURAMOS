@@ -3,6 +3,7 @@ import { ArrowRight, Briefcase, FileText, Plus, Users, Wrench } from 'lucide-rea
 import { supabase } from '../supabaseClient';
 import { plural } from '../lib/utils';
 import { applyZone, zoneShort, zoneText } from '../lib/geo';
+import { attachReputation, loadReputation } from '../lib/reputation';
 import JobSign, { ServiceCard } from './Sign';
 import { Empty } from './ui';
 import { ZonePicker } from './Place';
@@ -92,10 +93,14 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
         'city'
       );
       const [j, s] = await Promise.all([jq, sq]);
+      const rep = await loadReputation([
+        ...(j.data || []).map((x) => x.company_id),
+        ...(s.data || []).map((x) => x.owner_id),
+      ]);
       if (!off) {
         setData({
-          jobs: j.data || [],
-          services: s.data || [],
+          jobs: attachReputation(j.data || [], rep, 'company_id'),
+          services: attachReputation(s.data || [], rep, 'owner_id'),
           jobsN: j.count ?? 0,
           servN: s.count ?? 0,
           loading: false,

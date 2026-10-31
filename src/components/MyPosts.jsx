@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Star } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { daysLeft, friendlyError, intentOf } from '../lib/utils';
-import { Empty } from './ui';
+import { daysLeft, friendlyError, intentOf, timeAgo } from '../lib/utils';
+import { loadReputation } from '../lib/reputation';
+import ReviewModal from './ReviewModal';
+import { Empty, Reputation } from './ui';
 
 const LABEL = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
 
@@ -59,22 +62,44 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
   const isCompany = user.role === 'company';
   const [jobs, setJobs] = useState([]);
   const [services, setServices] = useState([]);
+  const [apps, setApps] = useState([]);
+  const [rep, setRep] = useState({});
+  const [mine, setMine] = useState({});
+  const [reviewFor, setReviewFor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    const [j, s] = await Promise.all([
+    const [j, s, a] = await Promise.all([
       isCompany
         ? supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false })
         : Promise.resolve({ data: [], error: null }),
       supabase.from('services').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
+      !isCompany
+        ? supabase
+            .from('applications')
+            .select('id, created_at, company_id, job_id, jobs(title, company_name)')
+            .eq('worker_id', user.id)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
     ]);
-    const err = j.error || s.error;
+    const err = j.error || s.error || a.error;
     if (err) setError(friendlyError(err.message));
     setJobs(j.data || []);
     setServices(s.data || []);
+    const list = a.data || [];
+    setApps(list);
+    if (list.length) {
+      const ids = [...new Set(list.map((x) => x.company_id))];
+      const [r, rv] = await Promise.all([
+        loadReputation(ids),
+        supabase.from('reviews').select('application_id, rating').eq('author_id', user.id),
+      ]);
+      setRep(r);
+      setMine(Object.fromEntries((rv.data || []).map((x) => [x.application_id, x])));
+    }
     setLoading(false);
   }, [user.id, isCompany]);
 
@@ -147,6 +172,42 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
         </>
       )}
 
+      {!loading && !isCompany && (
+        <>
+          <h2 className="block-title">Mis postulaciones</h2>
+          {apps.length === 0 ? (
+            <Empty title="Todavía no te postulaste a nada" text="Cuando toques «Postularme» en un aviso, va a quedar acá y vas a poder calificar al comercio." />
+          ) : (
+            <div className="mine">
+              {apps.map((a) => {
+                const reviewed = mine[a.id];
+                return (
+                  <article className="post" key={a.id}>
+                    <div>
+                      <h3>{a.jobs?.title || 'Aviso no disponible'}</h3>
+                      <p>
+                        {a.jobs?.company_name || 'Comercio'} · te postulaste {timeAgo(a.created_at)}
+                      </p>
+                      <Reputation data={rep[a.company_id]} />
+                    </div>
+                    <div className="acts">
+                      <button
+                        className="btn btn-line btn-sm"
+                        disabled={!!reviewed}
+                        title={reviewed ? 'Ya calificaste a este comercio' : 'Calificar al comercio'}
+                        onClick={() => setReviewFor(a)}
+                      >
+                        <Star size={16} /> {reviewed ? `Calificaste ${reviewed.rating}/5` : 'Calificar al comercio'}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
       {!loading && (
         <>
           <h2 className="block-title">Servicios</h2>
@@ -164,6 +225,20 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
             </div>
           )}
         </>
+      )}
+
+      {reviewFor && (
+        <ReviewModal
+          applicationId={reviewFor.id}
+          targetName={reviewFor.jobs?.company_name || 'el comercio'}
+          targetKind="comercio"
+          onClose={() => setReviewFor(null)}
+          onDone={() => {
+            setReviewFor(null);
+            notify('Reseña publicada');
+            load();
+          }}
+        />
       )}
     </section>
   );

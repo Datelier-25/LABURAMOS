@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Phone, Search, X } from 'lucide-react';
+import { FileText, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ageFrom, friendlyError, plural, timeAgo, toneFromName, waLink } from '../lib/utils';
 import { resumeToForm, useSignedPhoto } from '../lib/cv';
+import { loadReputation } from '../lib/reputation';
 import CvSheet from './CvSheet';
-import { Empty, Row, SkeletonGrid } from './ui';
+import ReviewModal from './ReviewModal';
+import { Empty, Reputation, Row, SkeletonGrid } from './ui';
 
 // Ventana con el CV completo de un postulante (o de cualquiera, para el administrador)
 export function CvModal({ resume, onClose }) {
@@ -33,14 +35,21 @@ export function CvModal({ resume, onClose }) {
 }
 
 // Postulantes: las personas que se postularon a los avisos de esta empresa
-export default function Candidates() {
+export default function Candidates({ user, notify }) {
   const [apps, setApps] = useState([]);
   const [resumes, setResumes] = useState({});
+  const [rep, setRep] = useState({});
+  const [mine, setMine] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [jobFilter, setJobFilter] = useState('');
   const [open, setOpen] = useState(null);
+  const [reviewFor, setReviewFor] = useState(null);
+  const [requesting, setRequesting] = useState(false);
+
+  const verified = !!user?.isVerified;
+  const requested = !!user?.verificationRequested;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,15 +67,31 @@ export default function Candidates() {
     setApps(list);
     const ids = [...new Set(list.map((a) => a.worker_id))];
     if (ids.length) {
-      const { data: rs } = await supabase.from('resumes').select('*').in('user_id', ids);
-      setResumes(Object.fromEntries((rs || []).map((r) => [r.user_id, r])));
+      const [rs, rv] = await Promise.all([
+        supabase.from('resumes').select('*').in('user_id', ids),
+        supabase.from('reviews').select('application_id, rating').eq('author_id', user?.id || ''),
+      ]);
+      setResumes(Object.fromEntries((rs.data || []).map((r) => [r.user_id, r])));
+      setMine(Object.fromEntries((rv.data || []).map((r) => [r.application_id, r])));
+      setRep(await loadReputation(ids));
     }
     setLoading(false);
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const requestVerification = async () => {
+    setRequesting(true);
+    const { error: err } = await supabase.rpc('request_verification');
+    setRequesting(false);
+    if (err) notify?.(friendlyError(err.message));
+    else {
+      notify?.('Pedido enviado. El administrador lo revisa y te avisamos.');
+      load();
+    }
+  };
 
   const jobs = useMemo(() => {
     const m = new Map();
@@ -90,7 +115,30 @@ export default function Candidates() {
           <h1 className="page-title">Postulantes</h1>
           <p className="lede">Personas que se postularon a tus avisos. Podés ver su CV y escribirles por WhatsApp.</p>
         </div>
+        <Reputation data={{ is_verified: verified, rating: 0, reviews: 0 }} />
       </header>
+
+      {!verified && (
+        <div className="banner">
+          <span className="banner-ic" aria-hidden="true">
+            <ShieldCheck size={24} />
+          </span>
+          <div className="banner-tx">
+            <b>Para ver los CVs necesitás verificar tu comercio</b>
+            <p>
+              La verificación protege a quienes se postulan: solo los comercios aprobados por el administrador pueden abrir los CVs.
+              Mientras tanto, tus avisos funcionan normal y podés escribirles por WhatsApp.
+            </p>
+          </div>
+          {requested ? (
+            <span className="pill paused">Pedido enviado</span>
+          ) : (
+            <button className="btn btn-ink" onClick={requestVerification} disabled={requesting}>
+              {requesting ? 'Enviando…' : 'Pedir verificación'}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="finder">
         <label className="search">
@@ -127,25 +175,42 @@ export default function Candidates() {
         />
       ) : (
         <>
-          <p className="count">{plural(filtered.length, 'postulación', 'postulaciones')}</p>
+          <p className="count">
+            {plural(filtered.length, 'postulación', 'postulaciones')}
+            {!verified ? ' · verificá tu comercio para ver los CVs' : ''}
+          </p>
           <div className="guide">
             {filtered.map((a) => {
               const r = resumes[a.worker_id];
               const age = ageFrom(r?.birth_date);
+              const reviewed = mine[a.id];
               return (
                 <Row
                   key={a.id}
                   tone={toneFromName(r?.full_name || a.worker_id)}
                   name={r?.full_name || '?'}
                   tag={a.jobs?.title || 'Aviso eliminado'}
-                  title={r?.full_name || 'Todavía no cargó su CV'}
-                  by={[r?.profession, age !== null && `${age} años`, r?.city, `se postuló ${timeAgo(a.created_at)}`].filter(Boolean).join(' · ')}
+                  title={r?.full_name || 'Postulante'}
+                  by={
+                    r
+                      ? [r.profession, age !== null && `${age} años`, r.city, `se postuló ${timeAgo(a.created_at)}`].filter(Boolean).join(' · ')
+                      : 'CV visible para comercios verificados'
+                  }
                   desc={r?.summary}
+                  extra={<Reputation data={rep[a.worker_id]} />}
                   action={
                     r ? (
                       <div className="row-acts">
                         <button className="btn btn-line" onClick={() => setOpen(r)}>
                           <FileText size={18} /> Ver CV
+                        </button>
+                        <button
+                          className="btn btn-line"
+                          disabled={!!reviewed}
+                          title={reviewed ? `Ya lo calificaste con ${reviewed.rating} estrellas` : 'Calificar a esta persona'}
+                          onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
+                        >
+                          <Star size={18} /> {reviewed ? `${reviewed.rating}/5` : 'Calificar'}
                         </button>
                         {r.phone && (
                           <a
@@ -168,6 +233,18 @@ export default function Candidates() {
       )}
 
       {open && <CvModal resume={open} onClose={() => setOpen(null)} />}
+      {reviewFor && (
+        <ReviewModal
+          applicationId={reviewFor.id}
+          targetName={reviewFor.name}
+          onClose={() => setReviewFor(null)}
+          onDone={() => {
+            setReviewFor(null);
+            notify?.('Reseña publicada');
+            load();
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://laburamosapp.netlify.app/sitemap.xml
+
+# No indexar estados internos con query de pago
+User-agent: *
+Disallow: /?pago=*

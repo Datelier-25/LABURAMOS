@@ -220,6 +220,12 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .chip-s.urgent { background: var(--orange); color: #fff; }
 .sign h3 { margin-top: 4px; font-size: clamp(1.5rem, 2.2vw, 1.9rem); line-height: 1; font-weight: 800; font-stretch: 78%; letter-spacing: -0.025em; }
 .sign-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-weight: 600; color: var(--muted); }
+/* reputación: estrellas y sello de verificado */
+.rep { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rep-ver { display: inline-flex; align-items: center; gap: 3px; background: #def3e6; color: #0e5a2f; border-radius: 999px; padding: 2px 9px 2px 6px; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.01em; }
+.rep-stars { display: inline-flex; align-items: center; gap: 3px; color: #b07800; font-weight: 800; font-size: 0.85rem; }
+.rep-stars svg { color: #f0a500; }
+.rep-stars small { color: var(--muted); font-weight: 700; }
 .loc { display: inline-flex; align-items: center; gap: 4px; }
 .loc svg { color: var(--acc, var(--ultra)); }
 .desc { font-size: 0.95rem; color: #3d4470; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -753,4 +759,62 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 @media (max-width: 560px) {
   .photo-slot, .photo-add { width: 78px; height: 78px; }
   .skill-opts { max-height: 108px; }
+}
+
+/* ==========================================================================
+   Bloqueo de cuentas, verificación de comercios y reseñas
+   ========================================================================== */
+
+/* ---------- aviso de verificación en Postulantes ---------- */
+.banner { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; background: #fff5e6; border: 2px solid #ffd9a8; border-radius: 18px; padding: 16px 18px; margin: 20px 0 4px; }
+.banner-ic { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px; background: #ffe3c2; color: #a64600; }
+.banner-tx { flex: 1 1 320px; }
+.banner-tx b { display: block; font-size: 1.05rem; }
+.banner-tx p { margin-top: 4px; font-size: 0.92rem; color: #5a4a2e; max-width: 72ch; }
+.banner .btn, .banner .pill { flex: 0 0 auto; align-self: center; }
+
+/* ---------- tabla de usuarios del panel ---------- */
+.admin-row.user { grid-template-columns: 1.7fr 0.8fr 1fr 1.2fr auto; }
+.admin-row.user.blocked { background: #fff1ee; }
+.user-flags { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill.verified { background: #def3e6; color: #0e5a2f; }
+.btn-xs { height: 32px; padding: 0 11px; font-size: 0.8rem; }
+.fbtn.mini { height: 34px; padding: 0 10px; font-size: 0.85rem; }
+
+/* ---------- estrellas para calificar ---------- */
+.stars-input { display: flex; gap: 4px; margin: 4px 0 12px; }
+.stars-input button { background: none; border: 0; padding: 2px; color: #c9cbd8; line-height: 0; }
+.stars-input button.on { color: #f0a500; }
+.stars-input button:hover { transform: scale(1.08); }
+.review-dlg { max-width: 480px; }
+
+/* ---------- cuenta bloqueada ---------- */
+.blocked { max-width: 620px; margin: 60px auto; background: #fff; border: 3px solid var(--ink); border-radius: 24px; padding: 32px; text-align: center; }
+.blocked .lede { margin: 12px 0 22px; }
+
+/* ---------- consejos de seguridad ---------- */
+.safety-hero { display: flex; gap: 14px; align-items: flex-start; background: var(--ink); color: #fff; border-radius: 20px; padding: 18px 20px; margin: 18px 0 6px; }
+.safety-hero svg { flex: 0 0 auto; color: #8ef0b8; }
+.safety-hero p { font-size: 1rem; }
+.safety-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-bottom: 8px; }
+.safety-card { background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 18px; }
+.safety-card h3 { font-size: 1.12rem; margin: 10px 0 6px; }
+.safety-card p, .safety-warn p, .safety-warn li, .safety-two li { color: #3d4470; font-size: 0.95rem; }
+.safety-ic { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--mist); color: var(--ultra); }
+.safety-ic.warn { background: #ffe3d6; color: #a63a10; }
+.safety-warn { display: flex; gap: 14px; background: #fff4ef; border: 2px solid #ffd3c2; border-radius: 18px; padding: 18px; margin-bottom: 8px; }
+.safety-warn ul, .safety-two ul { margin: 8px 0 0 18px; display: grid; gap: 6px; list-style: disc; }
+.safety-two { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 8px; }
+.safety-two h3 { font-size: 1.12rem; margin-bottom: 4px; }
+.safety-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 34px 0 10px; }
+
+/* aviso corto dentro del modal de publicación */
+.sheet-note.safe { color: #7a3d00; background: #fff5e6; border: 1px solid #ffd9a8; border-radius: 12px; padding: 10px 12px; }
+.linky { background: none; border: 0; padding: 0; font: inherit; color: var(--ultra); font-weight: 800; text-decoration: underline; }
+
+@media (max-width: 700px) {
+  .admin-row.user { grid-template-columns: 1fr auto; }
+  .admin-row.user > :nth-child(2), .admin-row.user > :nth-child(3) { display: none; }
+  .admin-row.user .admin-acts { flex-wrap: wrap; justify-content: flex-end; }
+  .banner .btn, .banner .pill { width: 100%; }
 }

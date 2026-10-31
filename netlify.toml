@@ -6,6 +6,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# SPA: cualquier ruta distinta a los assets estáticos sirve el index (History API)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 # Encabezados de seguridad para todo el sitio.
 # La CSP permite Supabase (API y realtime), Google Fonts y las fotos del bucket
 # público; todo lo demás queda restringido al propio dominio.

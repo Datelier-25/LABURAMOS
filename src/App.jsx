@@ -15,24 +15,52 @@ import Candidates from './components/Candidates';
 import MyPosts from './components/MyPosts';
 import PublishModal from './components/PublishModal';
 import Admin from './components/Admin';
+import Safety from './components/Safety';
 import { Footer } from './components/ui';
 
-const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin'];
+const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin', 'seguridad'];
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
 const PAY_RETURN = (() => {
   if (typeof window === 'undefined') return null;
   const q = new URLSearchParams(window.location.search);
   if (q.get('pago') !== 'cv') return null;
   const status = q.get('status') || q.get('collection_status') || 'pending';
-  window.history.replaceState(null, '', `${window.location.pathname}#/cv`);
+  window.history.replaceState(null, '', '/cv');
   return status;
 })();
 // Si la persona llega desde el enlace de "Olvidé mi contraseña", Supabase lo marca en la dirección
 const STARTED_IN_RECOVERY = typeof window !== 'undefined' && /type=recovery/.test(window.location.hash);
 
-const readHash = () => {
+// Rutas sin #: /laburos, /oficios, /seguridad… (los enlaces viejos con #/ siguen andando)
+const readView = () => {
+  if (typeof window === 'undefined') return 'home';
   const h = window.location.hash.replace(/^#\/?/, '');
-  return VIEWS.includes(h) ? h : 'home';
+  if (VIEWS.includes(h)) return h;
+  const p = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  return VIEWS.includes(p) ? p : 'home';
+};
+
+const pathFor = (id) => (id === 'home' ? '/' : `/${id}`);
+
+const TITLES = {
+  home: 'LaburamosApp · Laburos, oficios y changas cerca tuyo',
+  laburos: 'Laburos y ofertas de trabajo cerca tuyo · LaburamosApp',
+  oficios: 'Oficios y servicios cerca tuyo · LaburamosApp',
+  cv: 'Mi CV online · LaburamosApp',
+  candidatos: 'Postulantes · LaburamosApp',
+  avisos: 'Mis avisos · LaburamosApp',
+  admin: 'Administración · LaburamosApp',
+  seguridad: 'Consejos para operar seguro · LaburamosApp',
+};
+const DESCRIPTIONS = {
+  home: 'Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos y el contacto es directo por WhatsApp.',
+  laburos: 'Ofertas de trabajo de comercios y vecinos, por rubro y localidad. Postulate y que vean tu CV.',
+  oficios: 'Plomeros, electricistas, clases, limpieza y más. Encontrá a quién te haga el trabajo o anunciá tu oficio.',
+  cv: 'Armá tu CV online con tus oficios y habilidades, y compartilo con los comercios que buscan gente.',
+  candidatos: 'Personas que se postularon a tus avisos, con su CV y contacto directo por WhatsApp.',
+  avisos: 'Tus publicaciones y tus postulaciones en LaburamosApp.',
+  admin: 'Panel de administración de LaburamosApp.',
+  seguridad: 'Cómo cuidarte al buscar o publicar un trabajo: señales de alerta, pagos y referencias.',
 };
 
 export default function App() {
@@ -41,7 +69,7 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [guest, setGuest] = useState(false);
   const [recovery, setRecovery] = useState(STARTED_IN_RECOVERY);
-  const [rawView, setRawView] = useState(readHash);
+  const [rawView, setRawView] = useState(readView);
   const [zone, setZone, suggestZone] = useZone();
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
@@ -71,15 +99,18 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Navegación por hash: #/laburos, #/oficios... (anda el botón "atrás")
+  // Navegación por ruta (/laburos, /oficios…) con el botón "atrás" del navegador
   useEffect(() => {
-    const onHash = () => {
-      setRawView(readHash());
+    const onPop = () => {
+      setRawView(readView());
       setMenuOpen(false);
       window.scrollTo(0, 0);
     };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    window.addEventListener('popstate', onPop);
+    // Enlaces viejos con #/laburos: se normalizan a /laburos
+    const h = window.location.hash.replace(/^#\/?/, '');
+    if (VIEWS.includes(h)) window.history.replaceState(null, '', pathFor(h));
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   const userId = session?.user?.id;
@@ -118,6 +149,9 @@ export default function App() {
         role: profile?.role || (meta.role === 'company' ? 'company' : 'worker'),
         phone: profile?.phone || '',
         isAdmin: !!profile?.is_admin,
+        isBlocked: !!profile?.is_blocked,
+        isVerified: !!profile?.is_verified,
+        verificationRequested: !!profile?.verification_requested,
         city: profile?.city || meta.city || null,
         province: profile?.province || meta.province || null,
       }
@@ -134,7 +168,28 @@ export default function App() {
   if (user) links.push({ id: 'avisos', label: 'Mis avisos' });
   if (user?.isAdmin) links.push({ id: 'admin', label: 'Admin' });
 
-  const view = links.some((l) => l.id === rawView) ? rawView : 'home';
+  const allowed = (id) => {
+    if (id === 'cv') return user?.role === 'worker';
+    if (id === 'candidatos') return user?.role === 'company';
+    if (id === 'avisos') return !!user;
+    if (id === 'admin') return !!user?.isAdmin;
+    return true;
+  };
+  const view = VIEWS.includes(rawView) && allowed(rawView) ? rawView : 'home';
+
+  // Título y descripción por vista (Google y las vistas previas de WhatsApp)
+  useEffect(() => {
+    document.title = TITLES[view] || TITLES.home;
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute('content', DESCRIPTIONS[view] || DESCRIPTIONS.home);
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = `https://laburamosapp.netlify.app${pathFor(view)}`;
+  }, [view]);
 
   const go = (id) => {
     setMenuOpen(false);
@@ -142,14 +197,17 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    window.location.hash = id === 'home' ? '' : `/${id}`;
+    window.history.pushState(null, '', pathFor(id));
+    setRawView(id);
+    window.scrollTo(0, 0);
   };
 
   const handleLogout = async () => {
     setMenuOpen(false);
     await supabase.auth.signOut();
     setGuest(false);
-    window.location.hash = '';
+    window.history.replaceState(null, '', '/');
+    setRawView('home');
   };
 
   // Un invitado que quiere postularse o publicar vuelve a la pantalla de ingreso
@@ -212,8 +270,34 @@ export default function App() {
   };
 
   if (booting) return <div style={{ minHeight: '100svh', display: 'grid', placeItems: 'center' }}>Cargando…</div>;
-  if (recovery) return <ResetPassword onDone={() => { setRecovery(false); window.location.hash = ''; }} />;
+  if (recovery)
+    return (
+      <ResetPassword
+        onDone={() => {
+          setRecovery(false);
+          window.history.replaceState(null, '', '/');
+          setRawView('home');
+        }}
+      />
+    );
   if (!session && !guest) return <AuthScreen onGuest={() => setGuest(true)} />;
+
+  // Cuenta bloqueada por el administrador: puede ver el sitio, pero no operar
+  if (user?.isBlocked) {
+    return (
+      <section className="wrap page">
+        <div className="blocked">
+          <h1 className="page-title">Tu cuenta está bloqueada</h1>
+          <p className="lede">
+            Un administrador bloqueó esta cuenta, así que no puede publicar avisos ni postularse. Si creés que es un error, escribinos y lo revisamos.
+          </p>
+          <button className="btn btn-ink" onClick={handleLogout}>
+            Salir
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
   const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: applyTo, saved, onSave: toggleSaved, onPrune: pruneSaved };
@@ -238,12 +322,13 @@ export default function App() {
         {view === 'laburos' && <JobList key={`${refreshKey}-${zoneKey}`} {...common} />}
         {view === 'oficios' && <ServiceList key={`${refreshKey}-${zoneKey}`} {...common} />}
         {view === 'cv' && user && <MyResume user={user} zone={zone} notify={notify} payReturn={PAY_RETURN} />}
-        {view === 'candidatos' && user && <Candidates />}
+        {view === 'candidatos' && user && <Candidates user={user} notify={notify} />}
         {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} />}
         {view === 'avisos' && user && <MyPosts key={refreshKey} user={user} settings={settings} onPublish={openPublish} notify={notify} />}
+        {view === 'seguridad' && <Safety go={go} />}
       </main>
 
-      <Footer go={go} links={links} />
+      <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }]} />
 
       {!modal && (
         <button className="fab" onClick={() => openPublish(defaultPublish)} aria-label="Publicar un aviso">
@@ -251,7 +336,7 @@ export default function App() {
         </button>
       )}
 
-      {modal && <PublishModal type={modal} intent={modalIntent} user={user} zone={zone} settings={settings} onClose={() => setModal(null)} onCreated={handleCreated} />}
+      {modal && <PublishModal type={modal} intent={modalIntent} user={user} zone={zone} settings={settings} onClose={() => setModal(null)} onCreated={handleCreated} onSafety={() => { setModal(null); go('seguridad'); }} />}
 
       <div className={`toast${toast.show ? ' show' : ''}`} role="status" aria-live="polite">
         <i aria-hidden="true" />

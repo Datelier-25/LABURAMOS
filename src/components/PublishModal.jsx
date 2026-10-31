@@ -13,7 +13,7 @@ const startPlace = (user, zone) => {
   return null;
 };
 
-export default function PublishModal({ type, intent: startIntent = null, user, zone, settings, onClose, onCreated }) {
+export default function PublishModal({ type, intent: startIntent = null, user, zone, settings, onClose, onCreated, onSafety }) {
   const isJob = type === 'job';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -281,6 +281,12 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
 
           <p className="sheet-note">
             Queda publicado {(isJob ? settings?.job_days : settings?.service_days) || 30} días. Después podés renovarlo o pausarlo desde Mis avisos.
+          </p>
+          <p className="sheet-note safe">
+            Nunca pidas dinero por adelantado ni datos de tarjetas.{' '}
+            <button type="button" className="linky" onClick={onSafety}>
+              Consejos para operar seguro
+            </button>
           </p>
           <button className="btn btn-ink btn-lg btn-block" disabled={loading}>
             {loading ? 'Publicando…' : 'Publicar'}
