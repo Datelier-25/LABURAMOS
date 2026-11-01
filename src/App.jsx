@@ -43,6 +43,10 @@ const readView = () => {
 
 const pathFor = (id) => (id === 'home' ? '/' : `/${id}`);
 
+// Dominio público del sitio. Se configura por entorno (Netlify, Cloudflare Pages…) con
+// VITE_SITE_URL; herramientas/postbuild.mjs usa el mismo valor para el sitemap y robots.
+const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://laburamosapp.netlify.app').replace(/\/+$/, '');
+
 const TITLES = {
   home: 'LaburamosApp · Laburos, oficios y changas cerca tuyo',
   laburos: 'Laburos y ofertas de trabajo cerca tuyo · LaburamosApp',
@@ -191,7 +195,7 @@ export default function App() {
       canonical.rel = 'canonical';
       document.head.appendChild(canonical);
     }
-    canonical.href = `https://laburamosapp.netlify.app${pathFor(view)}`;
+    canonical.href = `${SITE_URL}${pathFor(view)}`;
   }, [view]);
 
   const go = (id) => {
