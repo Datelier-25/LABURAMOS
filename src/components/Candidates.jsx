@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Mail, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
+import { FileText, Mail, Phone, Search, ShieldCheck, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ageFrom, friendlyError, plural, timeAgo, toneFromName, waLink } from '../lib/utils';
 import { resumeToForm, useSignedPhoto } from '../lib/cv';
@@ -250,7 +250,7 @@ export default function Candidates({ user, notify }) {
                             title={reviewed ? `Ya lo calificaste con ${reviewScore(reviewed)}/100` : 'Calificar a esta persona'}
                             onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
                           >
-                            <Star size={18} /> {reviewed ? `${reviewScore(reviewed)}/100` : 'Calificar'}
+                            <ShieldCheck size={18} /> {reviewed ? `${reviewScore(reviewed)}/100` : 'Calificar'}
                           </button>
                           {r.phone && waAllowed && (
                             <a

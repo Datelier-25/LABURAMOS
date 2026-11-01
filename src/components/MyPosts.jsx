@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Star } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { daysLeft, friendlyError, intentOf, timeAgo } from '../lib/utils';
 import { loadReputation } from '../lib/reputation';
@@ -198,7 +198,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
                         title={reviewed ? 'Ya calificaste a este comercio' : 'Calificar al comercio'}
                         onClick={() => setReviewFor(a)}
                       >
-                        <Star size={16} /> {reviewed ? `Calificaste ${reviewScore(reviewed)}/100` : 'Calificar al comercio'}
+                        <ShieldCheck size={16} /> {reviewed ? `Calificaste ${reviewScore(reviewed)}/100` : 'Calificar al comercio'}
                       </button>
                     </div>
                   </article>
