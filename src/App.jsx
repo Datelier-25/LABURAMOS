@@ -289,8 +289,9 @@ export default function App() {
       />
     );
   if (!session && !guest) {
-    // La página de consejos de seguridad es informativa: se lee sin cuenta.
-    if (view !== 'seguridad') return <AuthScreen onGuest={() => setGuest(true)} />;
+    // La página de consejos de seguridad y la de sugerencias son informativas:
+    // se leen sin cuenta.
+    if (view !== 'seguridad' && view !== 'contacto') return <AuthScreen onGuest={() => setGuest(true)} />;
   }
 
   // Cuenta bloqueada por el administrador: puede ver el sitio, pero no operar
