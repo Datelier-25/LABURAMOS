@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bookmark, MapPin, MessageCircle, Phone, Search } from 'lucide-react';
 import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
-import { Reputation } from './ui';
+import { Reputation } from './Reputation';
 
 // Fotos del aviso (hasta 3). En la vista previa no son enlaces.
 function ServicePhotos({ service, preview }) {

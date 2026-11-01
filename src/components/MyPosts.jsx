@@ -4,7 +4,8 @@ import { supabase } from '../supabaseClient';
 import { daysLeft, friendlyError, intentOf, timeAgo } from '../lib/utils';
 import { loadReputation } from '../lib/reputation';
 import ReviewModal from './ReviewModal';
-import { Empty, Reputation } from './ui';
+import { Empty } from './ui';
+import { Reputation, reviewScore } from './Reputation';
 
 const LABEL = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
 
@@ -95,7 +96,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
       const ids = [...new Set(list.map((x) => x.company_id))];
       const [r, rv] = await Promise.all([
         loadReputation(ids),
-        supabase.from('reviews').select('application_id, rating').eq('author_id', user.id),
+        supabase.from('reviews').select('application_id, rating, compliance, responsibility, communication').eq('author_id', user.id),
       ]);
       setRep(r);
       setMine(Object.fromEntries((rv.data || []).map((x) => [x.application_id, x])));
@@ -197,7 +198,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
                         title={reviewed ? 'Ya calificaste a este comercio' : 'Calificar al comercio'}
                         onClick={() => setReviewFor(a)}
                       >
-                        <Star size={16} /> {reviewed ? `Calificaste ${reviewed.rating}/5` : 'Calificar al comercio'}
+                        <Star size={16} /> {reviewed ? `Calificaste ${reviewScore(reviewed)}/100` : 'Calificar al comercio'}
                       </button>
                     </div>
                   </article>

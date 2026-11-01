@@ -6,7 +6,8 @@ import { resumeToForm, useSignedPhoto } from '../lib/cv';
 import { loadReputation } from '../lib/reputation';
 import CvSheet from './CvSheet';
 import ReviewModal from './ReviewModal';
-import { Empty, Reputation, Row, SkeletonGrid } from './ui';
+import { Empty, Row, SkeletonGrid } from './ui';
+import { Reputation, reviewScore } from './Reputation';
 
 // Ventana con el CV completo de un postulante (o de cualquiera, para el administrador)
 export function CvModal({ resume, onClose }) {
@@ -71,7 +72,7 @@ export default function Candidates({ user, notify }) {
     if (ids.length) {
       const [rs, rv] = await Promise.all([
         supabase.from('resumes').select('*').in('user_id', ids),
-        supabase.from('reviews').select('application_id, rating').eq('author_id', user?.id || ''),
+        supabase.from('reviews').select('application_id, rating, compliance, responsibility, communication').eq('author_id', user?.id || ''),
       ]);
       setResumes(Object.fromEntries((rs.data || []).map((r) => [r.user_id, r])));
       setMine(Object.fromEntries((rv.data || []).map((r) => [r.application_id, r])));
@@ -246,10 +247,10 @@ export default function Candidates({ user, notify }) {
                           <button
                             className="btn btn-line"
                             disabled={!!reviewed}
-                            title={reviewed ? `Ya lo calificaste con ${reviewed.rating} estrellas` : 'Calificar a esta persona'}
+                            title={reviewed ? `Ya lo calificaste con ${reviewScore(reviewed)}/100` : 'Calificar a esta persona'}
                             onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
                           >
-                            <Star size={18} /> {reviewed ? `${reviewed.rating}/5` : 'Calificar'}
+                            <Star size={18} /> {reviewed ? `${reviewScore(reviewed)}/100` : 'Calificar'}
                           </button>
                           {r.phone && waAllowed && (
                             <a

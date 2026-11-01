@@ -220,12 +220,20 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .chip-s.urgent { background: var(--orange); color: #fff; }
 .sign h3 { margin-top: 4px; font-size: clamp(1.5rem, 2.2vw, 1.9rem); line-height: 1; font-weight: 800; font-stretch: 78%; letter-spacing: -0.025em; }
 .sign-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-weight: 600; color: var(--muted); }
-/* reputación: estrellas y sello de verificado */
+/* reputación: puntaje de cumplimiento y sello de verificado */
 .rep { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rep-ver { display: inline-flex; align-items: center; gap: 3px; background: #def3e6; color: #0e5a2f; border-radius: 999px; padding: 2px 9px 2px 6px; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.01em; }
-.rep-stars { display: inline-flex; align-items: center; gap: 3px; color: #b07800; font-weight: 800; font-size: 0.85rem; }
-.rep-stars svg { color: #f0a500; }
-.rep-stars small { color: var(--muted); font-weight: 700; }
+.rep-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 2px 7px; border: 0; border-radius: 999px; background: var(--mist); color: var(--ink); font-weight: 800; font-size: 0.85rem; line-height: 1.4; cursor: pointer; transition: filter 0.15s, transform 0.15s; }
+.rep-score:hover { filter: brightness(0.96); transform: translateY(-1px); }
+.rep-score svg { flex: none; opacity: 0.85; }
+.rep-score b { font-size: 0.95rem; letter-spacing: -0.02em; }
+.rep-score small { font-weight: 700; color: var(--muted); font-size: 0.78rem; }
+.rep-score.tone-high { background: #def3e6; color: #0e5a2f; }
+.rep-score.tone-high small { color: #2f7d55; }
+.rep-score.tone-mid { background: #fff1d6; color: #8a5a00; }
+.rep-score.tone-mid small { color: #a97b1e; }
+.rep-score.tone-low { background: #ffe3dd; color: #a3251a; }
+.rep-score.tone-low small { color: #b4554b; }
 .loc { display: inline-flex; align-items: center; gap: 4px; }
 .loc svg { color: var(--acc, var(--ultra)); }
 .desc { font-size: 0.95rem; color: #3d4470; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -709,6 +717,14 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   .row .disc { width: 52px; height: 52px; font-size: 1.15rem; }
   .row .act { grid-column: 1 / -1; }
   .row .act .btn { width: 100%; }
+  .page { padding-bottom: 96px; } /* deja aire para el botón Publicar */
+  .sign-foot { justify-content: stretch; }
+  .sign-acts { width: 100%; gap: 10px; }
+  .sign-acts .btn { flex: 1; justify-content: center; min-height: 46px; }
+  .sign .icon-btn { width: 46px; height: 46px; flex: none; }
+  .scard-foot { gap: 10px; }
+  .scard-foot .btn { flex: 1; justify-content: center; min-height: 46px; }
+  .rep-bar { grid-template-columns: 96px 1fr 30px; }
   .two { grid-template-columns: 1fr; }
   .post { grid-template-columns: 1fr; }
   .paths { grid-template-columns: 1fr; }
@@ -804,12 +820,48 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .btn-xs { height: 32px; padding: 0 11px; font-size: 0.8rem; }
 .fbtn.mini { height: 34px; padding: 0 10px; font-size: 0.85rem; }
 
-/* ---------- estrellas para calificar ---------- */
-.stars-input { display: flex; gap: 4px; margin: 4px 0 12px; }
-.stars-input button { background: none; border: 0; padding: 2px; color: #c9cbd8; line-height: 0; }
-.stars-input button.on { color: #f0a500; }
-.stars-input button:hover { transform: scale(1.08); }
-.review-dlg { max-width: 480px; }
+/* ---------- calificar: cumplimiento, responsabilidad y comunicación ---------- */
+.review-dlg { max-width: 500px; }
+.rate-row { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; }
+.rate-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.rate-head small { color: var(--muted); font-size: 0.8rem; text-align: right; }
+.rate-scale { display: flex; gap: 6px; }
+.rate-scale button { flex: 1; height: 40px; border: 2px solid var(--line); border-radius: 12px; background: #fff; font-weight: 800; color: var(--ink); transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.rate-scale button:hover { border-color: var(--ink); }
+.rate-scale button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.rate-preview { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 14px; background: var(--mist); font-weight: 700; }
+.rate-preview b { font-size: 1.35rem; letter-spacing: -0.02em; }
+.rate-preview small { font-weight: 700; color: var(--muted); }
+.rate-preview.tone-high { background: #def3e6; color: #0e5a2f; }
+.rate-preview.tone-mid { background: #fff1d6; color: #8a5a00; }
+.rate-preview.tone-low { background: #ffe3dd; color: #a3251a; }
+
+/* ---------- detalle del puntaje y reseñas ---------- */
+.rep-dlg { max-width: 520px; }
+.rep-hero { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; background: var(--mist); }
+.rep-hero-num { font-size: 2.3rem; font-weight: 800; font-stretch: 78%; letter-spacing: -0.03em; line-height: 1; }
+.rep-hero-num small { font-size: 0.95rem; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
+.rep-hero-txt { display: flex; flex-direction: column; gap: 2px; }
+.rep-hero-txt b { font-size: 1.05rem; }
+.rep-hero-txt small { color: var(--muted); font-weight: 600; }
+.rep-hero.tone-high { background: #def3e6; color: #0e5a2f; }
+.rep-hero.tone-mid { background: #fff1d6; color: #8a5a00; }
+.rep-hero.tone-low { background: #ffe3dd; color: #a3251a; }
+.rep-bars { display: grid; gap: 10px; }
+.rep-bar { display: grid; grid-template-columns: 118px 1fr 32px; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; }
+.rep-bar b { text-align: right; font-weight: 800; }
+.rep-track { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.rep-track > span { display: block; height: 100%; border-radius: 999px; background: var(--ultra); }
+.rep-comments { display: grid; gap: 10px; }
+.rep-comments h3 { font-size: 1.05rem; }
+.rep-item { padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; display: grid; gap: 4px; }
+.rep-item header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rep-item time { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.rep-item p { font-size: 0.93rem; color: #3d4470; }
+.rep-item-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--mist); font-weight: 800; font-size: 0.82rem; }
+.rep-item-score.tone-high { background: #def3e6; color: #0e5a2f; }
+.rep-item-score.tone-mid { background: #fff1d6; color: #8a5a00; }
+.rep-item-score.tone-low { background: #ffe3dd; color: #a3251a; }
 
 /* ---------- cuenta bloqueada ---------- */
 .blocked { max-width: 620px; margin: 60px auto; background: #fff; border: 3px solid var(--ink); border-radius: 24px; padding: 32px; text-align: center; }
