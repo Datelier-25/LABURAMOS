@@ -23,7 +23,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     name: user.name || '',
     category: isJob ? JOB_CATEGORIES[0] : SERVICE_CATEGORIES[0],
     job_type: JOB_TYPES[0],
-    salary: '',
     description: '',
     requirements: '',
     phone: user.phone || '',
@@ -101,7 +100,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           company_name: form.name.trim(),
           category: form.category,
           job_type: form.job_type,
-          salary: form.salary.trim() || null,
           location: form.place.city,
           province: form.place.province,
           phone,
@@ -138,7 +136,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     company_name: form.name || 'Tu comercio',
     location: city,
     job_type: form.job_type,
-    salary: form.salary,
     is_urgent: form.is_urgent,
   };
   const previewService = {
@@ -215,20 +212,14 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             <PlaceField value={form.place} onChange={(place) => set({ place })} required />
           </div>
           {isJob && (
-            <div className="two">
-              <label className="field">
-                <span>Modalidad</span>
-                <select value={form.job_type} onChange={(e) => set({ job_type: e.target.value })}>
-                  {JOB_TYPES.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>Sueldo (opcional)</span>
-                <input placeholder="$450.000" value={form.salary} onChange={(e) => set({ salary: e.target.value })} />
-              </label>
-            </div>
+            <label className="field">
+              <span>Modalidad</span>
+              <select value={form.job_type} onChange={(e) => set({ job_type: e.target.value })}>
+                {JOB_TYPES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </label>
           )}
           <label className="field">
             <span>Descripción</span>

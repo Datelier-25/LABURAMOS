@@ -80,7 +80,6 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       )}
 
       <div className="sign-foot">
-        <span className="price">{job.salary || 'A convenir'}</span>
         {interactive && (
           <div className="sign-acts">
             <button

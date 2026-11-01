@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BadgeCheck, Check, ChevronDown, Eye, EyeOff, SlidersHorizontal, Star, X } from 'lucide-react';
+import { BadgeCheck, Check, ChevronDown, Eye, EyeOff, LocateFixed, SlidersHorizontal, Star, X } from 'lucide-react';
 import { initials } from '../lib/utils';
 
 // Reputación de una cuenta: sello de verificado y promedio de estrellas.
@@ -149,6 +149,89 @@ function Dropdown({ group }) {
   );
 }
 
+// Filtro de distancia: mismo formato que los demás desplegables, con slider adentro.
+function DistanceFilter({ value, onChange, label = 'Distancia' }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => box.current && !box.current.contains(e.target) && setOpen(false);
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="fdrop" ref={box}>
+      <button type="button" className={`fbtn${value ? ' on' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="true">
+        <LocateFixed size={16} aria-hidden="true" />
+        <span>{value ? `${label}: ${value} km` : label}</span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="dist-pop" role="menu" aria-label={label}>
+          <div className="dist-in">
+            <input
+              type="range"
+              className="dist"
+              min={20}
+              max={500}
+              step={10}
+              value={value || 20}
+              onChange={(e) => onChange(Math.min(500, Math.max(20, Number(e.target.value))))}
+              aria-label="Distancia máxima en kilómetros"
+            />
+            <div className="dist-scale" aria-hidden="true">
+              <span>20 km</span>
+              <span>500 km</span>
+            </div>
+            <p className="dist-hint">{value ? `Mostrando lo que hay hasta a ${value} km de tu zona.` : 'Sin límite: sin filtro de distancia.'}</p>
+          </div>
+          <button type="button" className="btn btn-line btn-sm" onClick={() => { onChange(0); setOpen(false); }}>
+            Sin límite
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Mismo control de distancia, pero en bloque (para el panel de filtros del celular).
+function DistanceBlock({ value, onChange }) {
+  return (
+    <fieldset className="fgroup">
+      <legend>Distancia</legend>
+      <div className="dist-in">
+        <input
+          type="range"
+          className="dist"
+          min={20}
+          max={500}
+          step={10}
+          value={value || 20}
+          onChange={(e) => onChange(Math.min(500, Math.max(20, Number(e.target.value))))}
+          aria-label="Distancia máxima en kilómetros"
+        />
+        <div className="dist-scale" aria-hidden="true">
+          <span>20 km</span>
+          <span>500 km</span>
+        </div>
+        <p className="dist-hint">{value ? `Mostrando lo que hay hasta a ${value} km de tu zona.` : 'Sin límite: sin filtro de distancia.'}</p>
+      </div>
+      {value > 0 && (
+        <button type="button" className="btn btn-line btn-sm" onClick={() => onChange(0)}>
+          Sin límite
+        </button>
+      )}
+    </fieldset>
+  );
+}
+
 function Segment({ segment, className = '' }) {
   return (
     <div className={`fseg ${className}`} role="group">
@@ -161,7 +244,7 @@ function Segment({ segment, className = '' }) {
   );
 }
 
-function FilterSheet({ groups, segment, toggles, onClear, onClose, total }) {
+function FilterSheet({ groups, segment, toggles, distance, onClear, onClose, total }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -195,6 +278,7 @@ function FilterSheet({ groups, segment, toggles, onClear, onClose, total }) {
             </div>
           </fieldset>
         ))}
+        {distance && <DistanceBlock value={distance.value} onChange={distance.onChange} />}
         {toggles.map((t) => (
           <label key={t.id} className="switch">
             <input className="sr" type="checkbox" checked={t.value} onChange={(e) => t.onChange(e.target.checked)} />
@@ -218,7 +302,7 @@ function FilterSheet({ groups, segment, toggles, onClear, onClose, total }) {
   );
 }
 
-export function Filters({ groups = [], segment, toggles = [], extra = [], onClear, total }) {
+export function Filters({ groups = [], segment, toggles = [], distance, extra = [], onClear, total }) {
   const [sheet, setSheet] = useState(false);
 
   const active = [
@@ -226,6 +310,7 @@ export function Filters({ groups = [], segment, toggles = [], extra = [], onClea
       ? [{ id: 'seg', label: segment.options.find((o) => o.value === segment.value)?.label, onRemove: () => segment.onChange(segment.options[0].value) }]
       : []),
     ...groups.filter((g) => g.value).map((g) => ({ id: g.id, label: g.value, onRemove: () => g.onChange(null) })),
+    ...(distance && distance.value ? [{ id: 'dist', label: `Hasta ${distance.value} km`, onRemove: () => distance.onChange(0) }] : []),
     ...toggles.filter((t) => t.value).map((t) => ({ id: t.id, label: t.label, onRemove: () => t.onChange(false) })),
     ...extra,
   ];
@@ -237,6 +322,7 @@ export function Filters({ groups = [], segment, toggles = [], extra = [], onClea
         {groups.map((g) => (
           <Dropdown key={g.id} group={g} />
         ))}
+        {distance && <DistanceFilter value={distance.value} onChange={distance.onChange} />}
         {toggles.map((t) => (
           <button key={t.id} type="button" className={`fbtn toggle${t.value ? ' on' : ''}`} aria-pressed={t.value} onClick={() => t.onChange(!t.value)}>
             <span className="tdot" aria-hidden="true" />
@@ -264,7 +350,7 @@ export function Filters({ groups = [], segment, toggles = [], extra = [], onClea
         </div>
       )}
 
-      {sheet && <FilterSheet groups={groups} segment={segment} toggles={toggles} onClear={onClear} onClose={() => setSheet(false)} total={total} />}
+      {sheet && <FilterSheet groups={groups} segment={segment} toggles={toggles} distance={distance} onClear={onClear} onClose={() => setSheet(false)} total={total} />}
     </>
   );
 }

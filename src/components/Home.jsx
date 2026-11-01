@@ -124,9 +124,9 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
 
   // Si todavía no hay avisos, la pila muestra invitaciones
   const invites = [
-    { id: 'i1', category: 'Comercio', title: 'Acá va tu aviso', company_name: 'Tu comercio', location: where, job_type: 'Full-time', salary: 'A convenir' },
-    { id: 'i2', category: 'Gastronomía', title: 'Se busca gente de confianza', company_name: 'Tu negocio', location: where, job_type: 'Part-time', salary: 'A convenir' },
-    { id: 'i3', category: 'Oficios / Técnico', title: 'Publicá en un minuto', company_name: 'Vos', location: where, job_type: 'Changa', salary: 'A convenir' },
+    { id: 'i1', category: 'Comercio', title: 'Acá va tu aviso', company_name: 'Tu comercio', location: where, job_type: 'Full-time' },
+    { id: 'i2', category: 'Gastronomía', title: 'Se busca gente de confianza', company_name: 'Tu negocio', location: where, job_type: 'Part-time' },
+    { id: 'i3', category: 'Oficios / Técnico', title: 'Publicá en un minuto', company_name: 'Vos', location: where, job_type: 'Changa' },
   ];
   const stackItems = jobs.length ? jobs.slice(0, 5) : invites;
 
@@ -304,7 +304,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
           </div>
           <JobSign
             preview
-            job={{ category: 'Comercio', title: 'Se busca vendedor/a', company_name: 'Tu comercio', location: where, job_type: 'Part-time', salary: '$450.000' }}
+            job={{ category: 'Comercio', title: 'Se busca vendedor/a', company_name: 'Tu comercio', location: where, job_type: 'Part-time' }}
           />
         </div>
       </section>

@@ -54,13 +54,12 @@ export default function AuthScreen({ onGuest }) {
     setLoading(false);
   };
 
-  const demo = (title, company, category, type, salary, location) => ({
+  const demo = (title, company, category, type, location) => ({
     category,
     title,
     company_name: company,
     location,
     job_type: type,
-    salary,
   });
 
   const titles = {
@@ -79,8 +78,8 @@ export default function AuthScreen({ onGuest }) {
           Encontrá <em>lo que venís a buscar.</em>
         </h1>
         <div className="signs-deco" aria-hidden="true">
-          <JobSign compact job={demo('Se busca vendedor/a', 'Comercio El Sol', 'Comercio', 'Part-time', '$450.000', 'Rosario')} />
-          <JobSign compact job={demo('Plomero matriculado', 'Juan Pérez', 'Oficios / Técnico', 'Changa', 'A convenir', 'Bragado')} />
+          <JobSign compact job={demo('Se busca vendedor/a', 'Comercio El Sol', 'Comercio', 'Part-time', 'Rosario')} />
+          <JobSign compact job={demo('Plomero matriculado', 'Juan Pérez', 'Oficios / Técnico', 'Changa', 'Bragado')} />
         </div>
       </div>
 

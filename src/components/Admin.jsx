@@ -145,7 +145,6 @@ function EditListing({ kind, item, onClose, onSaved }) {
   const [f, setF] = useState({
     ...item,
     expires: item.expires_at ? item.expires_at.slice(0, 10) : '',
-    salary: item.salary || '',
     requirements: item.requirements || '',
   });
   const [saving, setSaving] = useState(false);
@@ -171,7 +170,7 @@ function EditListing({ kind, item, onClose, onSaved }) {
       status: f.status,
       ...(f.expires ? { expires_at: new Date(`${f.expires}T23:59:59`).toISOString() } : {}),
       ...(isJob
-        ? { company_name: f.company_name, job_type: f.job_type, salary: f.salary, requirements: f.requirements }
+        ? { company_name: f.company_name, job_type: f.job_type, requirements: f.requirements }
         : { provider_name: f.provider_name, intent: f.intent || 'ofrece' }),
     };
     const { error: err } = await supabase.rpc('admin_update_listing', { p_kind: kind, p_id: item.id, p });
@@ -209,20 +208,14 @@ function EditListing({ kind, item, onClose, onSaved }) {
           </label>
         </div>
         {isJob ? (
-          <div className="two">
-            <label className="field">
-              <span>Modalidad</span>
-              <select value={f.job_type} onChange={(e) => set({ job_type: e.target.value })}>
-                {JOB_TYPES.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Sueldo</span>
-              <input value={f.salary} onChange={(e) => set({ salary: e.target.value })} />
-            </label>
-          </div>
+          <label className="field">
+            <span>Modalidad</span>
+            <select value={f.job_type} onChange={(e) => set({ job_type: e.target.value })}>
+              {JOB_TYPES.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
         ) : (
           <label className="field">
             <span>Tipo</span>
