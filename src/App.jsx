@@ -14,6 +14,7 @@ import MyResume from './components/MyResume';
 import Candidates from './components/Candidates';
 import MyPosts from './components/MyPosts';
 import PublishModal from './components/PublishModal';
+import ApplyModal from './components/ApplyModal';
 import Admin from './components/Admin';
 import Safety from './components/Safety';
 import Contacto from './components/Contacto';
@@ -81,6 +82,7 @@ export default function App() {
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
+  const [applyFor, setApplyFor] = useState(null); // { job, waUrl } mientras elige el CV
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ text: '', show: false });
@@ -230,44 +232,15 @@ export default function App() {
     return setModal(type);
   };
 
-  // "Postularme": primero queda registrada la postulación (así la empresa ve el CV)
-  // y recién después se abre WhatsApp. Si el registro falla no se abre nada, para
-  // que nadie crea que se postuló cuando en realidad no quedó anotado.
-  const applyTo = async (job, waUrl) => {
+  // "Postularme": abre el paso donde se elige el CV (el de la app o un PDF).
+  // El envío y la apertura de WhatsApp se hacen en ApplyModal.
+  const openApply = (job, waUrl) => {
     if (!user || !job?.id) return;
     if (job.company_id === user.id) {
       notify('No podés postularte a un aviso propio.');
       return;
     }
-    // La ventana se abre dentro del clic (si esperamos al insert, el navegador
-    // puede bloquear la pestaña nueva). Si el insert falla de verdad, se cierra.
-    const win = window.open('', '_blank');
-    const openWhatsApp = () => {
-      if (win && !win.closed) win.location.href = waUrl;
-      else window.location.href = waUrl;
-    };
-
-    // email: para que la empresa pueda mandar el CV por Gmail. cv_contact: por qué canal se entregó.
-    const { error } = await supabase.from('applications').insert({ job_id: job.id, email: user?.email || null, cv_contact: 'whatsapp' });
-
-    if (!error) {
-      notify('Postulación enviada. Tu CV ya está en Postulantes.');
-      openWhatsApp();
-      return;
-    }
-    if (error.code === '23505') {
-      // Ya estaba postulado: la empresa ya tiene su CV, así que igual abrimos WhatsApp.
-      notify('Ya te habías postulado a este aviso.');
-      openWhatsApp();
-      return;
-    }
-
-    if (win && !win.closed) win.close();
-    if ((error.message || '').includes('aviso_no_disponible')) {
-      notify('Este aviso ya no está disponible.');
-      return;
-    }
-    notify('No pudimos registrar tu postulación. Probá de nuevo en un rato.');
+    setApplyFor({ job, waUrl });
   };
 
   const handleCreated = () => {
@@ -312,7 +285,7 @@ export default function App() {
   }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
-  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: applyTo, saved, onSave: toggleSaved, onPrune: pruneSaved };
+  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSaved, onPrune: pruneSaved };
   const zoneKey = `${zone.city}|${zone.province}`;
 
   return (
@@ -350,6 +323,21 @@ export default function App() {
       )}
 
       {modal && <PublishModal type={modal} intent={modalIntent} user={user} zone={zone} settings={settings} onClose={() => setModal(null)} onCreated={handleCreated} onSafety={() => { setModal(null); go('seguridad'); }} />}
+
+      {applyFor && (
+        <ApplyModal
+          job={applyFor.job}
+          user={user}
+          waUrl={applyFor.waUrl}
+          notify={notify}
+          onClose={() => setApplyFor(null)}
+          onDone={() => setApplyFor(null)}
+          onEditCv={() => {
+            setApplyFor(null);
+            go('cv');
+          }}
+        />
+      )}
 
       <div className={`toast${toast.show ? ' show' : ''}`} role="status" aria-live="polite">
         <i aria-hidden="true" />

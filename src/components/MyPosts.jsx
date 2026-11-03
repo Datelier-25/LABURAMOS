@@ -81,7 +81,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
       !isCompany
         ? supabase
             .from('applications')
-            .select('id, created_at, company_id, job_id, jobs(title, company_name)')
+            .select('id, created_at, company_id, job_id, cv_kind, jobs(title, company_name)')
             .eq('worker_id', user.id)
             .order('created_at', { ascending: false })
         : Promise.resolve({ data: [], error: null }),
@@ -189,6 +189,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
                       <p>
                         {a.jobs?.company_name || 'Comercio'} · te postulaste {timeAgo(a.created_at)}
                       </p>
+                      {a.cv_kind === 'file' && <span className="chip-s cv-chip">CV en PDF adjunto</span>}
                       <Reputation data={rep[a.company_id]} />
                     </div>
                     <div className="acts">

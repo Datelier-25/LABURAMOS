@@ -59,7 +59,7 @@ export default function Candidates({ user, notify }) {
     setError('');
     const { data, error: err } = await supabase
       .from('applications')
-      .select('id, created_at, worker_id, job_id, email, cv_contact, jobs(title, location)')
+      .select('id, created_at, worker_id, job_id, email, cv_contact, cv_kind, cv_path, cv_name, worker_name, worker_phone, jobs(title, location)')
       .order('created_at', { ascending: false });
     if (err) {
       setError(friendlyError(err.message));
@@ -108,6 +108,26 @@ export default function Candidates({ user, notify }) {
     }
   };
 
+  // El CV puede venir armado en la app (tabla resumes) o como PDF adjunto en la
+  // postulación (bucket privado cvs). El PDF se abre con una URL firmada.
+  const openCv = async (a, r) => {
+    if (!a.cv_path) {
+      if (r) setOpen(r);
+      return;
+    }
+    const win = window.open('', '_blank');
+    setCvBusy(a.id);
+    const { data, error: err } = await supabase.storage.from('cvs').createSignedUrl(a.cv_path, 600);
+    setCvBusy('');
+    if (err) {
+      if (win && !win.closed) win.close();
+      notify?.(friendlyError(err.message));
+      return;
+    }
+    if (win && !win.closed) win.location.href = data.signedUrl;
+    else window.open(data.signedUrl, '_blank', 'noopener');
+  };
+
   const jobs = useMemo(() => {
     const m = new Map();
     apps.forEach((a) => m.set(a.job_id, a.jobs?.title || 'Aviso eliminado'));
@@ -118,7 +138,7 @@ export default function Candidates({ user, notify }) {
     const term = search.trim().toLowerCase();
     return apps.filter((a) => {
       const r = resumes[a.worker_id];
-      const text = !term || [r?.full_name, r?.profession, a.jobs?.title].some((v) => (v || '').toLowerCase().includes(term));
+      const text = !term || [r?.full_name || a.worker_name, r?.profession, a.jobs?.title].some((v) => (v || '').toLowerCase().includes(term));
       return text && (!jobFilter || a.job_id === jobFilter);
     });
   }, [apps, resumes, search, jobFilter]);
@@ -202,20 +222,27 @@ export default function Candidates({ user, notify }) {
               const cur = channels[a.id] || a.cv_contact || 'whatsapp';
               const waAllowed = cur !== 'email';
               const emAllowed = cur !== 'whatsapp';
+              const cvPdf = !!a.cv_path;
+              const name = r?.full_name || a.worker_name || 'Postulante';
+              const phone = r?.phone || a.worker_phone || '';
               const mailto = a.email
-                ? `mailto:${a.email}?subject=${encodeURIComponent(`CV para ${a.jobs?.title || 'tu aviso'} en LaburamosApp`)}&body=${encodeURIComponent(`Hola ${r?.full_name || 'hola'}, acá está el CV que te enviamos por tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}`
+                ? `mailto:${a.email}?subject=${encodeURIComponent(`CV para ${a.jobs?.title || 'tu aviso'} en LaburamosApp`)}&body=${encodeURIComponent(`Hola ${name}, acá está el CV que te enviamos por tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}`
                 : '';
               return (
                 <Row
                   key={a.id}
-                  tone={toneFromName(r?.full_name || a.worker_id)}
-                  name={r?.full_name || '?'}
+                  tone={toneFromName(name)}
+                  name={name}
                   tag={a.jobs?.title || 'Aviso eliminado'}
-                  title={r?.full_name || 'Postulante'}
+                  title={name}
                   by={
                     r
-                      ? [r.profession, age !== null && `${age} años`, r.city, `se postuló ${timeAgo(a.created_at)}`].filter(Boolean).join(' · ')
-                      : 'CV visible para comercios verificados'
+                      ? [r.profession, age !== null && `${age} años`, r.city, cvPdf ? 'CV en PDF adjunto' : null, `se postuló ${timeAgo(a.created_at)}`]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : cvPdf
+                        ? ['CV en PDF adjunto', `se postuló ${timeAgo(a.created_at)}`].join(' · ')
+                        : 'CV visible para comercios verificados'
                   }
                   desc={r?.summary}
                   extra={<Reputation data={rep[a.worker_id]} />}
@@ -239,23 +266,23 @@ export default function Candidates({ user, notify }) {
                           </button>
                         ))}
                       </div>
-                      {r ? (
+                      {r || cvPdf ? (
                         <>
-                          <button className="btn btn-line" onClick={() => setOpen(r)}>
-                            <FileText size={18} /> Ver CV
+                          <button className="btn btn-line" onClick={() => openCv(a, r)} disabled={cvBusy === a.id}>
+                            <FileText size={18} /> {cvPdf ? (cvBusy === a.id ? 'Abriendo…' : 'Ver CV (PDF)') : 'Ver CV'}
                           </button>
                           <button
                             className="btn btn-line"
                             disabled={!!reviewed}
                             title={reviewed ? `Ya lo calificaste con ${reviewScore(reviewed)}/100` : 'Calificar a esta persona'}
-                            onClick={() => setReviewFor({ id: a.id, name: r.full_name })}
+                            onClick={() => setReviewFor({ id: a.id, name })}
                           >
                             <ShieldCheck size={18} /> {reviewed ? `${reviewScore(reviewed)}/100` : 'Calificar'}
                           </button>
-                          {r.phone && waAllowed && (
+                          {phone && waAllowed && (
                             <a
                               className="btn btn-ink"
-                              href={waLink(r.phone, `Hola ${r.full_name}, vi tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}
+                              href={waLink(phone, `Hola ${name}, vi tu postulación a "${a.jobs?.title || 'nuestro aviso'}" en LaburamosApp.`)}
                               target="_blank"
                               rel="noreferrer"
                             >

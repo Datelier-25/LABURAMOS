@@ -654,6 +654,37 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   .auth-art .signs-deco { display: none; }
 }
 
+/* ---------- postulación: CV de la app o PDF adjunto ---------- */
+.apply-dlg .lede { margin: 0; font-size: 0.95rem; }
+.apply-q { font-weight: 800; font-stretch: 85%; font-size: 1.05rem; }
+.cv-options { display: grid; gap: 10px; }
+.cv-opt {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: center;
+  text-align: left;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cv-opt:hover { border-color: var(--ink); }
+.cv-opt.on { border-color: var(--ink); background: var(--mist); }
+.cv-opt-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--mist); color: var(--ink); grid-row: span 2; }
+.cv-opt.on .cv-opt-ic { background: var(--ink); color: #fff; }
+.cv-opt b { font-size: 1rem; font-weight: 800; }
+.cv-opt small { display: block; color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.cv-file { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; background: var(--mist); font-weight: 700; font-size: 0.9rem; }
+.cv-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cv-file button { margin-left: auto; border: 0; background: transparent; color: #8a1e08; font-weight: 800; font-size: 0.85rem; }
+.apply-edit { align-self: flex-start; border: 0; background: transparent; padding: 0; color: var(--ultra-deep); font-weight: 700; text-decoration: underline; font-size: 0.85rem; }
+.apply-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 0; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+.apply-note svg { flex: none; margin-top: 2px; }
+.apply-acts { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 4px; }
+.cv-chip { margin: 4px 0 6px; }
+
 /* ---------- animaciones ---------- */
 @keyframes up { from { transform: translateY(105%); } to { transform: none; } }
 @keyframes marquee { to { transform: translateX(-50%); } }
@@ -662,6 +693,8 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
 @keyframes slide { from { transform: translateY(100%); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
 
 /* El filtro de distancia es un dropdown, como los demás filtros */
 .dist-pop { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: min(360px, calc(100vw - 32px)); padding: 14px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 40px -18px rgba(25, 25, 75, 0.45); display: grid; gap: 10px; }
