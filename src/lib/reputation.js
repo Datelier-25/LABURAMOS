@@ -7,7 +7,7 @@ export async function loadReputation(ids) {
   if (!list.length) return {};
   const { data, error } = await supabase
     .from('user_reputation')
-    .select('user_id, rating, reviews, comments, score, compliance, responsibility, communication, is_verified')
+    .select('user_id, rating, reviews, comments, score, compliance, responsibility, communication, is_verified, verification_requested')
     .in('user_id', list);
   if (error) return {};
   return Object.fromEntries((data || []).map((r) => [r.user_id, r]));

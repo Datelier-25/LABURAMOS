@@ -8,7 +8,7 @@ import JobSign from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
 import { ZonePicker } from './Place';
 
-export default function JobList({ user, zone, setZone, onPublish, onLogin, onApply, saved, onSave, onPrune }) {
+export default function JobList({ user, zone, setZone, onPublish, onLogin, onApply, saved, onSave, onPrune, onReport }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -161,9 +161,23 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
           text={jobs.length === 0 ? 'Sé el primero en publicar y quedás arriba de todo.' : 'Probá con otra palabra o sacá algún filtro.'}
         >
           {jobs.length === 0 ? (
-            <button className="btn btn-ink" onClick={() => onPublish('job')}>
-              Publicar un aviso
-            </button>
+            <>
+              <button className="btn btn-ink" onClick={() => onPublish('job')}>
+                Publicar un aviso
+              </button>
+              {zone.city && (
+                <div className="empty-acts">
+                  <button className="btn btn-line btn-sm" onClick={() => setDistanceKm(50)}>
+                    Ampliar a 50 km
+                  </button>
+                  {zone.province && (
+                    <button className="btn btn-line btn-sm" onClick={() => setZone({ city: null, province: zone.province })}>
+                      Toda la provincia
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             <button className="btn btn-ink" onClick={clear}>
               Limpiar filtros
@@ -173,8 +187,32 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
       ) : (
         <>
           <p className="count" aria-live="polite">
-            {plural(filtered.length, 'aviso', 'avisos')} en {place}
+            {plural(filtered.length, 'aviso', 'avisos')} {distanceKm ? `a menos de ${distanceKm} km de ${place}` : `en ${place}`}
           </p>
+          {(zone.city || distanceKm) && (
+            <div className="radius-bar">
+              {zone.city && (
+                <>
+                  <span className="radius-note">
+                    Mostrando los avisos de <b>{zone.city}</b>. ¿Querés más lejos?
+                  </span>
+                  <div className="radius-opts">
+                    {[25, 50, 100].map((km) => (
+                      <button key={km} type="button" className={`chip${distanceKm === km ? ' on' : ''}`} onClick={() => setDistanceKm(km)}>
+                        {km} km
+                      </button>
+                    ))}
+                    {zone.province && (
+                      <button type="button" className="chip" onClick={() => setZone({ city: null, province: zone.province })}>
+                        Toda la provincia
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+              {distanceKm ? <span className="radius-note">Filtrando por distancia.</span> : null}
+            </div>
+          )}
           <div className="signs">
             {filtered.map((job, i) => (
               <JobSign
@@ -186,6 +224,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
                 onLogin={onLogin}
                 onApply={onApply}
                 applied={applied?.has(job.id) ?? false}
+                onReport={onReport}
                 wide={i === 0 && filtered.length >= 3 && !search}
               />
             ))}

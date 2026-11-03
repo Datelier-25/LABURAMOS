@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bookmark, MapPin, MessageCircle, Phone, Search } from 'lucide-react';
+import { Bookmark, CalendarDays, Clock, Flag, MapPin, MessageCircle, Phone, Search, Wallet } from 'lucide-react';
 import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { Reputation } from './Reputation';
@@ -26,12 +26,20 @@ function ServicePhotos({ service, preview }) {
 }
 
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
-export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, applied = false, compact = false, preview = false, wide = false, style }) {
+export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, applied = false, compact = false, preview = false, wide = false, style, onReport }) {
   const [open, setOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const interactive = !compact && !preview;
   const long = (job.description || '').length > 130 || !!job.requirements;
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
+
+  // Pago visible: la banda salarial ya escrita o la forma de cobro. "A convenir" es un dato explícito.
+  const pay = job.salary || job.pay_type || null;
+  const payLabel = !pay
+    ? null
+    : pay === 'A convenir' || /a convenir/i.test(String(pay))
+      ? 'A convenir'
+      : `${pay}${job.pay_type && job.pay_type !== 'A convenir' && !/a convenir/i.test(String(job.salary || '')) ? ` · ${job.pay_type}` : ''}`;
 
   // Primero se registra la postulación y después se abre WhatsApp (ver applyTo en App.jsx).
   // Si el registro falla, no se navega y además se muestra el motivo.
@@ -59,9 +67,28 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       </div>
 
       <h3>{job.title}</h3>
+      {payLabel && (
+        <p className="sign-pay">
+          <Wallet size={15} aria-hidden="true" /> <b>{payLabel}</b>
+        </p>
+      )}
+      {!compact && (job.schedule || job.duration) && (
+        <p className="sign-conds">
+          {job.schedule && (
+            <span>
+              <Clock size={13} aria-hidden="true" /> {job.schedule}
+            </span>
+          )}
+          {job.duration && (
+            <span>
+              <CalendarDays size={13} aria-hidden="true" /> {job.duration}
+            </span>
+          )}
+        </p>
+      )}
       <p className="sign-meta">
         <span>{job.company_name}</span>
-        <Reputation data={job.reputation} />
+        <Reputation data={job.reputation} showStatus />
         <span className="loc">
           <MapPin size={15} aria-hidden="true" /> {job.location}
         </span>
@@ -80,6 +107,11 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       )}
 
       <div className="sign-foot">
+        {interactive && job?.id && onReport && user?.id !== job.company_id && (
+          <button type="button" className="report-btn" onClick={() => onReport(job)}>
+            <Flag size={14} aria-hidden="true" /> Denunciar aviso
+          </button>
+        )}
         {interactive && (
           <div className="sign-acts">
             <button
@@ -153,9 +185,14 @@ export function ServiceCard({ service, user, onLogin, preview = false }) {
         </div>
       </div>
       <h3>{service.title}</h3>
+      {service.price && (
+        <p className="sign-pay">
+          <Wallet size={15} aria-hidden="true" /> <small>{isAsk ? 'Presupuesto' : 'Precio'}</small> <b>{service.price}</b>
+        </p>
+      )}
       <p className="by">
         {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
-        <Reputation data={service.reputation} />
+        <Reputation data={service.reputation} showStatus />
         <span className="loc">
           <MapPin size={15} aria-hidden="true" /> {service.city}
         </span>

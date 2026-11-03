@@ -6,8 +6,8 @@ import Logo from './Logo';
 import { PasswordField } from './ui';
 import { PlaceField } from './Place';
 
-export default function AuthScreen({ onGuest }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
+export default function AuthScreen({ onGuest, initialMode = 'login' }) {
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot' | 'solo'
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'ok' | 'err', text }
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'worker', place: null });
@@ -17,6 +17,7 @@ export default function AuthScreen({ onGuest }) {
     setMode(next);
     setMessage(null);
   };
+  const seguirMirando = () => onGuest?.();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,10 +93,12 @@ export default function AuthScreen({ onGuest }) {
             <button type="button" className={mode === 'register' ? 'on' : ''} onClick={() => switchMode('register')}>
               Crear cuenta
             </button>
-            <button type="button" onClick={onGuest}>
-              Solo mirar
+            <button type="button" onClick={seguirMirando}>
+              Seguir mirando
             </button>
           </div>
+
+          <p className="auth-note">Podés cerrar esta ventana y seguir mirando. La cuenta la pedimos solo cuando querés postular, guardar, contactar o publicar.</p>
 
           <h2>{titles[mode][0]}</h2>
           <p>{titles[mode][1]}</p>

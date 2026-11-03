@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import useSaved from './lib/useSaved';
 import { useZone } from './lib/geo';
@@ -18,6 +18,8 @@ import ApplyModal from './components/ApplyModal';
 import Admin from './components/Admin';
 import Safety from './components/Safety';
 import Contacto from './components/Contacto';
+import ZoneWelcome from './components/ZoneWelcome';
+import ReportModal from './components/ReportModal';
 import { Footer } from './components/ui';
 
 const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin', 'seguridad', 'contacto'];
@@ -75,10 +77,13 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [booting, setBooting] = useState(true);
-  const [guest, setGuest] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [zoneOpen, setZoneOpen] = useState(false);
+  const [reportFor, setReportFor] = useState(null);
   const [recovery, setRecovery] = useState(STARTED_IN_RECOVERY);
   const [rawView, setRawView] = useState(readView);
-  const [zone, setZone, suggestZone] = useZone();
+  const [zone, setZone, suggestZone, zoneChosen] = useZone();
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
@@ -94,6 +99,21 @@ export default function App() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, show: false })), 3000);
   }, []);
+
+  // Si abrimos el ingreso (modal), bloqueamos el scroll del fondo
+  useEffect(() => {
+    if (!authOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [authOpen]);
+
+  // La sesión de Supabase cierra el ingreso después de loguearse
+  useEffect(() => {
+    if (session) setAuthOpen(false);
+  }, [session]);
 
   // Sesión de Supabase (se mantiene al recargar)
   useEffect(() => {
@@ -214,15 +234,22 @@ export default function App() {
   const handleLogout = async () => {
     setMenuOpen(false);
     await supabase.auth.signOut();
-    setGuest(false);
     window.history.replaceState(null, '', '/');
     setRawView('home');
   };
 
-  // Un invitado que quiere postularse o publicar vuelve a la pantalla de ingreso
-  const requireLogin = () => {
+  // Ingreso como ventana (no reemplaza la experiencia pública): se cierra para
+  // seguir mirando o seguir navegando. Al loguearse se cierra solo.
+  const requireLogin = (mode) => {
     setMenuOpen(false);
-    setGuest(false);
+    setAuthMode(mode === 'register' ? 'register' : 'login');
+    setAuthOpen(true);
+  };
+
+  const toggleSavedGated = (id) => {
+    // Guardar avisos también requiere cuenta: abre el ingreso, no reemplaza la experiencia.
+    if (!user) return requireLogin();
+    toggleSaved(id);
   };
 
   const openPublish = (type, intent = null) => {
@@ -235,7 +262,8 @@ export default function App() {
   // "Postularme": abre el paso donde se elige el CV (el de la app o un PDF).
   // El envío y la apertura de WhatsApp se hacen en ApplyModal.
   const openApply = (job, waUrl) => {
-    if (!user || !job?.id) return;
+    if (!user) return requireLogin();
+    if (!job?.id) return;
     if (job.company_id === user.id) {
       notify('No podés postularte a un aviso propio.');
       return;
@@ -250,6 +278,16 @@ export default function App() {
     go('avisos');
   };
 
+  // Pregunta la zona en la primera visita pública. Quien no vaya a elegir (o
+  // elige "ver todo") se queda con toda la Argentina. Las vistas informativas
+  // no la preguntan.
+  useEffect(() => {
+    const informational = view === 'seguridad' || view === 'contacto';
+    if (booting || user || zoneChosen || authOpen || modal || applyFor || informational) return undefined;
+    const t = setTimeout(() => setZoneOpen(true), 900);
+    return () => clearTimeout(t);
+  }, [booting, user, zoneChosen, authOpen, modal, applyFor, view]);
+
   if (booting) return <div style={{ minHeight: '100svh', display: 'grid', placeItems: 'center' }}>Cargando…</div>;
   if (recovery)
     return (
@@ -261,11 +299,6 @@ export default function App() {
         }}
       />
     );
-  if (!session && !guest) {
-    // La página de consejos de seguridad y la de sugerencias son informativas:
-    // se leen sin cuenta.
-    if (view !== 'seguridad' && view !== 'contacto') return <AuthScreen onGuest={() => setGuest(true)} />;
-  }
 
   // Cuenta bloqueada por el administrador: puede ver el sitio, pero no operar
   if (user?.isBlocked) {
@@ -285,7 +318,7 @@ export default function App() {
   }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
-  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSaved, onPrune: pruneSaved };
+  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, onPrune: pruneSaved, onReport: (job) => setReportFor(job) };
   const zoneKey = `${zone.city}|${zone.province}`;
 
   return (
@@ -296,7 +329,7 @@ export default function App() {
         go={go}
         links={links}
         onLogout={handleLogout}
-        onLogin={requireLogin}
+        onLogin={(mode) => requireLogin(mode)}
         onPublish={() => openPublish(defaultPublish)}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
@@ -338,6 +371,32 @@ export default function App() {
           }}
         />
       )}
+
+      {zoneOpen && !user && (
+        <ZoneWelcome
+          onPick={(z) => {
+            setZone(z);
+            setZoneOpen(false);
+          }}
+          onClose={() => {
+            // Cerrar = elegir "ver todo el país"
+            setZone({ city: null, province: null });
+            setZoneOpen(false);
+          }}
+        />
+      )}
+
+      {authOpen && !session && (
+        <div className="auth-overlay">
+          <button type="button" className="auth-close" onClick={() => setAuthOpen(false)} aria-label="Seguir mirando">
+            <span aria-hidden="true">Seguir mirando</span>
+            <X size={14} aria-hidden="true" />
+          </button>
+          <AuthScreen onGuest={() => setAuthOpen(false)} initialMode={authMode} />
+        </div>
+      )}
+
+      {reportFor && <ReportModal job={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
 
       <div className={`toast${toast.show ? ' show' : ''}`} role="status" aria-live="polite">
         <i aria-hidden="true" />

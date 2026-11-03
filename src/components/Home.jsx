@@ -62,7 +62,7 @@ function SignStack({ items, total, onMore }) {
   );
 }
 
-export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave }) {
+export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave, onReport }) {
   const [data, setData] = useState({ jobs: [], services: [], jobsN: 0, servN: 0, loading: true, error: false });
   const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
 
@@ -238,6 +238,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
                 onLogin={onLogin}
                 onApply={onApply}
                 applied={applied?.has(job.id) ?? false}
+                onReport={onReport}
                 wide={i === 0 && jobs.length >= 3}
               />
             ))}

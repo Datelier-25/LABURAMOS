@@ -2,7 +2,7 @@
 // La lista sale de la API Georef (datos.gob.ar) y está guardada en public/geo/localidades.json.
 // Una zona es { city, province }: con city es una localidad, solo province es la provincia entera,
 // y las dos en null es toda Argentina.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const ALL_ZONE = { city: null, province: null };
 const ZONE_KEY = 'lab_zone';
@@ -230,12 +230,12 @@ function readZone() {
 export function useZone() {
   const [stored] = useState(readZone);
   const [zone, setZoneState] = useState(stored || ALL_ZONE);
-  const chosen = useRef(!!stored);
+  const [chosen, setChosen] = useState(!!stored);
 
   const setZone = useCallback((z) => {
     const next = { city: z?.city || null, province: z?.province || null };
     setZoneState(next);
-    chosen.current = true;
+    setChosen(true);
     try {
       localStorage.setItem(ZONE_KEY, JSON.stringify(next));
     } catch {
@@ -245,10 +245,11 @@ export function useZone() {
 
   // Zona sugerida (la del perfil): solo se usa si la persona todavía no eligió una
   const suggestZone = useCallback((z) => {
-    if (!chosen.current && z && (z.city || z.province)) setZoneState({ city: z.city || null, province: z.province || null });
+    // La zona sugerida (la del perfil) no cuenta como "elegida" por la persona
+    if (!chosen && z && (z.city || z.province)) setZoneState({ city: z.city || null, province: z.province || null });
   }, []);
 
-  return [zone, setZone, suggestZone];
+  return [zone, setZone, suggestZone, chosen];
 }
 
 // Carga la lista al montar (para buscadores)

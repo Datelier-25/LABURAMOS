@@ -2,6 +2,9 @@
 
 export const JOB_CATEGORIES = ['Comercio', 'Gastronomía', 'Agro / Campo', 'Oficios / Técnico', 'Administración', 'Salud y cuidados', 'Transporte', 'Moda', 'Otros'];
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Por horas', 'Temporal', 'Changa'];
+// Formas de cobro que acepta el aviso laboral. "A convenir" es explícito y no
+// exige monto.
+export const JOB_PAY_TYPES = ['Por hora', 'Por día', 'Por semana', 'Por mes', 'Por trabajo', 'A convenir'];
 export const SERVICE_CATEGORIES = ['Oficios', 'Profesionales', 'Clases particulares', 'Cuidados', 'Limpieza', 'Tecnología', 'Eventos', 'Moda', 'Otros'];
 // Un servicio puede ser alguien que ofrece su oficio o alguien que busca quién le haga un trabajo
 export const INTENTS = { ofrece: 'Ofrece', busca: 'Busca' };

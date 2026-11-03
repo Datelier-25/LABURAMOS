@@ -37,10 +37,10 @@ export default function Nav({ user, view, go, links, onLogout, onLogin, onPublis
               </>
             ) : (
               <>
-                <button className="btn btn-line btn-sm hide-m" onClick={onLogin}>
+                <button className="btn btn-line btn-sm hide-m" onClick={() => onLogin('login')}>
                   Ingresar
                 </button>
-                <button className="btn btn-ink btn-sm hide-m" onClick={onLogin}>
+                <button className="btn btn-ink btn-sm hide-m" onClick={() => onLogin('register')}>
                   Crear cuenta
                 </button>
               </>
@@ -84,10 +84,10 @@ export default function Nav({ user, view, go, links, onLogout, onLogin, onPublis
             </>
           ) : (
             <>
-              <button className="btn btn-sun" onClick={onLogin}>
+              <button className="btn btn-sun" onClick={() => onLogin('register')}>
                 Crear cuenta
               </button>
-              <button className="btn btn-paper" onClick={onLogin}>
+              <button className="btn btn-paper" onClick={() => onLogin('login')}>
                 Ingresar
               </button>
             </>

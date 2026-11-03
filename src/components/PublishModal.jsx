@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { JOB_CATEGORIES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
+import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import JobSign, { ServiceCard } from './Sign';
 import { PlaceField } from './Place';
@@ -23,6 +23,11 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     name: user.name || '',
     category: isJob ? JOB_CATEGORIES[0] : SERVICE_CATEGORIES[0],
     job_type: JOB_TYPES[0],
+    pay_type: 'Por mes',
+    salary: '',
+    schedule: '',
+    duration: '',
+    price: '',
     description: '',
     requirements: '',
     phone: user.phone || '',
@@ -106,6 +111,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           description: form.description.trim(),
           requirements: form.requirements.trim() || null,
           is_urgent: form.is_urgent,
+          salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
+          pay_type: form.pay_type,
+          schedule: form.schedule.trim() || null,
+          duration: form.duration.trim() || null,
         })
       : await supabase.from('services').insert({
           owner_id: user.id,
@@ -118,6 +127,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           city: form.place.city,
           province: form.place.province,
           is_urgent: isAsk && form.is_urgent,
+          price: form.price.trim() || null,
           photos: form.photos.map((p) => p.path),
         });
 
@@ -137,6 +147,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     location: city,
     job_type: form.job_type,
     is_urgent: form.is_urgent,
+    salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
+    pay_type: form.pay_type,
+    schedule: form.schedule.trim() || null,
+    duration: form.duration.trim() || null,
   };
   const previewService = {
     intent: form.intent,
@@ -146,6 +160,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     description: form.description,
     city,
     is_urgent: isAsk && form.is_urgent,
+    price: form.price.trim() || null,
     photos: form.photos.map((p) => p.url),
   };
 
@@ -219,6 +234,42 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                   <option key={t}>{t}</option>
                 ))}
               </select>
+            </label>
+          )}
+          {isJob && (
+            <div className="two">
+              <label className="field">
+                <span>Forma de pago</span>
+                <select value={form.pay_type} onChange={(e) => set({ pay_type: e.target.value })}>
+                  {JOB_PAY_TYPES.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Monto o banda salarial</span>
+                <input disabled={form.pay_type === 'A convenir'} inputMode="decimal" placeholder="$650.000" value={form.salary} onChange={(e) => set({ salary: e.target.value })} />
+                <small>Solo el monto. Si es “a convenir”, elegí esa forma de pago y no cargues monto.</small>
+              </label>
+            </div>
+          )}
+          {isJob && (
+            <div className="two">
+              <label className="field">
+                <span>Horario (opcional)</span>
+                <input placeholder="Lunes a viernes de 9 a 18" value={form.schedule} onChange={(e) => set({ schedule: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>Duración (opcional)</span>
+                <input placeholder="Permanente / 3 meses" value={form.duration} onChange={(e) => set({ duration: e.target.value })} />
+              </label>
+            </div>
+          )}
+          {!isJob && (
+            <label className="field">
+              <span>{isAsk ? 'Presupuesto' : 'Precio orientativo'} (opcional)</span>
+              <input placeholder={isAsk ? 'A presupuesto' : 'Desde $8.000'} value={form.price} onChange={(e) => set({ price: e.target.value })} />
+              <small>Para ofertas: monto de referencia. Para pedidos: preferís cotizar por presupuesto.</small>
             </label>
           )}
           <label className="field">

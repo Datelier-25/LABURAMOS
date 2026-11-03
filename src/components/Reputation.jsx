@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BadgeCheck, ShieldCheck, X } from 'lucide-react';
+import { BadgeCheck, Clock, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { timeAgo } from '../lib/utils';
 
@@ -36,17 +36,53 @@ export function reviewScore(r) {
 
 // Puntaje público de una cuenta: número (sobre 100) y cantidad de valoraciones.
 // Tocar el puntaje abre el detalle y las reseñas escritas.
-export function Reputation({ data, className = '' }) {
+export function Reputation({ data, className = '', showStatus = false }) {
   const [open, setOpen] = useState(false);
   const reviews = Number(data?.reviews || 0);
   const score = Number(data?.score || 0);
   const comments = Number(data?.comments || 0);
-  const verified = !!data?.is_verified;
-  if (!verified && !reviews) return null;
 
-  const title = `Puntaje de cumplimiento ${score}/100 · ${reviews} ${reviews === 1 ? 'valoración' : 'valoraciones'}${
+  if (!data) return null;
+
+  const verified = !!data.is_verified;
+  const pending = !verified && !!data.verification_requested;
+  const state = verified ? 'verified' : pending ? 'pending' : 'unverified';
+  const label = verified ? 'Verificado' : pending ? 'En proceso' : 'No verificado';
+  const badgeTitle =
+    state === 'verified'
+      ? 'Verificado: cuenta revisada por LaburamosApp. El puntaje sale de las experiencias de trabajo.'
+      : state === 'pending'
+        ? 'En proceso: la cuenta pidió verificación y todavía está en revisión.'
+        : 'No verificado: esta cuenta todavía no pasó la revisión de LaburamosApp.';
+
+  const scoreTitle = `Puntaje de cumplimiento ${score}/100 · ${reviews} ${reviews === 1 ? 'valoración' : 'valoraciones'}${
     comments ? ` · ${comments} ${comments === 1 ? 'reseña' : 'reseñas'}` : ' · sin reseñas escritas'
   }`;
+
+  // Con showStatus mostramos siempre el estado de la cuenta (y las valoraciones);
+  // sin él, se mantiene la vista ligera solo para el sello de verificado.
+  if (showStatus) {
+    return (
+      <span className={`rep ${className}`.trim()}>
+        <span className={`rep-ver ${state}`} title={badgeTitle}>
+          {verified ? <BadgeCheck size={15} aria-hidden="true" /> : pending ? <Clock size={13} aria-hidden="true" /> : <ShieldAlert size={13} aria-hidden="true" />}
+          {label}
+        </span>
+        {reviews > 0 ? (
+          <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
+            <ShieldCheck size={14} aria-hidden="true" />
+            <b>{score}</b>
+            <small>({reviews})</small>
+          </button>
+        ) : (
+          <span className="rep-empty">Sin valoraciones</span>
+        )}
+        {open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
+      </span>
+    );
+  }
+
+  if (!verified && !reviews) return null;
 
   return (
     <span className={`rep ${className}`.trim()}>
@@ -162,6 +198,14 @@ function ReputationModal({ data, onClose }) {
               </article>
             ))
           )}
+        </div>
+
+        <div className="rep-trust">
+          <BadgeCheck size={16} aria-hidden="true" />
+          <p>
+            <b>Verificado</b> es una aprobación administrativa del equipo. El <b>puntaje</b> (0-100) sale del promedio de cumplimiento, responsabilidad y
+            comunicación de las <b>experiencias reales</b> publicadas como valoraciones. No es una nota comprada ni un sello que garantiza el trabajo.
+          </p>
         </div>
 
         <p className="note">
