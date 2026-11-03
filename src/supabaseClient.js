@@ -1,17 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Configuración obligatoria. No dejamos una URL de respaldo: la base anterior
-// es la de Workeo y su esquema NO es compatible con LaburamosApp.
-// En Vite `import.meta.env` existe; en la vista previa con datos mock el módulo
-// de Supabase se reemplaza completo, así que esto no afecta esa vista.
+// Configuración de Supabase.
+// La URL y la clave "publishable" (anon) son públicas: viajan en el bundle del
+// navegador y la seguridad la dan las políticas RLS de la base. Las dejamos como
+// respaldo para que la app funcione en cualquier entorno (StackBlitz, previews,
+// builds sin .env) sin mostrar la pantalla de "Falta conectar Supabase".
+// Si hay variables de entorno, siempre tienen prioridad.
+const DEFAULT_SUPABASE_URL = 'https://fcfomffkmxcakqmbugje.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_9u1GPSGLEnJ5lUy71wFw1Q_rYZZfr8G';
+
 const env = import.meta.env || {};
-const supabaseUrl = env.VITE_SUPABASE_URL;
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 export const supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-// En Vite `import.meta.env` existe. En la vista previa con el harness de datos
-// mock no existe; ahí no mostramos la pantalla de configuración.
+// Sólo se muestra la pantalla de configuración si no hay ni variables de entorno
+// ni valores por defecto (por ejemplo, si alguien vacía los de arriba).
 const hasViteEnv = typeof import.meta !== 'undefined' && Boolean(import.meta.env);
 export const supabaseConfigMissing = hasViteEnv && !supabaseConfigured;
 
@@ -23,10 +28,4 @@ if (hasViteEnv && !supabaseConfigured) {
   );
 }
 
-// El cliente necesita valores no vacíos para construirse. Si falta la
-// configuración usamos un destino inerte y mostramos el aviso de arriba; así la
-// app puede renderizar la pantalla de ingreso en lugar de quedar en blanco.
-export const supabase = createClient(
-  supabaseUrl || 'https://configuracion-pendiente.supabase.co',
-  supabaseAnonKey || 'configuracion-pendiente'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
