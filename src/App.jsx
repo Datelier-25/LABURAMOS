@@ -108,6 +108,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ text: '', show: false });
   const [saved, toggleSaved, pruneSaved] = useSaved();
+  const [savedSvc, toggleSavedSvc] = useSaved('tb_saved_services');
   const toastTimer = useRef(null);
 
   const notify = useCallback((text) => {
@@ -290,6 +291,12 @@ export default function App() {
     toggleSaved(id);
   };
 
+  const toggleSavedSvcGated = (id) => {
+    // Guardar servicios pide cuenta igual que los avisos de trabajo.
+    if (!user) return requireLogin();
+    toggleSavedSvc(id);
+  };
+
   const openPublish = (type, intent = null) => {
     if (!user) return requireLogin();
     setMenuOpen(false);
@@ -356,7 +363,7 @@ export default function App() {
   }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
-  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
+  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, savedSvc, onSaveSvc: toggleSavedSvcGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
   const zoneKey = `${zone.city}|${zone.province}`;
 
   return (

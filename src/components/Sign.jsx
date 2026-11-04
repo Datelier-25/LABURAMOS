@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Bookmark, CalendarDays, Clock, Flag, MapPin, MessageCircle, Phone, Search, Share2, Wallet } from 'lucide-react';
-import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
+import { AlertTriangle, Bookmark, CircleDollarSign, MapPin, Share2, Store, User } from 'lucide-react';
+import { emojiOf, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { Reputation } from './Reputation';
 
@@ -25,6 +25,25 @@ function ServicePhotos({ service, preview }) {
   );
 }
 
+// Fila de tres acciones (Guardar / Compartir / Denunciar) del nuevo diseño de tarjeta.
+function CardActs({ saved, onSave, onShare, onReport, dead }) {
+  return (
+    <div className="card-acts">
+      <button type="button" disabled={dead} className={saved ? 'on' : ''} onClick={onSave} aria-label={saved ? 'Quitar de guardados' : 'Guardar aviso'} aria-pressed={saved}>
+        <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /> {saved ? 'Guardado' : 'Guardar'}
+      </button>
+      <button type="button" disabled={dead} onClick={onShare} aria-label="Compartir por WhatsApp">
+        <Share2 size={17} aria-hidden="true" /> Compartir
+      </button>
+      {onReport && (
+        <button type="button" disabled={dead} onClick={onReport} aria-label="Denunciar aviso">
+          <AlertTriangle size={16} aria-hidden="true" /> Denunciar
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
 export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, applied = false, compact = false, preview = false, wide = false, style, onReport }) {
   const [open, setOpen] = useState(false);
@@ -40,6 +59,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
     : pay === 'A convenir' || /a convenir/i.test(String(pay))
       ? 'A convenir'
       : `${pay}${job.pay_type && job.pay_type !== 'A convenir' && !/a convenir/i.test(String(job.salary || '')) ? ` · ${job.pay_type}` : ''}`;
+  const conds = [job.schedule, job.duration, !payLabel ? job.job_type : null].filter(Boolean).join(' · ');
 
   // Primero se registra la postulación y después se abre WhatsApp (ver applyTo en App.jsx).
   // Si el registro falla, no se navega y además se muestra el motivo.
@@ -56,11 +76,10 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
   // Compartir por WhatsApp: link directo al aviso puntual del sitio.
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/job/${job.id}`;
   const share = () =>
-    window.open(
-      waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.\n${deepUrl}`),
-      '_blank',
-      'noopener'
-    );
+    window.open(waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.\n${deepUrl}`), '_blank', 'noopener');
+
+  const canReport = !!job.id && !!onReport && user?.id !== job.company_id;
+  const emoji = emojiOf(job.category);
 
   return (
     <article
@@ -68,92 +87,83 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       id={`job-${job.id}`}
       style={style}
     >
-      <div className="sign-top">
-        <span className="chip-s acc">{job.category}</span>
-        <div>
-          {job.is_urgent && <span className="chip-s urgent">Urgente</span>}
-          <span className="chip-s">{job.job_type}</span>
+      <div className="card-body">
+        {!compact && (
+          <div className="plate" aria-hidden="true">
+            {job.image ? <img src={job.image} alt="" loading="lazy" /> : <span className="plate-emoji">{emoji}</span>}
+          </div>
+        )}
+        <div className="card-info">
+          <div className="card-badges">
+            <span className="pill pill-job">Laburo</span>
+            <span className="chip-s acc">{job.category}</span>
+            {job.is_urgent && <span className="chip-s urgent">Urgente</span>}
+          </div>
+          <h3>{job.title}</h3>
+          <p className="meta-row">
+            <Store size={15} aria-hidden="true" /> {job.company_name}
+            {job.location && (
+              <span className="loc">
+                <MapPin size={13} aria-hidden="true" /> {job.location}
+              </span>
+            )}
+          </p>
+          {(payLabel || conds) && (
+            <p className="meta-row">
+              <span className="coin">
+                <CircleDollarSign size={13} aria-hidden="true" />
+              </span>
+              {payLabel && <b>{payLabel}</b>}
+              {conds && <span>{conds}</span>}
+            </p>
+          )}
+          {job.reputation && (
+            <div className="rep-row">
+              <Reputation data={job.reputation} showStatus />
+            </div>
+          )}
+          {!compact && job.description && <p className="desc">{job.description}</p>}
+          {open && job.requirements && (
+            <p className="desc">
+              <strong>Requisitos:</strong> {job.requirements}
+            </p>
+          )}
+          {interactive && long && (
+            <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
+              {open ? 'Ver menos' : 'Ver más'}
+            </button>
+          )}
         </div>
       </div>
 
-      <h3>{job.title}</h3>
-      {payLabel && (
-        <p className="sign-pay">
-          <Wallet size={15} aria-hidden="true" /> <b>{payLabel}</b>
-        </p>
-      )}
-      {!compact && (job.schedule || job.duration) && (
-        <p className="sign-conds">
-          {job.schedule && (
-            <span>
-              <Clock size={13} aria-hidden="true" /> {job.schedule}
-            </span>
-          )}
-          {job.duration && (
-            <span>
-              <CalendarDays size={13} aria-hidden="true" /> {job.duration}
-            </span>
-          )}
-        </p>
-      )}
-      <p className="sign-meta">
-        <span>{job.company_name}</span>
-        <Reputation data={job.reputation} showStatus />
-        <span className="loc">
-          <MapPin size={15} aria-hidden="true" /> {job.location}
-        </span>
-      </p>
-
-      {!compact && job.description && <p className="desc">{job.description}</p>}
-      {open && job.requirements && (
-        <p className="desc">
-          <strong>Requisitos:</strong> {job.requirements}
-        </p>
-      )}
-      {interactive && long && (
-        <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {open ? 'Ver menos' : 'Ver más'}
-        </button>
-      )}
-
-      <div className="sign-foot">
-        {interactive && (
-          <div className="sign-acts">
-            <button
-              type="button"
-              className={`icon-btn${saved ? ' on' : ''}`}
-              onClick={() => onSave && onSave(job.id)}
-              aria-label={saved ? 'Quitar de guardados' : 'Guardar aviso'}
-              aria-pressed={saved}
-            >
-              <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
-            </button>
-            <button type="button" className="icon-btn share" onClick={share} aria-label="Compartir aviso por WhatsApp" title="Compartir aviso por WhatsApp">
-              <Share2 size={17} />
-            </button>
-            {job?.id && onReport && user?.id !== job.company_id && (
-              <button type="button" className="icon-btn report" onClick={() => onReport({ kind: 'job', job })} aria-label="Denunciar aviso" title="Denunciar aviso">
-                <Flag size={17} />
-              </button>
-            )}
-            {user ? (
+      {(interactive || preview) && (
+        <>
+          <CardActs
+            saved={saved}
+            onSave={onSave ? () => onSave(job.id) : undefined}
+            onShare={preview ? undefined : share}
+            onReport={preview ? undefined : canReport ? () => onReport({ kind: 'job', job }) : undefined}
+            dead={preview}
+          />
+          {!preview &&
+            (user ? (
               applied ? (
-                <button type="button" className="btn btn-line btn-sm" disabled>
+                <button type="button" className="card-cta" disabled>
                   Ya postulaste
                 </button>
               ) : (
-                <button type="button" className="btn btn-ink btn-sm" onClick={apply} disabled={applying}>
-                  <Phone size={16} /> {applying ? 'Enviando…' : 'Postularme'}
+                <button type="button" className="card-cta" onClick={apply} disabled={applying}>
+                  {applying ? 'Enviando…' : 'Postularme'}
                 </button>
               )
             ) : (
-              <button type="button" className="btn btn-ink btn-sm" onClick={onLogin}>
+              <button type="button" className="card-cta" onClick={onLogin}>
                 Ingresá para postularte
               </button>
-            )}
-          </div>
-        )}
-      </div>
+            ))}
+          {preview && <span className="card-cta as-text">Postularme</span>}
+        </>
+      )}
 
       {job.created_at && !compact && !preview && <span className="when">Publicado {timeAgo(job.created_at)}</span>}
     </article>
@@ -161,12 +171,13 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
 }
 
 // Tarjeta de servicio. "ofrece": la vidriera de un oficio o negocio. "busca": un pedido de trabajo.
-export function ServiceCard({ service, user, onLogin, preview = false, onReport }) {
+export function ServiceCard({ service, user, onLogin, preview = false, onReport, saved = false, onSave }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
-  const interactive = !preview && !isAsk;
-  const canReport = interactive && !!user && user.id !== service.owner_id;
+  const interactive = !preview;
+  const canReport = !preview && !!onReport && user?.id !== service.owner_id;
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/svc/${service.id}`;
+  const emoji = isAsk ? '🔎' : emojiOf(service.category);
   const share = () =>
     window.open(
       waLink(service.phone, `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.\n${deepUrl}`),
@@ -176,67 +187,79 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport 
   const message = isAsk
     ? `Hola, vi tu pedido "${service.title}" en LaburamosApp y te puedo ayudar.`
     : `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.`;
-  const label = isAsk ? 'Me interesa' : 'Contactar';
-  const btn = isAsk ? 'btn btn-sun btn-sm' : 'btn btn-ink btn-sm';
+  const ctaLabel = isAsk ? 'Me interesa' : 'Contactar';
 
-  let action;
-  if (preview) action = <span className={btn}>{label}</span>;
+  let cta;
+  if (preview) cta = <span className="card-cta as-text">{ctaLabel}</span>;
   else if (user)
-    action = (
-      <a className={btn} href={waLink(service.phone, message)} target="_blank" rel="noreferrer">
-        <MessageCircle size={16} /> {label}
+    cta = (
+      <a className="card-cta" href={waLink(service.phone, message)} target="_blank" rel="noreferrer">
+        {ctaLabel}
       </a>
     );
   else
-    action = (
-      <button type="button" className={btn} onClick={onLogin}>
+    cta = (
+      <button type="button" className="card-cta" onClick={onLogin}>
         Ingresá para {isAsk ? 'responder' : 'escribir'}
       </button>
     );
 
   return (
     <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
-      <div className="scard-head">
-        <div className="disc" aria-hidden="true">
-          {isAsk ? <Search size={22} /> : initials(service.provider_name)}
+      <div className="card-body">
+        <div className="plate" aria-hidden="true">
+          {(service.photos || []).filter(Boolean)[0] ? (
+            <img src={servicePhotoUrl((service.photos || []).filter(Boolean)[0])} alt="" loading="lazy" />
+          ) : (
+            <span className="plate-emoji">{emoji}</span>
+          )}
         </div>
-        <div className="scard-tags">
-          <span className="kind">{isAsk ? 'Busca' : 'Ofrece'}</span>
-          <span className="chip-s">{service.category}</span>
-          {service.is_urgent && <span className="chip-s urgent">Urgente</span>}
-        </div>
-      </div>
-      <h3>{service.title}</h3>
-      {service.price && (
-        <p className="sign-pay">
-          <Wallet size={15} aria-hidden="true" /> <small>{isAsk ? 'Presupuesto' : 'Precio'}</small> <b>{service.price}</b>
-        </p>
-      )}
-      <p className="by">
-        {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
-        <Reputation data={service.reputation} showStatus />
-        <span className="loc">
-          <MapPin size={15} aria-hidden="true" /> {service.city}
-        </span>
-      </p>
-      {service.description && <p className="desc">{service.description}</p>}
-      <ServicePhotos service={service} preview={preview} />
-      <div className="scard-foot">
-        {service.created_at && !preview ? <span className="when">{timeAgo(service.created_at)}</span> : <span />}
-        {interactive && (
-          <div className="scard-acts">
-            <button type="button" className="icon-btn share" onClick={share} aria-label="Compartir servicio por WhatsApp" title="Compartir servicio por WhatsApp">
-              <Share2 size={17} />
-            </button>
-            {canReport && (
-              <button type="button" className="icon-btn report" onClick={() => onReport({ kind: 'service', service })} aria-label="Denunciar servicio" title="Denunciar servicio">
-                <Flag size={17} />
-              </button>
-            )}
+        <div className="card-info">
+          <div className="card-badges">
+            <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
+            <span className="chip-s acc">{service.category}</span>
+            {service.is_urgent && <span className="chip-s urgent">Urgente</span>}
           </div>
-        )}
-        {action}
+          <h3>{service.title}</h3>
+          <p className="meta-row">
+            {isAsk ? <Store size={15} aria-hidden="true" /> : <User size={15} aria-hidden="true" />} {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
+            {service.city && (
+              <span className="loc">
+                <MapPin size={13} aria-hidden="true" /> {service.city}
+              </span>
+            )}
+          </p>
+          {service.price && (
+            <p className="meta-row">
+              <span className="coin">
+                <CircleDollarSign size={13} aria-hidden="true" />
+              </span>
+              <b>{service.price}</b>
+              <span>{isAsk ? 'presupuesto' : 'precio'}</span>
+            </p>
+          )}
+          {service.reputation && (
+            <div className="rep-row">
+              <Reputation data={service.reputation} showStatus />
+            </div>
+          )}
+          {service.description && <p className="desc">{service.description}</p>}
+        </div>
       </div>
+      <ServicePhotos service={service} preview={preview} />
+      {(interactive || preview) && (
+        <>
+          <CardActs
+            saved={saved}
+            onSave={onSave ? () => onSave(service.id) : undefined}
+            onShare={preview ? undefined : share}
+            onReport={canReport ? () => onReport({ kind: 'service', service }) : undefined}
+            dead={preview}
+          />
+          {cta}
+        </>
+      )}
+      {service.created_at && !preview && <span className="when">{timeAgo(service.created_at)}</span>}
     </article>
   );
 }

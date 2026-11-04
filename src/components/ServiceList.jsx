@@ -14,7 +14,7 @@ const INTENT_OPTIONS = [
   { value: 'busca', label: 'Buscan' },
 ];
 
-export default function ServiceList({ user, zone, setZone, onPublish, onLogin, onReport, deep }) {
+export default function ServiceList({ user, zone, setZone, onPublish, onLogin, onReport, deep, savedSvc, onSaveSvc }) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -150,7 +150,7 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin, o
           </p>
           <div className="scards">
             {filtered.map((s) => (
-              <ServiceCard key={s.id} service={s} user={user} onLogin={onLogin} onReport={onReport} />
+              <ServiceCard key={s.id} service={s} user={user} onLogin={onLogin} onReport={onReport} saved={savedSvc.includes(s.id)} onSave={onSaveSvc} />
             ))}
           </div>
         </>

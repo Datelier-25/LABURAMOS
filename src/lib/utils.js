@@ -39,6 +39,27 @@ const TONES = {
 };
 export const toneOf = (category) => `t-${TONES[category] || 'stone'}`;
 
+// Emoji del frente de la tarjeta cuando el aviso no tiene foto ni emote elegido.
+// Cuando llegue el set de 60 PNGs, este valor se reemplaza por el emote elegido.
+const CATEGORY_EMOJI = {
+  Comercio: '🏪',
+  Gastronomía: '🍳',
+  'Agro / Campo': '🌾',
+  'Oficios / Técnico': '🔧',
+  Administración: '🧾',
+  'Salud y cuidados': '🩺',
+  Transporte: '🚚',
+  Moda: '🧵',
+  Oficios: '🔧',
+  Profesionales: '💼',
+  'Clases particulares': '📚',
+  Cuidados: '🤝',
+  Limpieza: '🧽',
+  Tecnología: '💻',
+  Eventos: '🎉',
+};
+export const emojiOf = (category) => CATEGORY_EMOJI[category] || '✨';
+
 const NAME_TONES = ['ultra', 'sun', 'tomato', 'field', 'violet', 'pink', 'sky'];
 export function toneFromName(name = '') {
   const n = [...name].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
