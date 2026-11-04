@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plantilla editable — Tarjetas Laburamos</title>
+<style>
+  /* =========================================================
+     Plantilla editable de tarjetas Laburamos — copiá los bloques
+     y cambiá los valores entre /* EDIT */ para personalizar.
+     ========================================================= */
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap');
+
+  :root {
+    --ink: #0F1242;      /* navy */
+    --ultra: #405ae5;    /* azul servicio */
+    --ultra-deep: #2e44c4;
+    --orange: #FF6A00;   /* naranja urgencia / sueldo */
+    --field: #008F78;    /* verde pedido */
+    --mist: #F2F4F7;     /* fondo */
+    --line: #e8ebf2;     /* borde tarjeta */
+    --muted: #586088;    /* texto secundario */
+    --paper: #ffffff;    /* tarjeta */
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 16px; line-height: 1.45; color: var(--ink); background: var(--mist); }
+
+  /* ---------- CONTENEDOR GENERAL ---------- */
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 24px; }
+
+  /* ---------- TARJETA (copiá esta clase para editar) ---------- */
+  .sign {
+    /* EDIT: altura mínima, padding, radio, sombra */
+    display: flex; flex-direction: column; gap: 12px; min-height: 260px; padding: 18px;
+    background: #fff; color: var(--ink); border-radius: 24px; border: 1px solid var(--line);
+    box-shadow: 0 10px 28px -18px rgba(15, 18, 66, 0.22);
+  }
+
+  /* ---------- CUERPO: ilustración + contenido ---------- */
+  .card-body { display: flex; gap: 16px; align-items: flex-start; }
+
+  /* EDIT: tamaño ilustración */
+  .plate { position: relative; flex: none; width: 150px; height: 150px; border-radius: 20px; background: #fff6e6; overflow: hidden; flex-shrink: 0; display: grid; place-items: center; }
+  .plate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* EDIT: espacio y orden de los textos */
+  .card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .card-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  /* EDIT: pill (etiquetas) */
+  .pill { display: inline-flex; align-items: center; justify-content: center; padding: 7px 13px; border-radius: 999px; font-size: 0.8rem; line-height: 1; text-align: center; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; white-space: nowrap; }
+  .pill-job  { background: #FF6A00; } /* Laburo */
+  .pill-urgent { background: #FF6A00; } /* Urgente */
+  .pill-ofrece { background: #2563eb; } /* Ofrezco servicio */
+  .pill-busca { background: #008F78; } /* Estoy buscando */
+
+  /* EDIT: título */
+  .sign h3 { margin: 0; font-size: clamp(1.55rem, 2.2vw, 1.75rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* EDIT: datos (persona, localidad, sueldo) */
+  .meta-row { display: flex; align-items: center; gap: 3px 8px; font-size: 0.92rem; line-height: 1.2; font-weight: 500; color: #3d4470; }
+  .meta-row b { color: var(--ink); font-weight: 800; }
+  .meta-row .sep { color: #8a90b3; font-weight: 400; }
+  .coin { width: 26px; height: 26px; border-radius: 50%; background: #FF6A00; color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+  .meta-row.pay { font-size: 0.92rem; }
+
+  /* EDIT: reputación / confianza */
+  .rep-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 28px; }
+  .rep-ver { display: inline-flex; align-items: center; gap: 3px; background: #2563eb; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 0.76rem; font-weight: 800; }
+  .rep-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: #fff1d6; color: var(--ink); font-weight: 800; font-size: 0.85rem; }
+  .rep-score b { font-size: 0.95rem; letter-spacing: -0.02em; }
+  .rep-score small { font-weight: 700; color: var(--muted); font-size: 0.78rem; }
+
+  /* EDIT: descripción */
+  .desc { font-size: 0.92rem; line-height: 1.35; color: #3d4470; display: -webkit-box; -webkit-line-clamp: 2; overflow: hidden; margin-top: 2px; }
+
+  /* EDIT: acciones secundarias */
+  .card-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+  .card-acts button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 46px; padding: 0 6px; border: 0; border-radius: 999px; background: #f1f3f8; color: #0F1242; font-weight: 600; font-size: 1rem; white-space: nowrap; transition: background 0.2s; }
+  .card-acts button:hover:not(:disabled) { background: #e4e8f1; }
+
+  /* EDIT: botón principal */
+  .card-cta { width: 100%; min-height: 52px; border-radius: 999px; background: #0F1242; color: #fff; font-weight: 800; font-size: 1.1rem; border: 0; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; }
+
+  /* EDIT: fecha */
+  .when { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+
+  /* ---------- GRILLA ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+
+  /* ---------- RESPUESTA RÁPIDA (vista en celular) ---------- */
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+    .plate { width: 120px; height: 120px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em;">Plantilla editable</h2>
+  <p style="color: var(--muted); font-size: 0.9rem; margin: -8px 0 16px;">
+    Abrí este archivo con cualquier editor de texto, cambiá los valores entre <code>/* EDIT */</code> y recargá en el navegador.
+  </p>
+
+  <div class="cards">
+    <!-- LABURO -->
+    <article class="sign">
+      <div class="card-body">
+        <div class="plate" aria-hidden="true">
+          <img src="/public/emotes/cocinero_mujer.png" alt="" loading="lazy" />
+        </div>
+        <div class="card-info">
+          <div class="card-badges"><span class="pill pill-urgent">URGENTE</span></div>
+          <h3>Ayudante de cocina</h3>
+          <p class="meta-row">
+            <span>👥</span> Parrilla El Fogón <span class="sep">·</span> <span>📍 25 de Mayo</span>
+          </p>
+          <p class="meta-row pay">
+            <span class="coin">💰</span> <b>$620.000</b> <span>· Jornada completa</span>
+          </p>
+          <div class="rep-row">
+            <span class="rep-ver">✓ Verificado</span>
+            <span class="rep-score">★ <b>93</b> <small>(8)</small></span>
+          </div>
+          <p class="desc">Parrilla con mucho movimiento busca ayudante de cocina para turnos rotativos. Se trabaja de martes a domingo, co...</p>
+        </div>
+      </div>
+      <div class="card-acts">
+        <button>💾 Guardar</button>
+        <button>🔗 Compartir</button>
+        <button>⚠️ Denunciar</button>
+      </div>
+      <a class="card-cta" href="#">Postularme</a>
+      <span class="when">Publicado hace 3 días</span>
+    </article>
+
+    <!-- SERVICIO -->
+    <article class="sign" style="background:#fff; border-color:#e8ebf2;">
+      <div class="card-body">
+        <div class="plate" aria-hidden="true" style="background:#e6ebff;">
+          <img src="/public/emotes/plomero_hombre.png" alt="" loading="lazy" />
+        </div>
+        <div class="card-info">
+          <div class="card-badges"><span class="pill pill-ofrece">OFREZCO MI SERVICIO</span></div>
+          <h3>Plomería y destapaciones</h3>
+          <p class="meta-row">
+            <span>👤</span> Carlos Gómez <span class="sep">·</span> <span>📍 Bragado</span>
+          </p>
+          <div class="rep-row">
+            <span class="rep-ver">✓ Verificado</span>
+            <span class="rep-score">★ <b>94</b> <small>(12)</small></span>
+          </div>
+          <p class="desc">Trabajos de plomería en general, destapaciones y reparaciones. Atención responsable y rápida.</p>
+        </div>
+      </div>
+      <div class="card-acts">
+        <button>💾 Guardar</button>
+        <button>🔗 Compartir</button>
+        <button>⚠️ Denunciar</button>
+      </div>
+      <a class="card-cta" href="#">Contactar</a>
+      <span class="when">Publicado hace 4 días</span>
+    </article>
+
+    <!-- BUSCA -->
+    <article class="sign" style="background:#fff; border-color:#e8ebf2;">
+      <div class="card-body">
+        <div class="plate" aria-hidden="true" style="background:#dcf2e4;">
+          <img src="/public/emotes/electricista_mujer.png" alt="" loading="lazy" />
+        </div>
+        <div class="card-info">
+          <div class="card-badges"><span class="pill pill-busca">ESTOY BUSCANDO A ALGUIEN</span></div>
+          <h3>Busco electricista para un local</h3>
+          <p class="meta-row">
+            <span>🏪</span> Almacén Don Pedro <span class="sep">·</span> <span>📍 Bragado</span>
+          </p>
+          <p class="meta-row pay">
+            <span class="coin">💰</span> <b>Presupuesto</b> <span>· Para esta semana</span>
+          </p>
+          <div class="rep-row">
+            <span class="rep-ver" style="background:#def3e6; color:#0e5a2f;">✓ Verificado</span>
+            <span class="rep-score">★ <b>77</b> <small>(5)</small></span>
+          </div>
+          <p class="desc">Necesito un electricista para revisar la instalación del local y hacer algunas mejoras.</p>
+        </div>
+      </div>
+      <div class="card-acts">
+        <button>💾 Guardar</button>
+        <button>🔗 Compartir</button>
+        <button>⚠️ Denunciar</button>
+      </div>
+      <a class="card-cta" href="#">Me interesa</a>
+      <span class="when">Publicado hace 5 días</span>
+    </article>
+  </div>
+
+  <p style="margin-top: 24px; color: var(--muted); font-size: 0.85rem;">
+    Esta es una plantilla estática editable. Copiá esta página, abrila con tu editor de texto o con el navegador
+    y modificá los valores directamente en el CSS (buscá <code>/* EDIT */</code> para encontrar qué cambiar).
+  </p>
+</div>
+</body>
+</html>
