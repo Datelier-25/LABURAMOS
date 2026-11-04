@@ -70,7 +70,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     place: startPlace(user, zone),
     is_urgent: false,
     icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
-    photos: [], // { path, url } — hasta 3, solo en servicios
+    photos: [], // { path, url } — hasta 5, solo en servicios
   });
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
