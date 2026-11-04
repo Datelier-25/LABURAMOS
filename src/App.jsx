@@ -331,9 +331,11 @@ export default function App() {
   useEffect(() => {
     const informational = view === 'seguridad' || view === 'contacto';
     if (booting || user || zoneChosen || authOpen || modal || applyFor || informational) return undefined;
+    // Si la zona ya fue elegida o el usuario está navegando, no abrimos el modal
+    if (zoneChosen || zone?.city || zone?.province) return undefined;
     const t = setTimeout(() => setZoneOpen(true), 900);
     return () => clearTimeout(t);
-  }, [booting, user, zoneChosen, authOpen, modal, applyFor, view]);
+  }, [booting, user, zoneChosen, authOpen, modal, applyFor, view, zone?.city, zone?.province]);
 
   if (booting) return <div style={{ minHeight: '100svh', display: 'grid', placeItems: 'center' }}>Cargando…</div>;
   if (recovery)
