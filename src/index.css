@@ -203,7 +203,7 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 /* ---------- carteles (empleos) ---------- */
 /* Tarjeta blanca simple; el color del rubro (--acc) se usa como acento */
 .sign {
-  --r: 0deg; position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 160px; padding: 14px;
+  --r: 0deg; position: relative; display: flex; flex-direction: column; gap: 12px; min-height: 260px; padding: 18px;
   background: #fff; color: var(--ink); border-radius: 24px; border: 1px solid #e8ebf2; overflow: hidden;
   transform: rotate(var(--r)); transition: transform 0.4s var(--ease-pop), box-shadow 0.3s;
   box-shadow: 0 10px 28px -18px rgba(15, 18, 66, 0.22);
@@ -214,7 +214,7 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .signs > .sign:hover { transform: translateY(-5px); box-shadow: 0 26px 34px -24px rgba(25, 25, 75, 0.7); }
 
 /* cuerpo de tarjeta: placa (emote o foto) a la izquierda + contenido a la derecha */
-.card-body { display: flex; gap: 14px; align-items: flex-start; }
+.card-body { display: flex; gap: 16px; align-items: flex-start; }
 .plate {
   position: relative; flex: none; width: 150px; height: 150px; border-radius: 20px;
   background: var(--acc-soft, #eef1f9); box-shadow: inset 0 0 0 1px rgba(15, 18, 66, 0.05);
