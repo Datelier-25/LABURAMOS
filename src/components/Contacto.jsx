@@ -41,7 +41,7 @@ export default function Contacto({ user, settings, notify }) {
     }
     setBusy(true);
     setError('');
-    const { error: err } = await supabase.rpc('create_report', { p_type: type, p_job_id: jobId || null, p_message: message.trim() });
+    const { error: err } = await supabase.rpc('create_report', { p_type: type, p_job_id: jobId || null, p_service_id: null, p_message: message.trim() });
     setBusy(false);
     if (err) {
       setError(friendlyError(err.message));

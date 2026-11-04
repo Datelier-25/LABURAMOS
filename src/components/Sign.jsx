@@ -53,9 +53,19 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
     }
   };
 
+  // Compartir por WhatsApp: link directo al aviso puntual del sitio.
+  const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/job/${job.id}`;
+  const share = () =>
+    window.open(
+      waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.\n${deepUrl}`),
+      '_blank',
+      'noopener'
+    );
+
   return (
     <article
       className={`sign ${toneOf(job.category)}${open ? ' open' : ''}${wide ? ' wide' : ''}${compact ? ' compact' : ''}`}
+      id={`job-${job.id}`}
       style={style}
     >
       <div className="sign-top">
@@ -118,19 +128,11 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             >
               <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
             </button>
-            <button
-              type="button"
-              className="icon-btn share"
-              onClick={() =>
-                window.open(waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa. ${job.id}`), '_blank', 'noopener')
-              }
-              aria-label="Compartir aviso por WhatsApp"
-              title="Compartir aviso por WhatsApp"
-            >
+            <button type="button" className="icon-btn share" onClick={share} aria-label="Compartir aviso por WhatsApp" title="Compartir aviso por WhatsApp">
               <Share2 size={17} />
             </button>
             {job?.id && onReport && user?.id !== job.company_id && (
-              <button type="button" className="icon-btn report" onClick={() => onReport(job)} aria-label="Denunciar aviso" title="Denunciar aviso">
+              <button type="button" className="icon-btn report" onClick={() => onReport({ kind: 'job', job })} aria-label="Denunciar aviso" title="Denunciar aviso">
                 <Flag size={17} />
               </button>
             )}
@@ -159,9 +161,18 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
 }
 
 // Tarjeta de servicio. "ofrece": la vidriera de un oficio o negocio. "busca": un pedido de trabajo.
-export function ServiceCard({ service, user, onLogin, preview = false }) {
+export function ServiceCard({ service, user, onLogin, preview = false, onReport }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
+  const interactive = !preview && !isAsk;
+  const canReport = interactive && !!user && user.id !== service.owner_id;
+  const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/svc/${service.id}`;
+  const share = () =>
+    window.open(
+      waLink(service.phone, `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.\n${deepUrl}`),
+      '_blank',
+      'noopener'
+    );
   const message = isAsk
     ? `Hola, vi tu pedido "${service.title}" en LaburamosApp y te puedo ayudar.`
     : `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.`;
@@ -184,7 +195,7 @@ export function ServiceCard({ service, user, onLogin, preview = false }) {
     );
 
   return (
-    <article className={`scard ${intent} ${toneOf(service.category)}`}>
+    <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
       <div className="scard-head">
         <div className="disc" aria-hidden="true">
           {isAsk ? <Search size={22} /> : initials(service.provider_name)}
@@ -212,6 +223,18 @@ export function ServiceCard({ service, user, onLogin, preview = false }) {
       <ServicePhotos service={service} preview={preview} />
       <div className="scard-foot">
         {service.created_at && !preview ? <span className="when">{timeAgo(service.created_at)}</span> : <span />}
+        {interactive && (
+          <div className="scard-acts">
+            <button type="button" className="icon-btn share" onClick={share} aria-label="Compartir servicio por WhatsApp" title="Compartir servicio por WhatsApp">
+              <Share2 size={17} />
+            </button>
+            {canReport && (
+              <button type="button" className="icon-btn report" onClick={() => onReport({ kind: 'service', service })} aria-label="Denunciar servicio" title="Denunciar servicio">
+                <Flag size={17} />
+              </button>
+            )}
+          </div>
+        )}
         {action}
       </div>
     </article>

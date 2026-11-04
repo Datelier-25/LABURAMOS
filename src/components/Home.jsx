@@ -62,7 +62,7 @@ function SignStack({ items, total, onMore }) {
   );
 }
 
-export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave, onReport }) {
+export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave, onReport, deep }) {
   const [data, setData] = useState({ jobs: [], services: [], jobsN: 0, servN: 0, loading: true, error: false });
   const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
 
@@ -121,6 +121,16 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
   const { jobs, services, jobsN, servN, loading, error } = data;
   const place = zoneText(zone);
   const where = zoneShort(zone) === 'toda Argentina' ? 'Tu ciudad' : zoneShort(zone);
+
+  // Enlace profundo (#/aviso/...) al aviso puntual: lo llevamos al frente al cargar.
+  const deepId = deep?.id;
+  useEffect(() => {
+    if (!deepId) return undefined;
+    const t = setTimeout(() => {
+      document.getElementById(`job-${deepId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [deepId, jobs]);
 
   // Si todavía no hay avisos, la pila muestra invitaciones
   const invites = [

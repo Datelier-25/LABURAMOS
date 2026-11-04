@@ -13,7 +13,11 @@ const REASONS = [
   { id: 'otro', label: 'Otro motivo' },
 ];
 
-export default function ReportModal({ job, onClose, notify }) {
+export default function ReportModal({ report, onClose, notify }) {
+  const isSvc = report?.kind === 'service';
+  const target = isSvc ? report.service : report?.job;
+  const kind = isSvc ? 'service' : 'job';
+  const id = target?.id;
   const [reason, setReason] = useState(REASONS[0].id);
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,7 +43,7 @@ export default function ReportModal({ job, onClose, notify }) {
 
   const send = async (e) => {
     e.preventDefault();
-    if (!job?.id) {
+    if (!id) {
       setError('No pudimos identificar el aviso. Probá de nuevo.');
       return;
     }
@@ -49,12 +53,17 @@ export default function ReportModal({ job, onClose, notify }) {
     const text = [
       `Motivo: ${REASONS.find((r) => r.id === reason)?.label}.`,
       details.trim() ? `Detalle: ${details.trim()}` : '',
-      `Aviso: ${job.title || ''} · ID ${job.id} · ${job.company_name || ''} · ${job.location || ''}.`,
+      `Aviso: ${target.title || ''} · ID ${id} · ${kind === 'service' ? target.provider_name || '' : target.company_name || ''} · ${kind === 'service' ? target.city || '' : target.location || ''}.`,
       `Enlace: ${window.location.href}`,
     ]
       .filter(Boolean)
       .join(' ');
-    const { error: err } = await supabase.rpc('create_report', { p_type: 'denuncia', p_job_id: job.id, p_message: text.slice(0, 2000) });
+    const { error: err } = await supabase.rpc('create_report', {
+      p_type: 'denuncia',
+      p_job_id: kind === 'service' ? null : id,
+      p_service_id: kind === 'service' ? id : null,
+      p_message: text.slice(0, 2000),
+    });
     setBusy(false);
     if (err) {
       setError(friendlyError(err.message));
@@ -64,11 +73,13 @@ export default function ReportModal({ job, onClose, notify }) {
     notify('Denuncia enviada. Gracias por avisar.');
   };
 
+  const title = kind === 'service' ? 'Denunciar servicio' : 'Denunciar aviso';
+
   return createPortal(
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="place-dlg rep-dlg" role="dialog" aria-modal="true" aria-label="Denunciar aviso">
+      <div className="place-dlg rep-dlg" role="dialog" aria-modal="true" aria-label={title}>
         <div className="place-head">
-          <h2>Denunciar aviso</h2>
+          <h2>{title}</h2>
           <button type="button" className="x-sm" onClick={onClose} aria-label="Cerrar">
             <X size={18} />
           </button>
@@ -81,7 +92,7 @@ export default function ReportModal({ job, onClose, notify }) {
             </span>
             <h3>Recibido</h3>
             <p>
-              Tu denuncia sobre <b>{job?.title}</b> llegó al equipo de LaburamosApp. La revisamos con calma; no te respondemos por este canal.
+              Tu denuncia sobre <b>{target?.title}</b> llegó al equipo de LaburamosApp. La revisamos con calma; no te respondemos por este canal.
             </p>
             <button type="button" className="btn btn-ink btn-block" onClick={onClose}>
               Listo
@@ -92,9 +103,9 @@ export default function ReportModal({ job, onClose, notify }) {
             <div className="report-job">
               <Flag size={16} aria-hidden="true" />
               <div>
-                <b>{job?.title}</b>
+                <b>{target?.title}</b>
                 <small>
-                  {job?.company_name} · {job?.location}
+                  {kind === 'service' ? target?.provider_name : target?.company_name} · {kind === 'service' ? target?.city : target?.location}
                 </small>
               </div>
             </div>

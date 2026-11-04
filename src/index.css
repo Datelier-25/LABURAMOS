@@ -267,6 +267,7 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .scard .by { display: flex; flex-wrap: wrap; gap: 4px 14px; font-weight: 600; color: var(--muted); }
 .scard .desc { -webkit-line-clamp: 2; }
 .scard-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.scard-acts { display: flex; align-items: center; gap: 8px; }
 /* pedido ("busca"): borde punteado naranja, para que no se confunda con un oficio ofrecido */
 .scard.busca { border: 2px dashed #f9b27d; background: #fffaf5; }
 .scard.busca .disc { background: var(--orange); color: #fff; }

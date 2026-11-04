@@ -39,9 +39,24 @@ const STARTED_IN_RECOVERY = typeof window !== 'undefined' && /type=recovery/.tes
 const readView = () => {
   if (typeof window === 'undefined') return 'home';
   const h = window.location.hash.replace(/^#\/?/, '');
+  const parts = h.split('/');
+  const deepHit = parts[0] === 'aviso' && parts[1] && parts[2];
+  if (deepHit) return parts[1] === 'svc' ? 'oficios' : 'laburos';
   if (VIEWS.includes(h)) return h;
   const p = window.location.pathname.replace(/^\/+|\/+$/g, '');
   return VIEWS.includes(p) ? p : 'home';
+};
+
+// Enlace profundo a un aviso: /#/aviso/<job|svc>/<uuid> → { kind, id, view }
+const readDeep = () => {
+  if (typeof window === 'undefined') return null;
+  const parts = window.location.hash.replace(/^#\/?/, '').split('/');
+  if (parts[0] === 'aviso' && parts[1] && parts[2]) {
+    const kind = parts[1] === 'svc' ? 'service' : 'job';
+    const id = parts[2];
+    return { kind, id, view: kind === 'service' ? 'oficios' : 'laburos' };
+  }
+  return null;
 };
 
 const pathFor = (id) => (id === 'home' ? '/' : `/${id}`);
@@ -83,6 +98,7 @@ export default function App() {
   const [reportFor, setReportFor] = useState(null);
   const [recovery, setRecovery] = useState(STARTED_IN_RECOVERY);
   const [rawView, setRawView] = useState(readView);
+  const [deep, setDeep] = useState(readDeep);
   const [zone, setZone, suggestZone, zoneChosen] = useZone();
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
@@ -132,6 +148,7 @@ export default function App() {
   useEffect(() => {
     const onPop = () => {
       setRawView(readView());
+      setDeep(readDeep());
       setMenuOpen(false);
       window.scrollTo(0, 0);
     };
@@ -139,7 +156,13 @@ export default function App() {
     // Enlaces viejos con #/laburos: se normalizan a /laburos
     const h = window.location.hash.replace(/^#\/?/, '');
     if (VIEWS.includes(h)) window.history.replaceState(null, '', pathFor(h));
-    return () => window.removeEventListener('popstate', onPop);
+    const onDeep = () => setDeep(readDeep());
+    onDeep();
+    window.addEventListener('hashchange', onDeep);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('hashchange', onDeep);
+    };
   }, []);
 
   const userId = session?.user?.id;
@@ -204,7 +227,9 @@ export default function App() {
     if (id === 'admin') return !!user?.isAdmin;
     return true;
   };
-  const view = VIEWS.includes(rawView) && allowed(rawView) ? rawView : 'home';
+  const allowedRaw = VIEWS.includes(rawView) && allowed(rawView) ? rawView : 'home';
+  // Un enlace compartido (/#/aviso/<job|svc>/<uuid>) manda: lleva a la lista correcta y al aviso puntual.
+  const view = deep && deep.id ? deep.view : allowedRaw;
 
   // Título y descripción por vista (Google y las vistas previas de WhatsApp)
   useEffect(() => {
@@ -226,8 +251,20 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    // Enlaces profundos a un aviso: aviso:job:<uuid> | aviso:svc:<uuid> → /#/aviso/<kind>/<uuid>
+    if (typeof id === 'string' && id.startsWith('aviso:')) {
+      const parts = id.split(':');
+      const kind = parts[1] === 'svc' ? 'service' : 'job';
+      const base = kind === 'service' ? 'oficios' : 'laburos';
+      window.history.pushState(null, '', `/${base}#/aviso/${kind === 'service' ? 'svc' : 'job'}/${parts[2]}`);
+      setRawView(base);
+      setDeep({ kind, id: parts[2], view: base });
+      window.scrollTo(0, 0);
+      return;
+    }
     window.history.pushState(null, '', pathFor(id));
     setRawView(id);
+    setDeep(null);
     window.scrollTo(0, 0);
   };
 
@@ -236,6 +273,7 @@ export default function App() {
     await supabase.auth.signOut();
     window.history.replaceState(null, '', '/');
     setRawView('home');
+    setDeep(null);
   };
 
   // Ingreso como ventana (no reemplaza la experiencia pública): se cierra para
@@ -318,7 +356,7 @@ export default function App() {
   }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
-  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, onPrune: pruneSaved, onReport: (job) => setReportFor(job) };
+  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
   const zoneKey = `${zone.city}|${zone.province}`;
 
   return (
@@ -396,7 +434,7 @@ export default function App() {
         </div>
       )}
 
-      {reportFor && <ReportModal job={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
+      {reportFor && <ReportModal report={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
 
       <div className={`toast${toast.show ? ' show' : ''}`} role="status" aria-live="polite">
         <i aria-hidden="true" />

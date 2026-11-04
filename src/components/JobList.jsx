@@ -8,7 +8,7 @@ import JobSign from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
 import { ZonePicker } from './Place';
 
-export default function JobList({ user, zone, setZone, onPublish, onLogin, onApply, saved, onSave, onPrune, onReport }) {
+export default function JobList({ user, zone, setZone, onPublish, onLogin, onApply, saved, onSave, onPrune, onReport, deep }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,6 +53,16 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
   useEffect(() => {
     load();
   }, [load]);
+
+  // Enlace profundo (#/aviso/...) al aviso puntual: lo llevamos al frente al cargar.
+  const deepId = deep?.id;
+  useEffect(() => {
+    if (!deepId) return undefined;
+    const t = setTimeout(() => {
+      document.getElementById(`job-${deepId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [deepId, jobs]);
 
   // Al entrar, depura los guardados que ya vencieron o se eliminaron (de cualquier zona)
   useEffect(() => {

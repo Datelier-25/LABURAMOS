@@ -14,7 +14,7 @@ const INTENT_OPTIONS = [
   { value: 'busca', label: 'Buscan' },
 ];
 
-export default function ServiceList({ user, zone, setZone, onPublish, onLogin }) {
+export default function ServiceList({ user, zone, setZone, onPublish, onLogin, onReport, deep }) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,6 +47,16 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin })
   useEffect(() => {
     load();
   }, [load]);
+
+  // Enlace profundo (#/aviso/...) al servicio puntual: lo llevamos al frente al cargar.
+  const deepId = deep?.id;
+  useEffect(() => {
+    if (!deepId) return undefined;
+    const t = setTimeout(() => {
+      document.getElementById(`svc-${deepId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [deepId, services]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -140,7 +150,7 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin })
           </p>
           <div className="scards">
             {filtered.map((s) => (
-              <ServiceCard key={s.id} service={s} user={user} onLogin={onLogin} />
+              <ServiceCard key={s.id} service={s} user={user} onLogin={onLogin} onReport={onReport} />
             ))}
           </div>
         </>
