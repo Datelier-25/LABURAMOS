@@ -92,7 +92,7 @@ export function Reputation({ data, className = '', showStatus = false }) {
         </span>
       )}
       {reviews > 0 && (
-        <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={title} aria-label={title}>
+        <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
           <ShieldCheck size={14} aria-hidden="true" />
           <b>{score}</b>
           <small>({reviews})</small>
