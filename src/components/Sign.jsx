@@ -40,10 +40,10 @@ function CardActs({ saved, onSave, onShare, onReport, dead }) {
   return (
     <div className="card-acts">
       <button type="button" disabled={dead} className={saved ? 'on' : ''} onClick={onSave} aria-label={saved ? 'Quitar de guardados' : 'Guardar aviso'} aria-pressed={saved}>
-        <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /> {saved ? 'Guardado' : 'Guardar'}
+        <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /> {saved ? 'Guardado' : 'Guardar'}
       </button>
       <button type="button" disabled={dead || !onShare} onClick={share} aria-label="Compartir aviso con otra persona">
-        <Share2 size={17} aria-hidden="true" /> {shareHint || 'Compartir'}
+        <Share2 size={16} aria-hidden="true" /> {shareHint || 'Compartir'}
       </button>
       {onReport && (
         <button type="button" disabled={dead} onClick={onReport} aria-label="Denunciar aviso">
@@ -114,12 +114,12 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
           <h3>{job.title}</h3>
           <p className="meta-row">
             <Store size={15} aria-hidden="true" /> {job.company_name}
-            {job.location && (
-              <span className="loc">
-                <MapPin size={13} aria-hidden="true" /> {job.location}
-              </span>
-            )}
           </p>
+          {job.location && (
+            <p className="meta-row">
+              <MapPin size={15} aria-hidden="true" /> {job.location}
+            </p>
+          )}
           {(payLabel || conds) && (
             <p className="meta-row pay">
               <span className="coin">
@@ -129,11 +129,9 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               {conds && <span>{conds}</span>}
             </p>
           )}
-          {job.reputation && (
-            <div className="rep-row">
-              <Reputation data={job.reputation} showStatus />
-            </div>
-          )}
+          <div className="rep-row">
+            {job.reputation ? <Reputation data={job.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
+          </div>
           {!compact && job.description && <p className="desc">{job.description}</p>}
           {open && job.requirements && (
             <p className="desc">
@@ -238,14 +236,14 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           <h3>{service.title}</h3>
           <p className="meta-row">
             {isAsk ? <Store size={15} aria-hidden="true" /> : <User size={15} aria-hidden="true" />} {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
-            {service.city && (
-              <span className="loc">
-                <MapPin size={13} aria-hidden="true" /> {service.city}
-              </span>
-            )}
           </p>
-          {service.price && (
+          {service.city && (
             <p className="meta-row">
+              <MapPin size={15} aria-hidden="true" /> {service.city}
+            </p>
+          )}
+          {service.price && (
+            <p className="meta-row pay">
               <span className="coin">
                 <CircleDollarSign size={13} aria-hidden="true" />
               </span>
@@ -253,11 +251,9 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
               <span>{isAsk ? 'presupuesto' : 'precio'}</span>
             </p>
           )}
-          {service.reputation && (
-            <div className="rep-row">
-              <Reputation data={service.reputation} showStatus />
-            </div>
-          )}
+          <div className="rep-row">
+            {service.reputation ? <Reputation data={service.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
+          </div>
           {service.description && <p className="desc">{service.description}</p>}
         </div>
       </div>
