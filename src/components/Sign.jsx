@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bookmark, CalendarDays, Clock, Flag, MapPin, MessageCircle, Phone, Search, Wallet } from 'lucide-react';
+import { Bookmark, CalendarDays, Clock, Flag, MapPin, MessageCircle, Phone, Search, Share2, Wallet } from 'lucide-react';
 import { initials, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { Reputation } from './Reputation';
@@ -107,11 +107,6 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       )}
 
       <div className="sign-foot">
-        {interactive && job?.id && onReport && user?.id !== job.company_id && (
-          <button type="button" className="report-btn" onClick={() => onReport(job)}>
-            <Flag size={14} aria-hidden="true" /> Denunciar aviso
-          </button>
-        )}
         {interactive && (
           <div className="sign-acts">
             <button
@@ -123,6 +118,22 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             >
               <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
             </button>
+            <button
+              type="button"
+              className="icon-btn share"
+              onClick={() =>
+                window.open(waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa. ${job.id}`), '_blank', 'noopener')
+              }
+              aria-label="Compartir aviso por WhatsApp"
+              title="Compartir aviso por WhatsApp"
+            >
+              <Share2 size={17} />
+            </button>
+            {job?.id && onReport && user?.id !== job.company_id && (
+              <button type="button" className="icon-btn report" onClick={() => onReport(job)} aria-label="Denunciar aviso" title="Denunciar aviso">
+                <Flag size={17} />
+              </button>
+            )}
             {user ? (
               applied ? (
                 <button type="button" className="btn btn-line btn-sm" disabled>
