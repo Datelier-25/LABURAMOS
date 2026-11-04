@@ -114,6 +114,30 @@ export function waLink(phone, text = '') {
   return `https://wa.me/549${cleanPhone(phone)}?text=${encodeURIComponent(text)}`;
 }
 
+// Compartir el aviso con quien uno quiera: link público (no el WhatsApp de quien
+// publica). Usa el menú nativo del sistema si existe; si no, copia el link y abre
+// WhatsApp sin destinatario para elegir el contacto.
+export async function shareListing({ title, text, url }) {
+  if (typeof navigator !== 'undefined' && navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return 'shared';
+    } catch (err) {
+      if (err?.name === 'AbortError') return 'cancel';
+      // si el menú nativo falla, seguimos con el respaldo
+    }
+  }
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(url);
+    copied = true;
+  } catch {
+    // sin permiso de portapapeles: el mensaje de WhatsApp lleva el link igual
+  }
+  window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank', 'noopener');
+  return copied ? 'copied' : 'opened';
+}
+
 export function timeAgo(iso) {
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (min < 60) return 'hace un rato';

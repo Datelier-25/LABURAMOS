@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, Bookmark, CircleDollarSign, MapPin, Share2, Store, User } from 'lucide-react';
-import { emojiOf, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
+import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { plateEmote } from '../lib/emotes';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { Reputation } from './Reputation';
@@ -28,13 +28,22 @@ function ServicePhotos({ service, preview }) {
 
 // Fila de tres acciones (Guardar / Compartir / Denunciar) del nuevo diseño de tarjeta.
 function CardActs({ saved, onSave, onShare, onReport, dead }) {
+  const [shareHint, setShareHint] = useState('');
+  const share = async () => {
+    if (!onShare) return;
+    const result = await onShare();
+    if (result === 'copied') {
+      setShareHint('¡Copiado!');
+      window.setTimeout(() => setShareHint(''), 2500);
+    }
+  };
   return (
     <div className="card-acts">
       <button type="button" disabled={dead} className={saved ? 'on' : ''} onClick={onSave} aria-label={saved ? 'Quitar de guardados' : 'Guardar aviso'} aria-pressed={saved}>
         <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /> {saved ? 'Guardado' : 'Guardar'}
       </button>
-      <button type="button" disabled={dead} onClick={onShare} aria-label="Compartir por WhatsApp">
-        <Share2 size={17} aria-hidden="true" /> Compartir
+      <button type="button" disabled={dead || !onShare} onClick={share} aria-label="Compartir aviso con otra persona">
+        <Share2 size={17} aria-hidden="true" /> {shareHint || 'Compartir'}
       </button>
       {onReport && (
         <button type="button" disabled={dead} onClick={onReport} aria-label="Denunciar aviso">
@@ -74,10 +83,14 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
     }
   };
 
-  // Compartir por WhatsApp: link directo al aviso puntual del sitio.
+  // Compartir el link del aviso con quien quieras (no abre el WhatsApp de quien publica).
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/job/${job.id}`;
   const share = () =>
-    window.open(waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.\n${deepUrl}`), '_blank', 'noopener');
+    shareListing({
+      title: `${job.title} · LaburamosApp`,
+      text: `Mirá este aviso en LaburamosApp: "${job.title}"${job.company_name ? ` — ${job.company_name}` : ''}${job.location ? ` (${job.location})` : ''}.`,
+      url: deepUrl,
+    });
 
   const canReport = !!job.id && !!onReport && user?.id !== job.company_id;
   const emote = plateEmote(job);
@@ -180,11 +193,11 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   const emote = plateEmote(service);
   const photosList = (service.photos || []).filter(Boolean);
   const share = () =>
-    window.open(
-      waLink(service.phone, `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.\n${deepUrl}`),
-      '_blank',
-      'noopener'
-    );
+    shareListing({
+      title: `${service.title} · LaburamosApp`,
+      text: `Mirá ${isAsk ? 'este pedido de oficio' : 'este servicio'} en LaburamosApp: "${service.title}"${service.provider_name ? ` — ${service.provider_name}` : ''}${service.city ? ` (${service.city})` : ''}.`,
+      url: deepUrl,
+    });
   const message = isAsk
     ? `Hola, vi tu pedido "${service.title}" en LaburamosApp y te puedo ayudar.`
     : `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.`;
