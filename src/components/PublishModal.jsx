@@ -3,6 +3,7 @@ import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
+import { EMOTE_OPTIONS, emoteUrl } from '../lib/emotes';
 import JobSign, { ServiceCard } from './Sign';
 import { PlaceField } from './Place';
 
@@ -12,6 +13,41 @@ const startPlace = (user, zone) => {
   if (zone?.city) return { city: zone.city, province: zone.province };
   return null;
 };
+
+// Selector de emote: miniaturas del catálogo (30 oficios × hombre/mujer).
+export function EmotePicker({ value, onChange }) {
+  return (
+    <>
+      {value && (
+        <div className="emote-pick">
+          <span className="emote-cur">
+            <img src={emoteUrl(value)} alt="" />
+          </span>
+          <button type="button" className="chip" onClick={() => onChange('')}>
+            Quitar emote
+          </button>
+        </div>
+      )}
+      <details className="emote-picker">
+        <summary>{value ? 'Elegir otro emote' : 'Elegir emote'}</summary>
+        <div className="emote-grid" role="group" aria-label="Catálogo de emotes">
+          {EMOTE_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              className={`emote${value === o.id ? ' on' : ''}`}
+              title={`${o.label} (${o.cat})`}
+              onClick={() => onChange(o.id)}
+              aria-pressed={value === o.id}
+            >
+              <img src={o.url} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      </details>
+    </>
+  );
+}
 
 export default function PublishModal({ type, intent: startIntent = null, user, zone, settings, onClose, onCreated, onSafety }) {
   const isJob = type === 'job';
@@ -33,6 +69,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     phone: user.phone || '',
     place: startPlace(user, zone),
     is_urgent: false,
+    icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
     photos: [], // { path, url } — hasta 3, solo en servicios
   });
 
@@ -115,6 +152,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           pay_type: form.pay_type,
           schedule: form.schedule.trim() || null,
           duration: form.duration.trim() || null,
+          icon: form.icon.trim() || null,
         })
       : await supabase.from('services').insert({
           owner_id: user.id,
@@ -128,6 +166,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           province: form.place.province,
           is_urgent: isAsk && form.is_urgent,
           price: form.price.trim() || null,
+          icon: form.icon.trim() || null,
           photos: form.photos.map((p) => p.path),
         });
 
@@ -151,6 +190,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     pay_type: form.pay_type,
     schedule: form.schedule.trim() || null,
     duration: form.duration.trim() || null,
+    icon: form.icon.trim() || null,
   };
   const previewService = {
     intent: form.intent,
@@ -161,6 +201,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     city,
     is_urgent: isAsk && form.is_urgent,
     price: form.price.trim() || null,
+    icon: form.icon.trim() || null,
     photos: form.photos.map((p) => p.url),
   };
 
@@ -309,6 +350,20 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                 )}
               </div>
               <small>Hasta {MAX_SERVICE_PHOTOS} fotos. Se achican solas para que carguen rápido.</small>
+            </div>
+          )}
+          {!isJob && !form.photos.length && (
+            <div className="field">
+              <span>Emote de la tarjeta (opcional)</span>
+              <EmotePicker value={form.icon} onChange={(icon) => set({ icon })} />
+              <small>Elegí una ilustración de oficio para tu tarjeta. Se usa solo si no subís fotos.</small>
+            </div>
+          )}
+          {isJob && (
+            <div className="field">
+              <span>Emote de la tarjeta (opcional)</span>
+              <EmotePicker value={form.icon} onChange={(icon) => set({ icon })} />
+              <small>Si no cargás una imagen propia, la tarjeta usa una ilustración de oficio.</small>
             </div>
           )}
           <label className="field">

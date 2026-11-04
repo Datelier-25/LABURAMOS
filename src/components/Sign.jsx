@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Bookmark, CircleDollarSign, MapPin, Share2, Store, User } from 'lucide-react';
 import { emojiOf, intentOf, timeAgo, toneOf, waLink } from '../lib/utils';
+import { plateEmote } from '../lib/emotes';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { Reputation } from './Reputation';
 
@@ -79,7 +80,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
     window.open(waLink(job.phone, `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.\n${deepUrl}`), '_blank', 'noopener');
 
   const canReport = !!job.id && !!onReport && user?.id !== job.company_id;
-  const emoji = emojiOf(job.category);
+  const emote = plateEmote(job);
 
   return (
     <article
@@ -90,14 +91,12 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       <div className="card-body">
         {!compact && (
           <div className="plate" aria-hidden="true">
-            {job.image ? <img src={job.image} alt="" loading="lazy" /> : <span className="plate-emoji">{emoji}</span>}
+            {emote ? <img src={emote} alt="" loading="lazy" /> : <span className="plate-emoji">{emojiOf(job.category)}</span>}
           </div>
         )}
         <div className="card-info">
           <div className="card-badges">
-            <span className="pill pill-job">Laburo</span>
-            <span className="chip-s acc">{job.category}</span>
-            {job.is_urgent && <span className="chip-s urgent">Urgente</span>}
+            {job.is_urgent ? <span className="pill pill-urgent">Urgente</span> : <span className="pill pill-job">Laburo</span>}
           </div>
           <h3>{job.title}</h3>
           <p className="meta-row">
@@ -109,7 +108,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             )}
           </p>
           {(payLabel || conds) && (
-            <p className="meta-row">
+            <p className="meta-row pay">
               <span className="coin">
                 <CircleDollarSign size={13} aria-hidden="true" />
               </span>
@@ -178,6 +177,8 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   const canReport = !preview && !!onReport && user?.id !== service.owner_id;
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/svc/${service.id}`;
   const emoji = isAsk ? '🔎' : emojiOf(service.category);
+  const emote = plateEmote(service);
+  const photosList = (service.photos || []).filter(Boolean);
   const share = () =>
     window.open(
       waLink(service.phone, `Hola, vi tu servicio de "${service.title}" en LaburamosApp y quería consultarte.\n${deepUrl}`),
@@ -208,8 +209,10 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
     <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
       <div className="card-body">
         <div className="plate" aria-hidden="true">
-          {(service.photos || []).filter(Boolean)[0] ? (
-            <img src={servicePhotoUrl((service.photos || []).filter(Boolean)[0])} alt="" loading="lazy" />
+          {photosList[0] ? (
+            <img src={servicePhotoUrl(photosList[0])} alt="" loading="lazy" />
+          ) : emote ? (
+            <img src={emote} alt="" loading="lazy" />
           ) : (
             <span className="plate-emoji">{emoji}</span>
           )}
@@ -217,7 +220,6 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
         <div className="card-info">
           <div className="card-badges">
             <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
-            <span className="chip-s acc">{service.category}</span>
             {service.is_urgent && <span className="chip-s urgent">Urgente</span>}
           </div>
           <h3>{service.title}</h3>
