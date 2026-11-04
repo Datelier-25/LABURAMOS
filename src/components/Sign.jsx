@@ -113,13 +113,8 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
           </div>
           <h3>{job.title}</h3>
           <p className="meta-row">
-            <Store size={15} aria-hidden="true" /> {job.company_name}
+            <Store size={15} aria-hidden="true" /> {job.company_name}{job.location ? <span className="sep"> · </span> : null}{job.location ? <span><MapPin size={14} aria-hidden="true" /> {job.location}</span> : null}
           </p>
-          {job.location && (
-            <p className="meta-row">
-              <MapPin size={15} aria-hidden="true" /> {job.location}
-            </p>
-          )}
           {(payLabel || conds) && (
             <p className="meta-row pay">
               <span className="coin">
@@ -235,13 +230,8 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           </div>
           <h3>{service.title}</h3>
           <p className="meta-row">
-            {isAsk ? <Store size={15} aria-hidden="true" /> : <User size={15} aria-hidden="true" />} {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}
+            {isAsk ? <Store size={15} aria-hidden="true" /> : <User size={15} aria-hidden="true" />} {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}{service.city ? <span className="sep"> · </span> : null}{service.city ? <span><MapPin size={14} aria-hidden="true" /> {service.city}</span> : null}
           </p>
-          {service.city && (
-            <p className="meta-row">
-              <MapPin size={15} aria-hidden="true" /> {service.city}
-            </p>
-          )}
           {service.price && (
             <p className="meta-row pay">
               <span className="coin">
