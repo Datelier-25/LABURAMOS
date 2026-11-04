@@ -70,10 +70,10 @@ export default function Profile({ user, notify, onUpdated }) {
     try {
       const blob = await compressImage(file, 512, 0.85);
       const path = `${user.id}/avatar.jpg`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true, cacheControl: '0' });
       if (upErr) throw upErr;
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      const url = data.publicUrl;
+      const url = `${data.publicUrl}?v=${Date.now()}`;
       const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
       if (dbErr) throw dbErr;
       setAvatarUrl(url);
