@@ -906,6 +906,9 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .scard-photos.n1 { grid-template-columns: 1fr; }
 .scard-photos.n1 > * { aspect-ratio: 16 / 9; }
 .scard-photos.n2 { grid-template-columns: repeat(2, 1fr); }
+.scard-photos.n3 { grid-template-columns: repeat(3, 1fr); }
+.scard-photos.n4 { grid-template-columns: repeat(2, 1fr); }
+.scard-photos.n5 { grid-template-columns: repeat(3, 1fr); }
 .scard-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scard-photos a { transition: transform 0.25s var(--ease-pop); }
 .scard-photos a:hover { transform: scale(1.02); }

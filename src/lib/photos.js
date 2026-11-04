@@ -2,7 +2,7 @@
 import { supabase } from '../supabaseClient';
 
 export const SERVICE_PHOTO_BUCKET = 'service-photos';
-export const MAX_SERVICE_PHOTOS = 3;
+export const MAX_SERVICE_PHOTOS = 5;
 
 // Ruta guardada en la base -> URL pública. Si ya es una URL (vista previa) la devuelve tal cual.
 export function servicePhotoUrl(path) {

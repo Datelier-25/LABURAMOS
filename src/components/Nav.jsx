@@ -2,7 +2,7 @@ import { X } from 'lucide-react';
 import Logo from './Logo';
 import { initials } from '../lib/utils';
 
-export default function Nav({ user, view, go, links, onLogout, onLogin, onPublish, menuOpen, setMenuOpen }) {
+export default function Nav({ user, profile, view, go, links, onLogout, onLogin, onPublish, menuOpen, setMenuOpen }) {
   return (
     <>
       <header className="nav">
@@ -27,7 +27,7 @@ export default function Nav({ user, view, go, links, onLogout, onLogin, onPublis
                 </button>
                 <span className="who hide-m">
                   <span className="avatar" aria-hidden="true">
-                    {initials(user.name)}
+                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : initials(user.name)}
                   </span>
                   <span>{user.name}</span>
                 </span>
@@ -74,7 +74,7 @@ export default function Nav({ user, view, go, links, onLogout, onLogin, onPublis
             <>
               <span className="who">
                 <span className="avatar" aria-hidden="true">
-                  {initials(user.name)}
+                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : initials(user.name)}
                 </span>
                 <span>{user.name}</span>
               </span>

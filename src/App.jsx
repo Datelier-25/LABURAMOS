@@ -12,7 +12,7 @@ import JobList from './components/JobList';
 import ServiceList from './components/ServiceList';
 import MyResume from './components/MyResume';
 import Candidates from './components/Candidates';
-import MyPosts from './components/MyPosts';
+import Profile from './components/Profile';
 import PublishModal from './components/PublishModal';
 import ApplyModal from './components/ApplyModal';
 import Admin from './components/Admin';
@@ -22,7 +22,7 @@ import ZoneWelcome from './components/ZoneWelcome';
 import ReportModal from './components/ReportModal';
 import { Footer } from './components/ui';
 
-const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'admin', 'seguridad', 'contacto'];
+const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'perfil', 'admin', 'seguridad', 'contacto'];
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
 const PAY_RETURN = (() => {
   if (typeof window === 'undefined') return null;
@@ -71,7 +71,7 @@ const TITLES = {
   oficios: 'Oficios y servicios cerca tuyo · LaburamosApp',
   cv: 'Mi CV online · LaburamosApp',
   candidatos: 'Postulantes · LaburamosApp',
-  avisos: 'Mis avisos · LaburamosApp',
+  perfil: 'Mi perfil · LaburamosApp',
   admin: 'Administración · LaburamosApp',
   seguridad: 'Consejos para operar seguro · LaburamosApp',
   contacto: 'Sugerencias y denuncias · LaburamosApp',
@@ -82,7 +82,7 @@ const DESCRIPTIONS = {
   oficios: 'Plomeros, electricistas, clases, limpieza y más. Encontrá a quién te haga el trabajo o anunciá tu oficio.',
   cv: 'Armá tu CV online con tus oficios y habilidades, y compartilo con los comercios que buscan gente.',
   candidatos: 'Personas que se postularon a tus avisos, con su CV y contacto directo por WhatsApp.',
-  avisos: 'Tus publicaciones y tus postulaciones en LaburamosApp.',
+  perfil: 'Tus datos, tu foto y tu verificación en LaburamosApp.',
   admin: 'Panel de administración de LaburamosApp.',
   seguridad: 'Cómo cuidarte al buscar o publicar un trabajo: señales de alerta, pagos y referencias.',
   contacto: 'Enviá sugerencias, recomendaciones o denuncias sobre avisos y conductas a LaburamosApp.',
@@ -218,6 +218,7 @@ export default function App() {
   ];
   if (user?.role === 'worker') links.push({ id: 'cv', label: 'Mi CV' });
   if (user?.role === 'company') links.push({ id: 'candidatos', label: 'Postulantes' });
+  if (user) links.push({ id: 'perfil', label: 'Mi perfil' });
   if (user) links.push({ id: 'avisos', label: 'Mis avisos' });
   if (user?.isAdmin) links.push({ id: 'admin', label: 'Admin' });
 
@@ -225,6 +226,7 @@ export default function App() {
     if (id === 'cv') return user?.role === 'worker';
     if (id === 'candidatos') return user?.role === 'company';
     if (id === 'avisos') return !!user;
+    if (id === 'perfil') return !!user;
     if (id === 'admin') return !!user?.isAdmin;
     return true;
   };
@@ -370,6 +372,7 @@ export default function App() {
     <>
       <Nav
         user={user}
+        profile={profile}
         view={view}
         go={go}
         links={links}
@@ -388,6 +391,7 @@ export default function App() {
         {view === 'candidatos' && user && <Candidates user={user} notify={notify} />}
         {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} />}
         {view === 'avisos' && user && <MyPosts key={refreshKey} user={user} settings={settings} onPublish={openPublish} notify={notify} />}
+        {view === 'perfil' && user && <Profile user={user} notify={notify} onUpdated={(patch) => setProfile((p) => ({ ...p, ...patch }))} />}
         {view === 'seguridad' && <Safety go={go} />}
         {view === 'contacto' && <Contacto settings={settings} notify={notify} />}
       </main>
