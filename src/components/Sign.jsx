@@ -5,6 +5,7 @@ import { plateEmote } from '../lib/emotes';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { nameWithPrefix } from '../lib/prefixes';
 import { Reputation } from './Reputation';
+import { useUser } from '../lib/auth';
 
 // Fotos del aviso (hasta 3). En la vista previa no son enlaces.
 function ServicePhotos({ service, preview }) {
@@ -62,39 +63,10 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
   const interactive = !compact && !preview;
   const long = (job.description || '').length > 130 || !!job.requirements;
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
-
-  // Pago visible: la banda salarial ya escrita o la forma de cobro. "A convenir" es un dato explícito.
-  const pay = job.salary || job.pay_type || null;
-  const payLabel = !pay
-    ? null
-    : pay === 'A convenir' || /a convenir/i.test(String(pay))
-      ? 'A convenir'
-      : `${pay}${job.pay_type && job.pay_type !== 'A convenir' && !/a convenir/i.test(String(job.salary || '')) ? ` · ${job.pay_type}` : ''}`;
-  const conds = [job.schedule, job.duration, !payLabel ? job.job_type : null].filter(Boolean).join(' · ');
-
-  // Primero se registra la postulación y después se abre WhatsApp (ver applyTo en App.jsx).
-  // Si el registro falla, no se navega y además se muestra el motivo.
-  const apply = async () => {
-    if (applying) return;
-    setApplying(true);
-    try {
-      await onApply?.(job, waLink(job.phone, message));
-    } finally {
-      setApplying(false);
-    }
-  };
-
-  // Compartir el link del aviso con quien quieras (no abre el WhatsApp de quien publica).
-  const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/job/${job.id}`;
-  const share = () =>
-    shareListing({
-      title: `${job.title} · LaburamosApp`,
-      text: `Mirá este aviso en LaburamosApp: "${job.title}"${job.company_name ? ` — ${job.company_name}` : ''}${job.location ? ` (${job.location})` : ''}.`,
-      url: deepUrl,
-    });
-
-  const canReport = !!job.id && !!onReport && user?.id !== job.company_id;
-  const emote = plateEmote(job);
+  const { user: currentUser, isAdmin } = useUser();
+  const isOwner = currentUser?.id === job.company_id;
+  const canEdit = isAdmin || isOwner;
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <article
@@ -125,7 +97,15 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               </span>
             )}
           </p>
+          {canEdit && (
+            <p className="edit-row">
+              <button className="edit-btn" onClick={() => setEditOpen(true)}>
+                ✎ Editar
+              </button>
+            </p>
+          )}
         </div>
+
         {(payLabel || conds) && (
           <p className="meta-row pay card-pay">
             <span className="coin">
@@ -185,6 +165,99 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
 
       {job.created_at && !compact && !preview && <span className="when">Publicado {timeAgo(job.created_at)}</span>}
     </article>
+  );
+}
+
+function EditJobModal({ onClose, onSave, job }) {
+  const { error, setError } = useState('');
+  const { user } = useUser();
+  const [saving, setSaving] = useState(false);
+  const set = (patch) => setF((x) => ({ ...x, ...patch }));
+  const [f, setF] = useState({
+    title: job.title,
+    company_name: job.company_name,
+    category: job.category,
+    job_type: job.job_type,
+    description: job.description || '',
+    phone: job.phone || '',
+    status: job.status,
+    expires: job.expires_at ? job.expires_at.slice(0, 10) : '',
+    requirements: job.requirements || '',
+  });
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    const p = {
+      title: f.title,
+      company_name: f.company_name,
+      category: f.category,
+      job_type: f.job_type,
+      description: f.description,
+      phone: f.phone,
+      status: f.status,
+      ...(f.expires ? { expires_at: new Date(`${f.expires}T23:59:59`).toISOString() } : {}),
+    };
+    const { error: err } = await supabase.rpc('admin_update_listing', { p_kind: 'job', p_id: job.id, p: JSON.parse(JSON.stringify(p)) });
+    setSaving(false);
+    if (err) setError(friendlyError(err.message));
+    else onClose(), onSave();
+  };
+
+  return (
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label="Editar aviso">
+        <button type="button" className="x" onClick={onClose} aria-label="Cerrar">
+          <X size={20} />
+        </button>
+        <h2>Editar aviso</h2>
+        {error && <p className="note err">{error}</p>}
+        <form onSubmit={save}>
+          <label className="field">
+            <span>Título</span>
+            <input required value={f.title} onChange={(e) => set({ title: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Comercio o empresa</span>
+            <input required value={f.company_name} onChange={(e) => set({ company_name: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Rubro</span>
+            <select value={f.category} onChange={(e) => set({ category: e.target.value })}>
+              {JOB_CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Modalidad</span>
+            <select value={f.job_type} onChange={(e) => set({ job_type: e.target.value })}>
+              {JOB_TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Descripción</span>
+            <textarea value={f.description} onChange={(e) => set({ description: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Requisitos (opcional)</span>
+            <input value={f.requirements} onChange={(e) => set({ requirements: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Vence el</span>
+            <input type="date" value={f.expires} onChange={(e) => set({ expires: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>WhatsApp</span>
+            <input value={f.phone} onChange={(e) => set({ phone: e.target.value })} />
+          </label>
+          <button className="btn btn-ink btn-lg btn-block" disabled={saving}>
+            {saving ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
