@@ -248,8 +248,18 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .coin { width: 20px; height: 20px; border-radius: 50%; background: #f47b20; color: #fff; display: grid; place-items: center; flex: none; font-size: 12px; font-weight: 800; }
 .coin svg { color: #fff; width: 12px; height: 12px; }
 .meta-row.pay { font-size: 14px; font-weight: 500; }
+/* nombre + ciudad en una sola línea: el nombre se recorta si hace falta y la
+   ciudad queda siempre a la derecha. */
+.who-row { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0; font-size: 14px; line-height: 1.3; font-weight: 600; color: #1c2145; }
+.who-row svg { flex: none; width: 18px; height: 18px; color: #f47b20; }
+.who { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; }
+.who-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.where { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 50%; margin-left: auto; flex: none; overflow: hidden; }
+.where span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* franja de confianza: mismo alto aunque todavía no haya valoraciones */
-.rep-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rep-row { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.card-rep { grid-column: 1 / -1; margin-bottom: 2px; }
+.card-pay { grid-column: 1 / -1; }
 .rep-row .rep { gap: 6px; }
 .rep-row .rep-ver.verified { background: #dcebff; color: #1f5fd6; }
 .rep-row .rep-ver.pending { background: #fff1d6; color: #8a5a00; }
@@ -306,13 +316,11 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .card-acts button, .card-cta { font-family: inherit; }
 /* etiqueta (pill) */
 .sign .pill, .scard .pill { font-size: 12.5px; font-weight: 800; letter-spacing: .2px; color: #fff; padding: 3px 11px; line-height: 1.3; }
-/* ilustración: forma orgánica y fondo según el tipo de aviso */
-.plate { border-radius: 48% 52% 46% 54% / 52% 46% 54% 48%; }
-.sign .plate { background: #fdeedd; }
-.scard.ofrece .plate { background: #dcebff; }
-.scard.busca .plate { background: #d3f5ea; }
-.plate img { inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); object-fit: contain; }
-.plate.photo img { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* ilustración: solo el recuadro original del PNG, sin fondo extra de la placa */
+.plate { background: none; border-radius: 0; overflow: visible; }
+.plate img { inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.plate.photo { border-radius: 16px; overflow: hidden; }
+.plate.photo img { object-fit: cover; }
 /* ícono de persona en tarjetas "Ofrezco mi servicio" */
 .scard.ofrece .meta-row > svg:first-child { color: #4a4f73; }
 /* sello Verificado + valoraciones */
@@ -817,13 +825,26 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
      así no queda un hueco blanco debajo de la ilustración. */
   .card-body { display: block; }
   .card-info { display: block; }
-  .plate { float: left; width: 96px; height: 106px; margin: 0 12px 6px 0; }
+  .plate { float: left; width: 96px; height: 96px; margin: 0 12px 6px 0; }
+  .card-rep { clear: both; }
   .card-extra { clear: both; }
   .sign h3, .scard h3 { font-size: 19px; }
   .desc { min-height: 2.8em; }
   .card-acts button { font-size: 13px; gap: 6px; }
+  .who-row { font-size: 13px; gap: 6px; }
+  .who-row svg { width: 16px; height: 16px; }
+  .who { gap: 5px; }
+  .where { gap: 3px; }
 }
 
+/* En celulares angostos achicamos apenas la línea de nombre + ciudad y
+   ocultamos los íconos para que el nombre entre completo en una sola línea. */
+@media (max-width: 380px) {
+  .who-row { font-size: 13px; gap: 6px; }
+  .who-row svg { display: none; }
+  .who { gap: 0; }
+  .where { gap: 0; }
+}
 @keyframes up { from { transform: translateY(105%); } to { transform: none; } }
 @keyframes marquee { to { transform: translateX(-50%); } }
 @keyframes ping { 70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }

@@ -3,6 +3,7 @@ import { AlertTriangle, Bookmark, CircleDollarSign, MapPin, Share2, Store, User 
 import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { plateEmote } from '../lib/emotes';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
+import { nameWithPrefix } from '../lib/prefixes';
 import { Reputation } from './Reputation';
 
 // Fotos del aviso (hasta 3). En la vista previa no son enlaces.
@@ -112,22 +113,28 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             <span className="pill pill-job">Laburo</span>
           </div>
           <h3>{job.title}</h3>
-          <p className="meta-row">
-            <Store size={19} aria-hidden="true" /> <span>{job.company_name}{job.location ? <span className="sep"> · </span> : null}{job.location ? <><MapPin size={19} aria-hidden="true" /> {job.location}</> : null}</span>
-          </p>
-          {(payLabel || conds) && (
-            <p className="meta-row pay">
-              <span className="coin">
-                <CircleDollarSign size={13} aria-hidden="true" />
+          <p className="who-row">
+            <span className="who">
+              <Store size={18} aria-hidden="true" />
+              <span className="who-name">{job.company_name}</span>
+            </span>
+            {job.location && (
+              <span className="where">
+                <MapPin size={18} aria-hidden="true" />
+                <span>{job.location}</span>
               </span>
-              {payLabel && <b>{payLabel}</b>}
-              {conds && <span>{conds}</span>}
-            </p>
-          )}
-          <div className="rep-row">
-            {job.reputation ? <Reputation data={job.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
-          </div>
+            )}
+          </p>
         </div>
+        {(payLabel || conds) && (
+          <p className="meta-row pay card-pay">
+            <span className="coin">
+              <CircleDollarSign size={13} aria-hidden="true" />
+            </span>
+            {payLabel && <b>{payLabel}</b>}
+            {conds && <span>{conds}</span>}
+          </p>
+        )}
         <div className="card-extra">
           {!compact && job.description && <p className="desc">{job.description}</p>}
           {open && job.requirements && (
@@ -141,6 +148,10 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             </button>
           )}
         </div>
+      </div>
+
+      <div className="plate-bottom">
+        {job.reputation ? <Reputation data={job.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
       </div>
 
       {(interactive || preview) && (
@@ -170,7 +181,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             ))}
           {preview && <span className="card-cta as-text">Postularme</span>}
         </>
-      )}
+      )
 
       {job.created_at && !compact && !preview && <span className="when">Publicado {timeAgo(job.created_at)}</span>}
     </article>
@@ -230,27 +241,34 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
             <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
           </div>
           <h3>{service.title}</h3>
-          <p className="meta-row">
-            {isAsk ? <Store size={19} aria-hidden="true" /> : <User size={19} aria-hidden="true" />} <span>{isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}{service.city ? <span className="sep"> · </span> : null}{service.city ? <><MapPin size={19} aria-hidden="true" /> {service.city}</> : null}</span>
-          </p>
-          {service.price && (
-            <p className="meta-row pay">
-              <span className="coin">
-                <CircleDollarSign size={13} aria-hidden="true" />
+          <p className="who-row">
+            <span className="who">
+              {isAsk ? <Store size={18} aria-hidden="true" /> : <User size={18} aria-hidden="true" />}
+              <span className="who-name">{nameWithPrefix(service.provider_name, service.provider_prefix)}</span>
+            </span>
+            {service.city && (
+              <span className="where">
+                <MapPin size={18} aria-hidden="true" />
+                <span>{service.city}</span>
               </span>
-              <b>{service.price}</b>
-              <span>{isAsk ? 'presupuesto' : 'precio'}</span>
-            </p>
-          )}
-          <div className="rep-row">
-            {service.reputation ? <Reputation data={service.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
-          </div>
+            )}
+          </p>
         </div>
-        {service.description && (
-          <div className="card-extra">
-            <p className="desc">{service.description}</p>
-          </div>
+        {service.price && (
+          <p className="meta-row pay card-pay">
+            <span className="coin">
+              <CircleDollarSign size={13} aria-hidden="true" />
+            </span>
+            <b>{service.price}</b>
+            <span>{isAsk ? 'presupuesto' : 'precio'}</span>
+          </p>
         )}
+        <div className="card-extra">
+          {service.description && <p className="desc">{service.description}</p>}
+        </div>
+      </div>
+      <div className="plate-bottom">
+        {service.reputation ? <Reputation data={service.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
       </div>
       <ServicePhotos service={service} preview={preview} />
       {(interactive || preview) && (

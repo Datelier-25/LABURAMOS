@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
 import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import { EMOTE_OPTIONS, emoteUrl } from '../lib/emotes';
+import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import JobSign, { ServiceCard } from './Sign';
 import { PlaceField } from './Place';
 
@@ -57,6 +58,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     intent: startIntent || 'ofrece',
     title: '',
     name: user.name || '',
+    prefix: '',
     category: isJob ? JOB_CATEGORIES[0] : SERVICE_CATEGORIES[0],
     job_type: JOB_TYPES[0],
     pay_type: 'Por mes',
@@ -156,6 +158,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           owner_id: user.id,
           intent: form.intent,
           provider_name: form.name.trim(),
+          provider_prefix: form.prefix || null,
           title: form.title.trim(),
           category: form.category,
           description: form.description.trim(),
@@ -193,6 +196,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     category: form.category,
     title: form.title || (isAsk ? 'Lo que necesitás' : 'Tu oficio o servicio'),
     provider_name: form.name || 'Tu nombre',
+    provider_prefix: form.prefix || null,
     description: form.description,
     city,
     price: form.price.trim() || null,
@@ -249,6 +253,20 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             <span>{isJob ? 'Comercio o empresa' : isAsk ? 'Tu nombre' : 'Tu nombre o el de tu negocio'}</span>
             <input required value={form.name} onChange={(e) => set({ name: e.target.value })} />
           </label>
+          {!isJob && (
+            <label className="field">
+              <span>Abreviatura de tu profesión (opcional)</span>
+              <select value={form.prefix} onChange={(e) => set({ prefix: e.target.value })}>
+                <option value="">Sin abreviatura</option>
+                {PROFESSION_PREFIXES.map((p) => (
+                  <option key={`${p.value}-${p.label}`} value={p.value}>
+                    {p.value} · {p.label}
+                  </option>
+                ))}
+              </select>
+              <small>Se muestra antes de tu nombre. Ejemplo: Cra. Andrea Pérez.</small>
+            </label>
+          )}
           <div className="two">
             <div className="field">
               <span>Rubro</span>
