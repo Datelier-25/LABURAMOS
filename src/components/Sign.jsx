@@ -109,7 +109,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
         )}
         <div className="card-info">
           <div className="card-badges">
-            {job.is_urgent ? <span className="pill pill-urgent">Urgente</span> : <span className="pill pill-job">Laburo</span>}
+            <span className="pill pill-job">Laburo</span>
           </div>
           <h3>{job.title}</h3>
           <p className="meta-row">
@@ -228,7 +228,6 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
         <div className="card-info">
           <div className="card-badges">
             <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
-            {service.is_urgent && <span className="chip-s urgent">Urgente</span>}
           </div>
           <h3>{service.title}</h3>
           <p className="meta-row">

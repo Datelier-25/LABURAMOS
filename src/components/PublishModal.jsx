@@ -68,7 +68,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     requirements: '',
     phone: user.phone || '',
     place: startPlace(user, zone),
-    is_urgent: false,
     icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
     photos: [], // { path, url } — hasta 5, solo en servicios
   });
@@ -147,7 +146,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           phone,
           description: form.description.trim(),
           requirements: form.requirements.trim() || null,
-          is_urgent: form.is_urgent,
           salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
           pay_type: form.pay_type,
           schedule: form.schedule.trim() || null,
@@ -164,7 +162,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           phone,
           city: form.place.city,
           province: form.place.province,
-          is_urgent: isAsk && form.is_urgent,
           price: form.price.trim() || null,
           icon: form.icon.trim() || null,
           photos: form.photos.map((p) => p.path),
@@ -185,7 +182,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     company_name: form.name || 'Tu comercio',
     location: city,
     job_type: form.job_type,
-    is_urgent: form.is_urgent,
     salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
     pay_type: form.pay_type,
     schedule: form.schedule.trim() || null,
@@ -199,7 +195,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     provider_name: form.name || 'Tu nombre',
     description: form.description,
     city,
-    is_urgent: isAsk && form.is_urgent,
     price: form.price.trim() || null,
     icon: form.icon.trim() || null,
     photos: form.photos.map((p) => p.url),
@@ -227,7 +222,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             <div className="field">
               <span>¿Qué querés publicar?</span>
               <div className="tiles">
-                <button type="button" className={`tile${form.intent === 'ofrece' ? ' on' : ''}`} onClick={() => set({ intent: 'ofrece', is_urgent: false })} aria-pressed={form.intent === 'ofrece'}>
+                <button type="button" className={`tile${form.intent === 'ofrece' ? ' on' : ''}`} onClick={() => set({ intent: 'ofrece' })} aria-pressed={form.intent === 'ofrece'}>
                   <b>Ofrezco un servicio</b>
                   <small>Doy a conocer mi oficio o mi negocio</small>
                 </button>
@@ -371,12 +366,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             <input required inputMode="tel" placeholder="2342112233" value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
             <small>Código de área y número, sin 0 ni 15.</small>
           </label>
-          {(isJob || isAsk) && (
-            <label className="check">
-              <input type="checkbox" checked={form.is_urgent} onChange={(e) => set({ is_urgent: e.target.checked })} />
-              Es urgente
-            </label>
-          )}
 
           <p className="sheet-note">
             Queda publicado {(isJob ? settings?.job_days : settings?.service_days) || 30} días. Después podés renovarlo o pausarlo desde Mis avisos.

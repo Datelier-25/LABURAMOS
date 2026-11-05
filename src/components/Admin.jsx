@@ -166,7 +166,6 @@ function EditListing({ kind, item, onClose, onSaved }) {
       category: f.category,
       description: f.description || '',
       phone: f.phone || '',
-      is_urgent: !!f.is_urgent,
       status: f.status,
       ...(f.expires ? { expires_at: new Date(`${f.expires}T23:59:59`).toISOString() } : {}),
       ...(isJob
@@ -253,10 +252,6 @@ function EditListing({ kind, item, onClose, onSaved }) {
           <label className="field">
             <span>WhatsApp</span>
             <input value={f.phone || ''} onChange={(e) => set({ phone: e.target.value })} />
-          </label>
-          <label className="check admin-check">
-            <input type="checkbox" checked={!!f.is_urgent} onChange={(e) => set({ is_urgent: e.target.checked })} />
-            Urgente
           </label>
         </div>
         <button className="btn btn-ink btn-lg btn-block" disabled={saving}>
@@ -365,7 +360,6 @@ function ListingsTab({ kind, notify }) {
                   </b>
                   <small>
                     {(isJob ? i.company_name : i.provider_name) || '—'} · {i.category}
-                    {i.is_urgent ? ' · Urgente' : ''}
                   </small>
                 </span>
                 <span role="cell">{(isJob ? i.location : i.city) || '—'}</span>

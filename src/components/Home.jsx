@@ -76,7 +76,6 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
           .select('*', { count: 'exact' })
           .eq('status', 'active')
           .gt('expires_at', now)
-          .order('is_urgent', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(6),
         zone,

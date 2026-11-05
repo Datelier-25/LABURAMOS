@@ -211,7 +211,7 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
   overflow: hidden;
 }
 .sign.compact { min-height: 0; }
-.signs { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; padding-top: 14px; }
+.signs { display: grid; grid-template-columns: minmax(0,1fr); grid-auto-rows: 1fr; gap: 16px; padding-top: 14px; }
 @media (min-width: 960px) { .signs { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; } }
 @media (min-width: 600px) and (max-width: 959px) { .signs { max-width: 520px; margin-inline: auto; } }
 
@@ -230,12 +230,10 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .sign .pill, .scard .pill { display: inline-block; align-self: flex-start; white-space: nowrap; }
 .sign .pill { font-size: 12.5px; }
 .pill-job { background: #f47b20; }
-.pill-urgent { background: #f47b20; }
 .pill-ofrece { background: #1f5fd6; }
 .pill-busca { background: #12a37f; }
 .chip-s { display: inline-block; background: var(--mist); color: var(--ink); padding: 4px 11px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
 .chip-s.acc { background: var(--acc-soft, #e6ebff); color: var(--acc-ink, var(--ultra-deep)); }
-.chip-s.urgent { background: var(--orange); color: #fff; }
 /* Títulos con el mismo tamaño y a lo sumo dos líneas, para que los datos arranquen alineados. */
 .sign h3, .scard h3 {
   margin-top: 5px; margin-bottom: 7px; font-size: 21px; line-height: 1.15; font-weight: 800; letter-spacing: -.2px;
@@ -335,7 +333,7 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .t-stone { --acc: var(--stone); --acc-soft: var(--mist); --acc-ink: var(--ink); }
 
 /* ---------- tarjetas de servicios ---------- */
-.scards { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; padding-top: 14px; }
+.scards { display: grid; grid-template-columns: minmax(0,1fr); grid-auto-rows: 1fr; gap: 16px; padding-top: 14px; }
 @media (min-width: 960px) { .scards { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; } }
 @media (min-width: 600px) and (max-width: 959px) { .scards { max-width: 520px; margin-inline: auto; } }
 .scard { position: relative; display: flex; flex-direction: column; gap: 0; padding: 16px 16px 14px; background: #fff; border: none; border-radius: 20px; box-shadow: 0 2px 4px rgba(20,25,77,.04), 0 8px 24px rgba(20,25,77,.07); }
@@ -815,9 +813,14 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 
 /* ---------- cuando el pie pasa a dos filas ---------- */
 @media (max-width: 640px) {
-  .card-body { grid-template-columns: 96px 1fr; column-gap: 12px; }
-  .plate { width: 96px; height: 106px; }
+  /* En celular el texto sigue al lado del emote y después ocupa todo el ancho:
+     así no queda un hueco blanco debajo de la ilustración. */
+  .card-body { display: block; }
+  .card-info { display: block; }
+  .plate { float: left; width: 96px; height: 106px; margin: 0 12px 6px 0; }
+  .card-extra { clear: both; }
   .sign h3, .scard h3 { font-size: 19px; }
+  .desc { min-height: 2.8em; }
   .card-acts button { font-size: 13px; gap: 6px; }
 }
 

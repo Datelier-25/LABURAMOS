@@ -15,7 +15,6 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(null);
   const [jobType, setJobType] = useState(null);
-  const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [onlySaved, setOnlySaved] = useState(false);
   const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
   const [distanceKm, setDistanceKm] = useState(0); // Radio máximo (km); 0 = sin límite
@@ -29,7 +28,6 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
         .select('*')
         .eq('status', 'active')
         .gt('expires_at', new Date().toISOString())
-        .order('is_urgent', { ascending: false })
         .order('created_at', { ascending: false }),
       // Con distancia elegida, buscamos a nivel de provincia para llegar a las zonas cercanas
       distanceKm > 0 && zone?.province ? { city: null, province: zone.province } : zone,
@@ -92,18 +90,16 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
         text &&
         (!category || j.category === category) &&
         (!jobType || j.job_type === jobType) &&
-        (!onlyUrgent || j.is_urgent) &&
         (!onlySaved || saved.includes(j.id)) &&
         (!distanceKm || withinKm(zone, { city: j.location, province: j.province }, distanceKm))
       );
     });
-  }, [jobs, search, category, jobType, onlyUrgent, onlySaved, saved, zone, distanceKm]);
+  }, [jobs, search, category, jobType, onlySaved, saved, zone, distanceKm]);
 
   const clear = () => {
     setSearch('');
     setCategory(null);
     setJobType(null);
-    setOnlyUrgent(false);
     setOnlySaved(false);
     setDistanceKm(0);
   };
@@ -149,7 +145,6 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
             { id: 'rubro', label: 'Rubro', all: 'Todos los rubros', options: JOB_CATEGORIES, value: category, onChange: setCategory },
             { id: 'modalidad', label: 'Modalidad', all: 'Cualquier modalidad', options: JOB_TYPES, value: jobType, onChange: setJobType },
           ]}
-          toggles={[{ id: 'urgentes', label: 'Solo urgentes', value: onlyUrgent, onChange: setOnlyUrgent }]}
           distance={{ value: distanceKm, onChange: setDistanceKm }}
           extra={onlySaved ? [{ id: 'guardados', label: 'Guardados', onRemove: () => setOnlySaved(false) }] : []}
           onClear={clear}

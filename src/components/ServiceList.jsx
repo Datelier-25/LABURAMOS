@@ -21,7 +21,6 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin, o
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(null);
   const [intent, setIntent] = useState('todos');
-  const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [distanceKm, setDistanceKm] = useState(0); // Radio máximo (km); 0 = sin límite
 
   const load = useCallback(async () => {
@@ -67,18 +66,15 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin, o
           text &&
           (!category || s.category === category) &&
           (intent === 'todos' || intentOf(s) === intent) &&
-          (!onlyUrgent || s.is_urgent) &&
           (!distanceKm || withinKm(zone, { city: s.city, province: s.province }, distanceKm))
         );
-      })
-      .sort((a, b) => Number(!!b.is_urgent) - Number(!!a.is_urgent));
-  }, [services, search, category, intent, onlyUrgent, zone, distanceKm]);
+      });
+  }, [services, search, category, intent, zone, distanceKm]);
 
   const clear = () => {
     setSearch('');
     setCategory(null);
     setIntent('todos');
-    setOnlyUrgent(false);
     setDistanceKm(0);
   };
 
@@ -113,7 +109,6 @@ export default function ServiceList({ user, zone, setZone, onPublish, onLogin, o
         <Filters
           segment={{ options: INTENT_OPTIONS, value: intent, onChange: setIntent }}
           groups={[{ id: 'rubro', label: 'Rubro', all: 'Todos los rubros', options: SERVICE_CATEGORIES, value: category, onChange: setCategory }]}
-          toggles={[{ id: 'urgentes', label: 'Solo urgentes', value: onlyUrgent, onChange: setOnlyUrgent }]}
           distance={{ value: distanceKm, onChange: setDistanceKm }}
           onClear={clear}
           total={filtered.length}
