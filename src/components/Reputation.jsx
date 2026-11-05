@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BadgeCheck, Clock, ShieldAlert, ShieldCheck, X } from 'lucide-react';
+import { BadgeCheck, ShieldCheck, Star, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { timeAgo } from '../lib/utils';
 
@@ -63,16 +63,17 @@ export function Reputation({ data, className = '', showStatus = false }) {
   // sin él, se mantiene la vista ligera solo para el sello de verificado.
   if (showStatus) {
     return (
-      <span className={`rep ${className}`.trim()}>
+      <span className="rep-row rep-row-match">
         <span className={`rep-ver ${state}`} title={badgeTitle}>
-          {verified ? <BadgeCheck size={15} aria-hidden="true" /> : pending ? <Clock size={13} aria-hidden="true" /> : <ShieldAlert size={13} aria-hidden="true" />}
+          <BadgeCheck size={18} aria-hidden="true" />
           {label}
         </span>
+        <span className="divider" aria-hidden="true" />
         {reviews > 0 ? (
-          <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
-            <ShieldCheck size={14} aria-hidden="true" />
+          <button type="button" className="rep-score tone-high" style={{ background: 'none', border: 'none' }} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
+            <Star size={18} aria-hidden="true" fill="currentColor" />
             <b>{score}</b>
-            <small>({reviews})</small>
+            <span>· {reviews} {reviews === 1 ? 'valoración' : 'valoraciones'}</span>
           </button>
         ) : (
           <span className="rep-empty">Sin valoraciones</span>

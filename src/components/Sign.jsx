@@ -113,7 +113,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
           </div>
           <h3>{job.title}</h3>
           <p className="meta-row">
-            <Store size={15} aria-hidden="true" /> {job.company_name}{job.location ? <span className="sep"> · </span> : null}{job.location ? <span><MapPin size={14} aria-hidden="true" /> {job.location}</span> : null}
+            <Store size={19} aria-hidden="true" /> <span>{job.company_name}{job.location ? <span className="sep"> · </span> : null}{job.location ? <><MapPin size={19} aria-hidden="true" /> {job.location}</> : null}</span>
           </p>
           {(payLabel || conds) && (
             <p className="meta-row pay">
@@ -127,6 +127,8 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
           <div className="rep-row">
             {job.reputation ? <Reputation data={job.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
           </div>
+        </div>
+        <div className="card-extra">
           {!compact && job.description && <p className="desc">{job.description}</p>}
           {open && job.requirements && (
             <p className="desc">
@@ -214,7 +216,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   return (
     <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
       <div className="card-body">
-        <div className="plate" aria-hidden="true">
+        <div className={`plate${photosList[0] ? ' photo' : ''}`} aria-hidden="true">
           {photosList[0] ? (
             <img src={servicePhotoUrl(photosList[0])} alt="" loading="lazy" />
           ) : emote ? (
@@ -230,7 +232,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           </div>
           <h3>{service.title}</h3>
           <p className="meta-row">
-            {isAsk ? <Store size={15} aria-hidden="true" /> : <User size={15} aria-hidden="true" />} {isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}{service.city ? <span className="sep"> · </span> : null}{service.city ? <span><MapPin size={14} aria-hidden="true" /> {service.city}</span> : null}
+            {isAsk ? <Store size={19} aria-hidden="true" /> : <User size={19} aria-hidden="true" />} <span>{isAsk ? `Pedido de ${service.provider_name}` : service.provider_name}{service.city ? <span className="sep"> · </span> : null}{service.city ? <><MapPin size={19} aria-hidden="true" /> {service.city}</> : null}</span>
           </p>
           {service.price && (
             <p className="meta-row pay">
@@ -244,8 +246,12 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           <div className="rep-row">
             {service.reputation ? <Reputation data={service.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
           </div>
-          {service.description && <p className="desc">{service.description}</p>}
         </div>
+        {service.description && (
+          <div className="card-extra">
+            <p className="desc">{service.description}</p>
+          </div>
+        )}
       </div>
       <ServicePhotos service={service} preview={preview} />
       {(interactive || preview) && (

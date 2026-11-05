@@ -199,7 +199,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
           <p className="count" aria-live="polite">
             {plural(filtered.length, 'aviso', 'avisos')} {distanceKm ? `a menos de ${distanceKm} km de ${place}` : `en ${place}`}
           </p>
-          {(zone.city || distanceKm) && (
+          {(!!zone.city || distanceKm > 0) && (
             <div className="radius-bar">
               {zone.city && (
                 <>

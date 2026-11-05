@@ -4,6 +4,8 @@
    Paleta de la lámina de marca: naranja, navy, azul, celeste y blanco
    ========================================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
 :root {
   --ink: #0F1242;      /* navy del mockup / marca */
   --ultra: #405ae5;    /* azul de la marca */
@@ -203,65 +205,63 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 /* ---------- carteles (empleos) ---------- */
 /* Tarjeta blanca simple; el color del rubro (--acc) se usa como acento */
 .sign {
-  --r: 0deg; position: relative; display: flex; flex-direction: column; gap: 12px; min-height: 260px; padding: 18px;
-  background: #fff; color: var(--ink); border-radius: 24px; border: 1px solid #e8ebf2; overflow: hidden;
-  transform: rotate(var(--r)); transition: transform 0.4s var(--ease-pop), box-shadow 0.3s;
-  box-shadow: 0 10px 28px -18px rgba(15, 18, 66, 0.22);
+  --r: 0deg; position: relative; display: flex; flex-direction: column; gap: 0; min-height: 260px; padding: 16px 16px 14px;
+  background: #fff; color: var(--ink); border-radius: 20px; border: none;
+  box-shadow: 0 2px 4px rgba(20,25,77,.04), 0 8px 24px rgba(20,25,77,.07);
+  overflow: hidden;
 }
 .sign.compact { min-height: 0; }
-/* Grilla: 3 columnas en escritorio, 2 en tablet y 1 en celular. */
-.signs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding-top: 14px; }
-.signs > .sign:hover { transform: translateY(-5px); box-shadow: 0 26px 34px -24px rgba(25, 25, 75, 0.7); }
+.signs { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; padding-top: 14px; }
+@media (min-width: 960px) { .signs { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; } }
+@media (min-width: 600px) and (max-width: 959px) { .signs { max-width: 520px; margin-inline: auto; } }
 
-/* cuerpo de tarjeta: placa (emote o foto) a la izquierda + contenido a la derecha */
-.card-body { display: flex; gap: 16px; align-items: flex-start; }
+/* cuerpo de tarjeta: ilustración y contenido en fila */
+.card-body { display: grid; grid-template-columns: 116px 1fr; column-gap: 14px; align-items: start; }
 .plate {
-  position: relative; flex: none; width: 150px; height: 150px; border-radius: 20px;
-  background: var(--acc-soft, #eef1f9); box-shadow: inset 0 0 0 1px rgba(15, 18, 66, 0.05);
-  display: grid; place-items: center; overflow: hidden; flex-shrink: 0; align-self: flex-start;
+  position: relative; flex: none; width: 116px; height: 116px; border-radius: 42% 58% 48% 52% / 52% 46% 54% 48%;
+  overflow: hidden; display: grid; place-items: center;
 }
 .plate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.plate-emoji { font-size: clamp(2.4rem, 6vw, 3.2rem); line-height: 1; filter: drop-shadow(0 6px 10px rgba(25, 25, 75, 0.14)); }
+.plate-emoji { font-size: 3rem; line-height: 1; }
 .sign.compact .plate { display: none; }
-.card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sign.compact .card-body { grid-template-columns: minmax(0, 1fr); }
+.card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .card-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-/* pill del tipo de aviso: Laburo (navy) / Urgente (naranja) / Ofrezco (azul) / Busco (verde) */
-.sign .pill, .scard .pill { display: inline-flex; align-items: center; justify-content: center; flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 7px 13px; border-radius: 999px; font-size: 0.8rem; line-height: 1; text-align: center; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; overflow-wrap: anywhere; white-space: normal; color: #fff; }
-.pill-job { background: #FF6A00; }
-.pill-urgent { background: #FF6A00; }
-.pill-ofrece { background: #2563eb; }
-.pill-busca { background: #008F78; }
+.sign .pill, .scard .pill { display: inline-block; align-self: flex-start; white-space: nowrap; }
+.sign .pill { font-size: 12.5px; }
+.pill-job { background: #f47b20; }
+.pill-urgent { background: #f47b20; }
+.pill-ofrece { background: #1f5fd6; }
+.pill-busca { background: #12a37f; }
 .chip-s { display: inline-block; background: var(--mist); color: var(--ink); padding: 4px 11px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
 .chip-s.acc { background: var(--acc-soft, #e6ebff); color: var(--acc-ink, var(--ultra-deep)); }
 .chip-s.urgent { background: var(--orange); color: #fff; }
 /* Títulos con el mismo tamaño y a lo sumo dos líneas, para que los datos arranquen alineados. */
 .sign h3, .scard h3 {
-  margin-top: 2px; font-size: clamp(1.55rem, 2vw, 1.75rem); line-height: 1.05; min-height: 2.2em;
-  font-weight: 700; font-stretch: 78%; letter-spacing: -0.015em;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 5px; margin-bottom: 7px; font-size: 21px; line-height: 1.15; font-weight: 800; letter-spacing: -.2px;
+  color: var(--navy, #0F1242); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-/* filas de datos con icono: persona · localidad / pago y condiciones */
-.meta-row { display: flex; align-items: center; gap: 3px 6px; min-height: 18px; font-size: 0.92rem; line-height: 1.2; font-weight: 500; color: #3d4470; }
-.meta-row svg { flex: none; color: #101737; }
+@media (min-width: 720px) { .sign h3, .scard h3 { font-size: 22px; } }
+.meta-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.3; font-weight: 600; margin-bottom: 6px; color: #1c2145; }
+.meta-row svg { flex: none; display: inline-block; vertical-align: -4px; width: 19px; height: 19px; color: #f47b20; }
 .meta-row b { color: var(--ink); font-weight: 800; }
 .meta-row .sep { color: #8a90b3; font-weight: 400; }
 .meta-row .loc { display: inline-flex; align-items: center; gap: 3px; }
-.coin { width: 26px; height: 26px; border-radius: 50%; background: #FF6A00; color: #fff; display: grid; place-items: center; flex: none; }
-.coin svg { color: #fff; }
-.meta-row.pay { font-size: 1.05rem; }
+.coin { width: 20px; height: 20px; border-radius: 50%; background: #f47b20; color: #fff; display: grid; place-items: center; flex: none; font-size: 12px; font-weight: 800; }
+.coin svg { color: #fff; width: 12px; height: 12px; }
+.meta-row.pay { font-size: 14px; font-weight: 500; }
 /* franja de confianza: mismo alto aunque todavía no haya valoraciones */
-.rep-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 22px; }
-/* reputación como en el diseño: sello azul + estrella suelta con puntaje y valoraciones */
-.rep-row .rep { gap: 10px; }
-.rep-row .rep-ver.verified { background: #2563eb; color: #fff; }
+.rep-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rep-row .rep { gap: 6px; }
+.rep-row .rep-ver.verified { background: #dcebff; color: #1f5fd6; }
 .rep-row .rep-ver.pending { background: #fff1d6; color: #8a5a00; }
 .rep-row .rep-ver.unverified { background: #eef1f8; color: #6b7299; }
-.rep-row .rep-score { position: relative; background: none; padding: 2px 0 2px 12px; }
-.rep-row .rep-score::before { content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 1px; background: #d9deef; }
-.rep-row .rep-score svg { color: var(--orange); opacity: 1; }
-.rep-row .rep-score.tone-high, .rep-row .rep-score.tone-mid, .rep-row .rep-score.tone-low { background: none; }
-.rep-row .rep-score b { color: var(--ink); }
-.rep-row .rep-score small { color: var(--muted); }
+.rep-row .rep-score { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.rep-row .rep-score::before { content: ''; width: 1px; height: 20px; background: #d7dae6; margin: 0 4px; }
+.rep-row .rep-score svg { width: 18px; height: 18px; color: #f47b20; opacity: 1; }
+.rep-row .rep-score.tone-high,.rep-row .rep-score.tone-mid,.rep-row .rep-score.tone-low { background: none; }
+.rep-row .rep-score b { color: var(--ink); font-weight: 800; }
+.rep-row .rep-score small { color: var(--muted); font-size: 14px; font-weight: 600; }
 /* reputación: puntaje de cumplimiento y sello de verificado */
 .rep { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rep-ver { display: inline-flex; align-items: center; gap: 3px; background: #def3e6; color: #0e5a2f; border-radius: 999px; padding: 2px 9px 2px 6px; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.01em; }
@@ -278,30 +278,51 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .rep-score.tone-low small { color: #b4554b; }
 .loc { display: inline-flex; align-items: center; gap: 4px; }
 .loc svg { color: var(--acc, var(--ultra)); }
-.desc { font-size: 0.88rem; line-height: 1.3; color: #3d4470; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-extra { grid-column: 1 / -1; min-width: 0; }
+.desc { grid-column: 1 / -1; font-size: 14px; font-weight: 500; line-height: 1.4; color: #1c2145; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sign.open .desc, .scard.open .desc { display: block; }
 .more { align-self: flex-start; background: none; border: 0; padding: 0; font-weight: 700; color: var(--ultra); text-decoration: underline; text-underline-offset: 3px; }
 /* acciones: Guardar / Compartir / Denunciar y el CTA principal a ancho completo.
    margin-top:auto las ancla al pie de la tarjeta para que queden a la misma altura. */
-.card-acts { margin-top: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+.card-acts { margin: auto 0 10px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; padding-top: 12px; }
 .card-acts button {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; padding: 0 8px; border: 0; border-radius: 999px;
-  background: #f1f3f8; color: #0F1242; font-weight: 600; font-size: 1rem; letter-spacing: -0.005em; white-space: nowrap; cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap; min-width: 0; padding: 0 6px; height: 36px; border-radius: 12px; border: 0; background: #f1f3f7;
+  display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 14px; font-weight: 600; color: #1c2145; cursor: pointer;
 }
-.card-acts button svg { flex: none; }
-.card-acts button:hover:not(:disabled) { background: #e4e8f1; }
+.card-acts button svg { width: 19px; height: 19px; flex: none; }
+.card-acts button:hover:not(:disabled) { background: #e7eaf1; }
 .card-acts button:disabled { cursor: default; opacity: 0.85; }
 .card-acts button.on { background: var(--ink); color: #fff; }
 .card-cta {
-  margin-top: 2px; display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 52px; padding: 0 18px; border: 0;
-  border-radius: 999px; background: #0F1242; color: #fff; font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; text-decoration: none;
-  cursor: pointer; text-align: center; transition: filter 0.2s, transform 0.15s;
+  width: 100%; height: 42px; border-radius: 12px; border: 0;
+  background: #14194d; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: .1px;
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; cursor: pointer;
 }
-.card-cta:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
+.card-cta:hover { background: #0d1139; }
 .card-cta:disabled { cursor: default; opacity: 0.75; }
 .card-cta.as-text { cursor: default; }
-.when { margin-top: 2px; font-size: 0.8rem; color: var(--muted); }
+.when { margin-top: 2px; font-size: 12px; color: #586088; }
+
+/* ---- Ajustes de diseño de tarjetas (versión laburamos-tarjetas.html) ---- */
+.sign, .scard { font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif; }
+.card-acts button, .card-cta { font-family: inherit; }
+/* etiqueta (pill) */
+.sign .pill, .scard .pill { font-size: 12.5px; font-weight: 800; letter-spacing: .2px; color: #fff; padding: 3px 11px; line-height: 1.3; }
+/* ilustración: forma orgánica y fondo según el tipo de aviso */
+.plate { border-radius: 48% 52% 46% 54% / 52% 46% 54% 48%; }
+.sign .plate { background: #fdeedd; }
+.scard.ofrece .plate { background: #dcebff; }
+.scard.busca .plate { background: #d3f5ea; }
+.plate img { inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); object-fit: contain; }
+.plate.photo img { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* ícono de persona en tarjetas "Ofrezco mi servicio" */
+.scard.ofrece .meta-row > svg:first-child { color: #4a4f73; }
+/* sello Verificado + valoraciones */
+.rep-row .rep-ver { gap: 6px; padding: 2px 12px 2px 6px; font-size: 14px; letter-spacing: 0; }
+.rep-row .rep-ver svg { width: 18px; height: 18px; }
+.rep-row .divider { width: 1px; height: 20px; background: #d7dae6; margin: 0 4px; }
+.rep-row .rep-score { padding: 0; }
+.rep-row .rep-score::before { content: none; }
 
 /* color de acento por rubro */
 .t-ultra { --acc: var(--ultra); --acc-soft: #e6ebff; --acc-ink: var(--ultra-deep); }
@@ -314,9 +335,11 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .t-stone { --acc: var(--stone); --acc-soft: var(--mist); --acc-ink: var(--ink); }
 
 /* ---------- tarjetas de servicios ---------- */
-.scards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; padding-top: 14px; }
-.scard { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 18px; background: #fff; border: 1px solid #e8ebf2; border-radius: 24px; box-shadow: 0 10px 28px -18px rgba(15, 18, 66, 0.22); transition: transform 0.35s var(--ease-pop), box-shadow 0.3s; }
-.scard:hover { transform: translateY(-4px); box-shadow: 0 26px 34px -26px rgba(25, 25, 75, 0.7); }
+.scards { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; padding-top: 14px; }
+@media (min-width: 960px) { .scards { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; } }
+@media (min-width: 600px) and (max-width: 959px) { .scards { max-width: 520px; margin-inline: auto; } }
+.scard { position: relative; display: flex; flex-direction: column; gap: 0; padding: 16px 16px 14px; background: #fff; border: none; border-radius: 20px; box-shadow: 0 2px 4px rgba(20,25,77,.04), 0 8px 24px rgba(20,25,77,.07); }
+.scard:hover { transform: none; box-shadow: 0 8px 28px -18px rgba(15, 18, 66, 0.3); }
 .scard .desc { -webkit-line-clamp: 2; }
 .kind-s { display: inline-block; vertical-align: middle; margin-right: 8px; padding: 3px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; font-stretch: 100%; letter-spacing: 0; background: var(--ultra); color: #fff; }
 .kind-s.busca { background: var(--field); }
@@ -792,10 +815,10 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 
 /* ---------- cuando el pie pasa a dos filas ---------- */
 @media (max-width: 640px) {
-  .card-body { gap: 12px; }
-  .plate { width: clamp(132px, 36vw, 150px); }
-  .card-acts button { min-height: 46px; }
-  .card-cta { min-height: 52px; }
+  .card-body { grid-template-columns: 96px 1fr; column-gap: 12px; }
+  .plate { width: 96px; height: 106px; }
+  .sign h3, .scard h3 { font-size: 19px; }
+  .card-acts button { font-size: 13px; gap: 6px; }
 }
 
 @keyframes up { from { transform: translateY(105%); } to { transform: none; } }
