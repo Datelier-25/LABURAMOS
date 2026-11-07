@@ -1229,8 +1229,8 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 /* Meta: nombre, badges, email, rol */
 .user-meta {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -1242,7 +1242,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 }
 
 .user-name {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--ink);
   font-weight: 800;
   line-height: 1.2;
@@ -1250,7 +1250,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 
 .badges {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -1258,9 +1258,9 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1272,22 +1272,23 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 
 .user-email {
   color: #6b7280;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .user-role-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 5px;
+  padding: 2px 10px;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
   color: #374151;
-  margin-top: 4px;
+  margin-left: auto;
 }
 
 /* Actividad: estadísticas centrada */
@@ -1310,7 +1311,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 }
 
 .stat-item .value {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--ink);
 }
