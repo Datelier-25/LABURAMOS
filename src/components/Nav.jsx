@@ -27,7 +27,7 @@ export default function Nav({ user, profile, view, go, links, onLogout, onLogin,
                 </button>
                 <span className="who hide-m">
                   <span className="avatar" aria-hidden="true">
-                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : initials(user.name)}
+                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : initials(user.name)}
                   </span>
                   <span>{user.name}</span>
                 </span>
