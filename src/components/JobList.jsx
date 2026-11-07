@@ -230,6 +230,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
                 onApply={onApply}
                 applied={applied?.has(job.id) ?? false}
                 onReport={onReport}
+                onChanged={load}
                 wide={i === 0 && filtered.length >= 3 && !search}
               />
             ))}

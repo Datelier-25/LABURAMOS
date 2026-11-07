@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { AlertTriangle, Bookmark, CircleDollarSign, MapPin, Share2, Store, User } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bookmark,
+  CircleDollarSign,
+  Clock3,
+  MapPin,
+  Share2,
+  Store,
+  User,
+} from 'lucide-react';
 import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { plateEmote } from '../lib/emotes';
 import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
 import { nameWithPrefix } from '../lib/prefixes';
 import { Reputation } from './Reputation';
-import { useUser } from '../lib/auth';
+import EditListing from './EditListing';
 
-// Fotos del aviso (hasta 3). En la vista previa no son enlaces.
+// Fotos del aviso (hasta 5). En la vista previa no son enlaces.
 function ServicePhotos({ service, preview }) {
   const photos = (service.photos || []).filter(Boolean).slice(0, MAX_SERVICE_PHOTOS);
   if (!photos.length) return null;
@@ -28,7 +37,7 @@ function ServicePhotos({ service, preview }) {
   );
 }
 
-// Fila de tres acciones (Guardar / Compartir / Denunciar) del nuevo diseño de tarjeta.
+// Fila de tres acciones (Guardar / Compartir / Denunciar) de la tarjeta.
 function CardActs({ saved, onSave, onShare, onReport, dead }) {
   const [shareHint, setShareHint] = useState('');
   const share = async () => {
@@ -56,17 +65,77 @@ function CardActs({ saved, onSave, onShare, onReport, dead }) {
   );
 }
 
+function editButton(onClick) {
+  return (
+    <div className="edit-row">
+      <button type="button" className="edit-btn" onClick={onClick}>
+        ✎ Editar
+      </button>
+    </div>
+  );
+}
+
 // Cartel de empleo. Es el mismo en las listas, en la vista previa y en los carteles de ejemplo.
-export default function JobSign({ job, user, saved = false, onSave, onLogin, onApply, applied = false, compact = false, preview = false, wide = false, style, onReport }) {
+export default function JobSign({
+  job,
+  user,
+  saved = false,
+  onSave,
+  onLogin,
+  onApply,
+  applied = false,
+  compact = false,
+  preview = false,
+  wide = false,
+  style,
+  onReport,
+  onChanged,
+}) {
   const [open, setOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [editing, setEditing] = useState(false);
   const interactive = !compact && !preview;
   const long = (job.description || '').length > 130 || !!job.requirements;
+  const canEdit = !!user && (user.isAdmin || user.id === job.company_id);
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
-  const { user: currentUser, isAdmin } = useUser();
-  const isOwner = currentUser?.id === job.company_id;
-  const canEdit = isAdmin || isOwner;
-  const [editOpen, setEditOpen] = useState(false);
+  const emote = plateEmote(job);
+  const salaryText = String(job.salary || '').trim();
+  const payLabel = !salaryText
+    ? null
+    : salaryText.toLowerCase() === 'a convenir'
+      ? 'A convenir'
+      : salaryText.startsWith('$')
+        ? salaryText
+        : /^\d+$/.test(salaryText)
+          ? `$${Number(salaryText).toLocaleString('es-AR')}`
+          : `$${salaryText}`;
+  const jobTypeLabel = {
+    'Full-time': 'Jornada completa',
+    'Part-time': 'Media jornada',
+    'Por horas': 'Por horas',
+    Temporal: 'Temporal',
+    Changa: 'Por trabajo',
+  }[job.job_type] || job.job_type;
+  const conditions = [job.schedule, job.duration, jobTypeLabel]
+    .filter(Boolean)
+    .filter((value, index, all) => all.indexOf(value) === index);
+  const canReport = !preview && !!onReport && user?.id !== job.company_id;
+  const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/job/${job.id}`;
+  const share = () =>
+    shareListing({
+      title: `${job.title} · LaburamosApp`,
+      text: `Mirá este aviso en LaburamosApp: "${job.title}"${job.company_name ? ` — ${job.company_name}` : ''}${job.location ? ` (${job.location})` : ''}.`,
+      url: deepUrl,
+    });
+  const apply = async () => {
+    if (!onApply || applying) return;
+    setApplying(true);
+    try {
+      await onApply(job, waLink(job.phone, message));
+    } finally {
+      setApplying(false);
+    }
+  };
 
   return (
     <article
@@ -77,7 +146,11 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
       <div className="card-body">
         {!compact && (
           <div className="plate" aria-hidden="true">
-            {emote ? <img src={emote} alt="" loading="lazy" /> : <span className="plate-emoji">{emojiOf(job.category)}</span>}
+            {emote ? (
+              <img src={emote} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
+            ) : (
+              <span className="plate-emoji">{emojiOf(job.category)}</span>
+            )}
           </div>
         )}
         <div className="card-info">
@@ -97,42 +170,41 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               </span>
             )}
           </p>
-          {canEdit && (
-            <p className="edit-row">
-              <button className="edit-btn" onClick={() => setEditOpen(true)}>
-                ✎ Editar
-              </button>
+          {(payLabel || conditions.length > 0) && (
+            <p className="meta-row pay card-pay">
+              {payLabel ? (
+                <span className="coin"><CircleDollarSign size={13} aria-hidden="true" /></span>
+              ) : (
+                <Clock3 size={16} aria-hidden="true" />
+              )}
+              {payLabel && <b>{payLabel}</b>}
+              {conditions.length > 0 && (
+                <span>{payLabel ? `· ${conditions.join(' · ')}` : conditions.join(' · ')}</span>
+              )}
             </p>
-          )}
-        </div>
-
-        {(payLabel || conds) && (
-          <p className="meta-row pay card-pay">
-            <span className="coin">
-              <CircleDollarSign size={13} aria-hidden="true" />
-            </span>
-            {payLabel && <b>{payLabel}</b>}
-            {conds && <span>{conds}</span>}
-          </p>
-        )}
-        <div className="card-extra">
-          {!compact && job.description && <p className="desc">{job.description}</p>}
-          {open && job.requirements && (
-            <p className="desc">
-              <strong>Requisitos:</strong> {job.requirements}
-            </p>
-          )}
-          {interactive && long && (
-            <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
-              {open ? 'Ver menos' : 'Ver más'}
-            </button>
           )}
         </div>
       </div>
 
       <div className="plate-bottom">
-        {job.reputation ? <Reputation data={job.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
+        <Reputation data={job.reputation} showStatus showReviews={false} />
       </div>
+
+      <div className="card-extra">
+        {!compact && job.description && <p className="desc">{job.description}</p>}
+        {open && job.requirements && (
+          <p className="desc">
+            <strong>Requisitos:</strong> {job.requirements}
+          </p>
+        )}
+        {interactive && long && (
+          <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
+            {open ? 'Ver menos' : 'Ver más'}
+          </button>
+        )}
+      </div>
+
+      {canEdit && editButton(() => setEditing(true))}
 
       {(interactive || preview) && (
         <>
@@ -140,7 +212,7 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
             saved={saved}
             onSave={onSave ? () => onSave(job.id) : undefined}
             onShare={preview ? undefined : share}
-            onReport={preview ? undefined : canReport ? () => onReport({ kind: 'job', job }) : undefined}
+            onReport={canReport ? () => onReport({ kind: 'job', job }) : undefined}
             dead={preview}
           />
           {!preview &&
@@ -156,121 +228,40 @@ export default function JobSign({ job, user, saved = false, onSave, onLogin, onA
               )
             ) : (
               <button type="button" className="card-cta" onClick={onLogin}>
-                Ingresá para postularte
+                Postularme
               </button>
             ))}
           {preview && <span className="card-cta as-text">Postularme</span>}
         </>
-      )
+      )}
 
       {job.created_at && !compact && !preview && <span className="when">Publicado {timeAgo(job.created_at)}</span>}
+
+      {editing && (
+        <EditListing
+          kind="job"
+          item={job}
+          onClose={() => setEditing(false)}
+          onSaved={() => onChanged?.('job', job.id)}
+        />
+      )}
     </article>
   );
 }
 
-function EditJobModal({ onClose, onSave, job }) {
-  const { error, setError } = useState('');
-  const { user } = useUser();
-  const [saving, setSaving] = useState(false);
-  const set = (patch) => setF((x) => ({ ...x, ...patch }));
-  const [f, setF] = useState({
-    title: job.title,
-    company_name: job.company_name,
-    category: job.category,
-    job_type: job.job_type,
-    description: job.description || '',
-    phone: job.phone || '',
-    status: job.status,
-    expires: job.expires_at ? job.expires_at.slice(0, 10) : '',
-    requirements: job.requirements || '',
-  });
-
-  const save = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    const p = {
-      title: f.title,
-      company_name: f.company_name,
-      category: f.category,
-      job_type: f.job_type,
-      description: f.description,
-      phone: f.phone,
-      status: f.status,
-      ...(f.expires ? { expires_at: new Date(`${f.expires}T23:59:59`).toISOString() } : {}),
-    };
-    const { error: err } = await supabase.rpc('admin_update_listing', { p_kind: 'job', p_id: job.id, p: JSON.parse(JSON.stringify(p)) });
-    setSaving(false);
-    if (err) setError(friendlyError(err.message));
-    else onClose(), onSave();
-  };
-
-  return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Editar aviso">
-        <button type="button" className="x" onClick={onClose} aria-label="Cerrar">
-          <X size={20} />
-        </button>
-        <h2>Editar aviso</h2>
-        {error && <p className="note err">{error}</p>}
-        <form onSubmit={save}>
-          <label className="field">
-            <span>Título</span>
-            <input required value={f.title} onChange={(e) => set({ title: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Comercio o empresa</span>
-            <input required value={f.company_name} onChange={(e) => set({ company_name: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Rubro</span>
-            <select value={f.category} onChange={(e) => set({ category: e.target.value })}>
-              {JOB_CATEGORIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Modalidad</span>
-            <select value={f.job_type} onChange={(e) => set({ job_type: e.target.value })}>
-              {JOB_TYPES.map((t) => <option key={t}>{t}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>Descripción</span>
-            <textarea value={f.description} onChange={(e) => set({ description: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Requisitos (opcional)</span>
-            <input value={f.requirements} onChange={(e) => set({ requirements: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Vence el</span>
-            <input type="date" value={f.expires} onChange={(e) => set({ expires: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>WhatsApp</span>
-            <input value={f.phone} onChange={(e) => set({ phone: e.target.value })} />
-          </label>
-          <button className="btn btn-ink btn-lg btn-block" disabled={saving}>
-            {saving ? 'Guardando…' : 'Guardar cambios'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // Tarjeta de servicio. "ofrece": la vidriera de un oficio o negocio. "busca": un pedido de trabajo.
-export function ServiceCard({ service, user, onLogin, preview = false, onReport, saved = false, onSave }) {
+export function ServiceCard({ service, user, onLogin, preview = false, onReport, saved = false, onSave, onChanged }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
+  const [editing, setEditing] = useState(false);
   const interactive = !preview;
+  const canEdit = !!user && (user.isAdmin || user.id === service.owner_id);
   const canReport = !preview && !!onReport && user?.id !== service.owner_id;
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/svc/${service.id}`;
   const emoji = isAsk ? '🔎' : emojiOf(service.category);
   const emote = plateEmote(service);
   const photosList = (service.photos || []).filter(Boolean);
+  const extraPhotos = photosList.slice(1);
   const share = () =>
     shareListing({
       title: `${service.title} · LaburamosApp`,
@@ -293,7 +284,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   else
     cta = (
       <button type="button" className="card-cta" onClick={onLogin}>
-        Ingresá para {isAsk ? 'responder' : 'escribir'}
+        {ctaLabel}
       </button>
     );
 
@@ -304,7 +295,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           {photosList[0] ? (
             <img src={servicePhotoUrl(photosList[0])} alt="" loading="lazy" />
           ) : emote ? (
-            <img src={emote} alt="" loading="lazy" />
+            <img src={emote} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
           ) : (
             <span className="plate-emoji">{emoji}</span>
           )}
@@ -326,24 +317,30 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
               </span>
             )}
           </p>
-        </div>
-        {service.price && (
-          <p className="meta-row pay card-pay">
-            <span className="coin">
-              <CircleDollarSign size={13} aria-hidden="true" />
-            </span>
-            <b>{service.price}</b>
-            <span>{isAsk ? 'presupuesto' : 'precio'}</span>
-          </p>
-        )}
-        <div className="card-extra">
-          {service.description && <p className="desc">{service.description}</p>}
+          {service.price && (
+            <p className="meta-row pay card-pay">
+              <span className="coin"><CircleDollarSign size={13} aria-hidden="true" /></span>
+              <b>{service.price}</b>
+              <span>{isAsk ? 'presupuesto' : 'precio'}</span>
+            </p>
+          )}
         </div>
       </div>
+
       <div className="plate-bottom">
-        {service.reputation ? <Reputation data={service.reputation} showStatus /> : <span className="rep-empty">Sin valoraciones</span>}
+        <Reputation data={service.reputation} showStatus />
       </div>
-      <ServicePhotos service={service} preview={preview} />
+
+      <div className="card-extra">
+        {service.description && <p className="desc">{service.description}</p>}
+      </div>
+
+      {canEdit && editButton(() => setEditing(true))}
+
+      {extraPhotos.length > 0 && (
+        <ServicePhotos service={{ ...service, photos: extraPhotos }} preview={preview} />
+      )}
+
       {(interactive || preview) && (
         <>
           <CardActs
@@ -356,7 +353,17 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           {cta}
         </>
       )}
+
       {service.created_at && !preview && <span className="when">{timeAgo(service.created_at)}</span>}
+
+      {editing && (
+        <EditListing
+          kind="service"
+          item={service}
+          onClose={() => setEditing(false)}
+          onSaved={() => onChanged?.('service', service.id)}
+        />
+      )}
     </article>
   );
 }

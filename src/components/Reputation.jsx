@@ -36,18 +36,23 @@ export function reviewScore(r) {
 
 // Puntaje público de una cuenta: número (sobre 100) y cantidad de valoraciones.
 // Tocar el puntaje abre el detalle y las reseñas escritas.
-export function Reputation({ data, className = '', showStatus = false }) {
+export function Reputation({ data, className = '', showStatus = false, showReviews = true }) {
   const [open, setOpen] = useState(false);
   const reviews = Number(data?.reviews || 0);
   const score = Number(data?.score || 0);
   const comments = Number(data?.comments || 0);
 
-  if (!data) return null;
+  if (!data) return showStatus ? (
+    <span className={`rep-row ${className}`.trim()}>
+      <span className="rep-ver unknown">Verificación no disponible</span>
+      {showReviews && <span className="rep-empty">Valoraciones no disponibles</span>}
+    </span>
+  ) : null;
 
   const verified = !!data.is_verified;
   const pending = !verified && !!data.verification_requested;
   const state = verified ? 'verified' : pending ? 'pending' : 'unverified';
-  const label = verified ? 'Verificado' : pending ? 'En proceso' : 'No verificado';
+  const label = verified ? 'Verificado' : pending ? 'En proceso de verificación' : 'No verificado';
   const badgeTitle =
     state === 'verified'
       ? 'Verificado: cuenta revisada por LaburamosApp. El puntaje sale de las experiencias de trabajo.'
@@ -68,8 +73,8 @@ export function Reputation({ data, className = '', showStatus = false }) {
           <BadgeCheck size={18} aria-hidden="true" />
           {label}
         </span>
-        <span className="divider" aria-hidden="true" />
-        {reviews > 0 ? (
+        {showReviews && <span className="divider" aria-hidden="true" />}
+        {showReviews && (reviews > 0 ? (
           <button type="button" className="rep-score tone-high" style={{ background: 'none', border: 'none' }} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
             <Star size={18} aria-hidden="true" fill="currentColor" />
             <b>{score}</b>
@@ -77,13 +82,13 @@ export function Reputation({ data, className = '', showStatus = false }) {
           </button>
         ) : (
           <span className="rep-empty">Sin valoraciones</span>
-        )}
-        {open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
+        ))}
+        {showReviews && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
       </span>
     );
   }
 
-  if (!verified && !reviews) return null;
+  if (!verified && (!showReviews || !reviews)) return null;
 
   return (
     <span className={`rep ${className}`.trim()}>
@@ -92,14 +97,14 @@ export function Reputation({ data, className = '', showStatus = false }) {
           <BadgeCheck size={15} aria-hidden="true" /> Verificado
         </span>
       )}
-      {reviews > 0 && (
+      {showReviews && reviews > 0 && (
         <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
           <ShieldCheck size={14} aria-hidden="true" />
           <b>{score}</b>
           <small>({reviews})</small>
         </button>
       )}
-      {open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
+      {showReviews && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
     </span>
   );
 }

@@ -13,6 +13,7 @@ import ServiceList from './components/ServiceList';
 import MyResume from './components/MyResume';
 import Candidates from './components/Candidates';
 import Profile from './components/Profile';
+import MyPosts from './components/MyPosts';
 import PublishModal from './components/PublishModal';
 import ApplyModal from './components/ApplyModal';
 import Admin from './components/Admin';

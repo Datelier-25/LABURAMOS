@@ -62,6 +62,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     category: isJob ? JOB_CATEGORIES[0] : SERVICE_CATEGORIES[0],
     job_type: JOB_TYPES[0],
     pay_type: 'Por mes',
+    publish_salary: false,
     salary: '',
     schedule: '',
     duration: '',
@@ -76,6 +77,12 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const isAsk = !isJob && form.intent === 'busca';
+  const publishedSalary = form.publish_salary
+    ? form.pay_type === 'A convenir'
+      ? 'A convenir'
+      : form.salary.trim() || null
+    : null;
+  const publishedPayType = form.publish_salary ? form.pay_type : null;
   const [photoBusy, setPhotoBusy] = useState(false);
 
   // Sube las fotos elegidas (máx. 3). Se guardan en la carpeta de la persona.
@@ -148,8 +155,8 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           phone,
           description: form.description.trim(),
           requirements: form.requirements.trim() || null,
-          salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
-          pay_type: form.pay_type,
+          salary: publishedSalary,
+          pay_type: publishedPayType,
           schedule: form.schedule.trim() || null,
           duration: form.duration.trim() || null,
           icon: form.icon.trim() || null,
@@ -185,8 +192,8 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     company_name: form.name || 'Tu comercio',
     location: city,
     job_type: form.job_type,
-    salary: form.pay_type === 'A convenir' ? 'A convenir' : form.salary.trim() || null,
-    pay_type: form.pay_type,
+    salary: publishedSalary,
+    pay_type: publishedPayType,
     schedule: form.schedule.trim() || null,
     duration: form.duration.trim() || null,
     icon: form.icon.trim() || null,
@@ -291,6 +298,12 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             </label>
           )}
           {isJob && (
+            <label className="check">
+              <input type="checkbox" checked={form.publish_salary} onChange={(e) => set({ publish_salary: e.target.checked })} />
+              <span>Publicar sueldo (opcional)</span>
+            </label>
+          )}
+          {isJob && form.publish_salary && (
             <div className="two">
               <label className="field">
                 <span>Forma de pago</span>
@@ -302,7 +315,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
               </label>
               <label className="field">
                 <span>Monto o banda salarial</span>
-                <input disabled={form.pay_type === 'A convenir'} inputMode="decimal" placeholder="$650.000" value={form.salary} onChange={(e) => set({ salary: e.target.value })} />
+                <input required={form.pay_type !== 'A convenir'} disabled={form.pay_type === 'A convenir'} inputMode="decimal" placeholder="$650.000" value={form.salary} onChange={(e) => set({ salary: e.target.value })} />
                 <small>Solo el monto. Si es “a convenir”, elegí esa forma de pago y no cargues monto.</small>
               </label>
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
-import { compressImage } from '../lib/photos';
+import AvatarCropper from './AvatarCropper';
 
 export default function Profile({ user, notify, onUpdated }) {
   const [loading, setLoading] = useState(true);
@@ -10,6 +10,7 @@ export default function Profile({ user, notify, onUpdated }) {
   const [form, setForm] = useState({ full_name: '', city: '', province: '', phone: '' });
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [cropFile, setCropFile] = useState(null);
   const [verified, setVerified] = useState(false);
   const [verificationRequested, setVerificationRequested] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -62,13 +63,23 @@ export default function Profile({ user, notify, onUpdated }) {
     }
   };
 
-  const uploadAvatar = async (e) => {
+  const pickAvatar = (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setError('La foto tiene que ser JPG, PNG o WebP.');
+      return;
+    }
+    setError('');
+    setCropFile(file);
+  };
+
+  const uploadAvatar = async (blob) => {
+    setCropFile(null);
     setAvatarBusy(true);
     setError('');
     try {
-      const blob = await compressImage(file, 512, 0.85);
       const path = `${user.id}/avatar.jpg`;
       const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true, cacheControl: '0' });
       if (upErr) throw upErr;
@@ -83,7 +94,6 @@ export default function Profile({ user, notify, onUpdated }) {
       setError(friendlyError(err?.message || 'No pudimos subir la foto.'));
     } finally {
       setAvatarBusy(false);
-      e.target.value = '';
     }
   };
 
@@ -145,18 +155,18 @@ export default function Profile({ user, notify, onUpdated }) {
         <div className="field">
           <span>Foto de perfil</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', background: 'var(--mist)', display: 'grid', placeItems: 'center', border: '2px solid var(--line)' }}>
-              {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '2.2rem', color: 'var(--muted)' }}>👤</span>}
+            <span style={{ position: 'relative', width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', background: 'var(--mist)', display: 'grid', placeItems: 'center', border: '2px solid var(--line)' }}>
+              {avatarUrl ? <img src={avatarUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <span style={{ fontSize: '2.2rem', color: 'var(--muted)' }}>👤</span>}
             </span>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <label className="btn btn-line btn-sm" style={{ cursor: 'pointer' }}>
                 {avatarBusy ? 'Subiendo…' : 'Cambiar foto'}
-                <input type="file" accept="image/*" hidden onChange={uploadAvatar} disabled={avatarBusy} />
+                <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={pickAvatar} disabled={avatarBusy} />
               </label>
               {avatarUrl && <button type="button" className="btn btn-line btn-sm" onClick={removeAvatar} disabled={avatarBusy}>Quitar</button>}
             </div>
           </div>
-          <small>JPG/PNG/WebP, hasta 2 MB. Se reduce a 512 px.</small>
+          <small>JPG/PNG/WebP, hasta 2 MB. Después de elegirla vas a poder encuadrarla dentro del círculo.</small>
         </div>
 
         <div className="field">
@@ -218,6 +228,14 @@ export default function Profile({ user, notify, onUpdated }) {
           <span className="chip-s">Tipo de cuenta: {user.role === 'company' ? 'Comercio' : 'Trabajador/a'}</span>
         </div>
       </div>
+
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onDone={uploadAvatar}
+        />
+      )}
     </section>
   );
 }

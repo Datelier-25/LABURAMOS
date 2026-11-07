@@ -4,12 +4,13 @@ import { supabase } from '../supabaseClient';
 import { daysLeft, friendlyError, intentOf, timeAgo } from '../lib/utils';
 import { loadReputation } from '../lib/reputation';
 import ReviewModal from './ReviewModal';
+import EditListing from './EditListing';
 import { Empty } from './ui';
 import { Reputation, reviewScore } from './Reputation';
 
 const LABEL = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
 
-function Post({ item, kind, days, onStatus, onRenew, onDelete }) {
+function Post({ item, kind, days, onStatus, onRenew, onDelete, onEdit }) {
   const isJob = kind === 'job';
   const expired = new Date(item.expires_at) < new Date();
   const state = item.status === 'active' && expired ? 'expired' : item.status;
@@ -30,6 +31,9 @@ function Post({ item, kind, days, onStatus, onRenew, onDelete }) {
       </div>
       <span className={`pill ${state}`}>{LABEL[state]}</span>
       <div className="acts">
+        <button className="btn btn-line btn-sm" onClick={() => onEdit(item)}>
+          Editar
+        </button>
         {item.status === 'active' && !expired && (
           <button className="btn btn-line btn-sm" onClick={() => onStatus(kind, item.id, 'paused', 'Aviso pausado')}>
             Pausar
@@ -67,6 +71,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
   const [rep, setRep] = useState({});
   const [mine, setMine] = useState({});
   const [reviewFor, setReviewFor] = useState(null);
+  const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -74,9 +79,9 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
     setLoading(true);
     setError('');
     const [j, s, a] = await Promise.all([
-      isCompany
-        ? supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
+      // Mostramos los laburos que publicó la persona, sin importar el rol con
+      // el que se registró: la propiedad del aviso es lo que habilita editarlo.
+      supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false }),
       supabase.from('services').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
       !isCompany
         ? supabase
@@ -154,7 +159,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
       {error && <p className="note err">{error}</p>}
       {loading && <p className="count">Cargando…</p>}
 
-      {!loading && isCompany && (
+      {!loading && (isCompany || jobs.length > 0) && (
         <>
           <h2 className="block-title">Ofertas laborales</h2>
           {jobs.length === 0 ? (
@@ -166,7 +171,16 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
           ) : (
             <div className="mine">
               {jobs.map((j) => (
-                <Post key={j.id} item={j} kind="job" days={settings?.job_days} onStatus={handleStatus} onRenew={handleRenew} onDelete={handleDelete} />
+                <Post
+                  key={j.id}
+                  item={j}
+                  kind="job"
+                  days={settings?.job_days}
+                  onStatus={handleStatus}
+                  onRenew={handleRenew}
+                  onDelete={handleDelete}
+                  onEdit={(item) => setEditing({ kind: 'job', item })}
+                />
               ))}
             </div>
           )}
@@ -190,7 +204,7 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
                         {a.jobs?.company_name || 'Comercio'} · te postulaste {timeAgo(a.created_at)}
                       </p>
                       {a.cv_kind === 'file' && <span className="chip-s cv-chip">CV en PDF adjunto</span>}
-                      <Reputation data={rep[a.company_id]} />
+                      <Reputation data={rep[a.company_id]} showStatus showReviews={false} />
                     </div>
                     <div className="acts">
                       <button
@@ -222,11 +236,33 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
           ) : (
             <div className="mine">
               {services.map((s) => (
-                <Post key={s.id} item={s} kind="service" days={settings?.service_days} onStatus={handleStatus} onRenew={handleRenew} onDelete={handleDelete} />
+                <Post
+                  key={s.id}
+                  item={s}
+                  kind="service"
+                  days={settings?.service_days}
+                  onStatus={handleStatus}
+                  onRenew={handleRenew}
+                  onDelete={handleDelete}
+                  onEdit={(item) => setEditing({ kind: 'service', item })}
+                />
               ))}
             </div>
           )}
         </>
+      )}
+
+      {editing && (
+        <EditListing
+          kind={editing.kind}
+          item={editing.item}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            notify('Cambios guardados');
+            load();
+          }}
+        />
       )}
 
       {reviewFor && (
