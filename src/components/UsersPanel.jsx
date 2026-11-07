@@ -170,42 +170,37 @@ export default function UsersPanel({ notify }) {
         <div className="users-list">
           {filtered.map((u) => (
             <div key={u.id} className={`user-card${u.is_blocked ? ' blocked' : ''}`}>
-              <div className="user-main">
+              <div className="user-header">
                 <div className="user-avatar">
                   <span>{avatarInitials(u.full_name || u.email)}</span>
                 </div>
-                <div className="user-info">
-                  <div className="user-name">
-                    <b>{u.full_name || 'Sin nombre'}</b>
-                    {u.is_admin && <span className="pill admin">Admin</span>}
-                    {u.is_verified && <span className="pill verified">Verificado</span>}
-                    {u.is_blocked && <span className="pill blocked">Bloqueado</span>}
-                    {!u.is_blocked && !u.is_verified && u.verification_requested && (
-                      <span className="pill pending">Pide verificación</span>
-                    )}
+                <div className="user-meta">
+                  <div className="user-name-row">
+                    <b className="user-name">{u.full_name || 'Sin nombre'}</b>
+                    <div className="badges">
+                      {u.is_admin && <span className="badge admin">Admin</span>}
+                      {u.is_verified && <span className="badge verified">Verificado</span>}
+                      {u.is_blocked && <span className="badge blocked">Bloqueado</span>}
+                      {!u.is_blocked && !u.is_verified && u.verification_requested && (
+                        <span className="badge pending">Pide verificación</span>
+                      )}
+                    </div>
                   </div>
-                  <small>{u.email}</small>
-                  <div className="user-role">
-                    <span>{u.role === 'company' ? 'Comercio' : 'Trabajador'}</span>
-                    <select
-                      className="fbtn mini"
-                      value={u.role}
-                      disabled={busy === u.id}
-                      aria-label={`Rol de ${u.full_name || u.email}`}
-                      onChange={(e) =>
-                        setUser(u, { role: e.target.value }, e.target.value === 'company' ? 'Ahora es comercio' : 'Ahora es trabajador')
-                      }
-                    >
-                      <option value="worker">Trabajador</option>
-                      <option value="company">Comercio</option>
-                    </select>
+                  <small className="user-email">{u.email}</small>
+                  <div className="user-role-chip">
+                    {u.role === 'company' ? 'Comercio' : 'Trabajador'}
                   </div>
                 </div>
-              </div>
-
-              <div className="user-activity">
-                <span>{u.listings} publicaciones</span>
-                <span>{u.applications} postulaciones</span>
+                <div className="user-activity">
+                  <div className="stat-item">
+                    <span className="value">{u.listings}</span>
+                    <span className="label">publicaciones</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="value">{u.applications}</span>
+                    <span className="label">postulaciones</span>
+                  </div>
+                </div>
               </div>
 
               <div className="user-actions">
@@ -220,27 +215,27 @@ export default function UsersPanel({ notify }) {
                 </button>
 
                 {u.verification_requested && !u.is_verified ? (
-                  <div className="action-group">
+                  <div className="action-group verify-group">
                     <button
-                      className="btn btn-line btn-sm"
+                      className="btn btn-success btn-sm"
                       disabled={busy === u.id}
                       onClick={() => setUser(u, { is_verified: true, verification_requested: false }, 'Verificación aceptada')}
                       title="Aceptar verificación"
                     >
-                      Aceptar verificación
+                      ✔ Aceptar verificación
                     </button>
                     <button
-                      className="btn btn-line btn-sm"
+                      className="btn btn-ghost btn-sm"
                       disabled={busy === u.id}
                       onClick={() => setUser(u, { verification_requested: false }, 'Pedido rechazado')}
                       title="Rechazar verificación"
                     >
-                      Rechazar
+                      ✘ Rechazar
                     </button>
                   </div>
                 ) : u.is_verified ? (
                   <button
-                    className="btn btn-line btn-sm"
+                    className="btn btn-ghost btn-sm"
                     disabled={busy === u.id}
                     onClick={() => setUser(u, { is_verified: false }, 'Verificación quitada')}
                     title="Quitar verificación"
@@ -250,7 +245,7 @@ export default function UsersPanel({ notify }) {
                 ) : null}
 
                 <button
-                  className="btn btn-line btn-sm"
+                  className="btn btn-ghost btn-sm"
                   disabled={busy === u.id}
                   onClick={() => setUser(u, { is_admin: !u.is_admin }, u.is_admin ? 'Ya no es admin' : 'Ahora es admin')}
                   title={u.is_admin ? 'Quitar administrador' : 'Hacer administrador'}
@@ -259,7 +254,7 @@ export default function UsersPanel({ notify }) {
                 </button>
 
                 <button
-                  className={`btn btn-sm ${u.is_blocked ? 'btn-line' : 'btn-danger'}`}
+                  className={`btn btn-ghost btn-sm ${u.is_blocked ? 'btn-muted' : 'btn-danger'}`}
                   disabled={busy === u.id}
                   onClick={() => setUser(u, { is_blocked: !u.is_blocked }, u.is_blocked ? 'Desbloqueado' : 'Bloqueado')}
                   title={u.is_blocked ? 'Desbloquear cuenta' : 'Bloquear cuenta'}
