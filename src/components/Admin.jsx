@@ -5,6 +5,7 @@ import { JOB_CATEGORIES, JOB_TYPES, PAY_MODES as MODES, SERVICE_CATEGORIES, frie
 import { Empty } from './ui';
 import { CvModal } from './Candidates';
 import UserActivityModal from './UserActivityModal';
+import UsersPanel from './UsersPanel';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -485,226 +486,6 @@ function ResumesTab({ notify }) {
   );
 }
 
-// ---------- usuarios ----------
-function UsersTab({ notify }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('todos');
-  const [busy, setBusy] = useState('');
-  const [activityUser, setActivityUser] = useState(null);
-  const [activityData, setActivityData] = useState(null);
-  const [activityLoading, setActivityLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error: err } = await supabase.rpc('admin_users');
-    if (err) setError(friendlyError(err.message));
-    setUsers(data || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const setUser = async (u, patch, message) => {
-    if (patch.is_blocked === true && !window.confirm(`¿Bloquear a ${u.full_name || u.email}? No va a poder publicar ni postularse, y sus avisos se pausan.`)) return;
-    setBusy(u.id);
-    setError('');
-    const { error: err } = await supabase.rpc('admin_set_user', {
-      p_user: u.id,
-      p_role: patch.role ?? null,
-      p_is_admin: patch.is_admin ?? null,
-      p_is_blocked: patch.is_blocked ?? null,
-      p_is_verified: patch.is_verified ?? null,
-    });
-    setBusy('');
-    if (err) setError(friendlyError(err.message));
-    else {
-      notify(message);
-      load();
-    }
-  };
-
-  const viewActivity = async (u) => {
-    setActivityUser(u);
-    setActivityLoading(true);
-    setActivityData(null);
-    const { data, error: err } = await supabase.rpc('admin_user_activity', { p_user: u.id });
-    setActivityLoading(false);
-    if (err) {
-      notify(friendlyError(err.message), 'err');
-    } else {
-      setActivityData(data);
-    }
-  };
-
-  const deleteUser = async (u) => {
-    if (!window.confirm(`¿Eliminar a ${u.full_name || u.email}? Se borrarán TODOS sus datos: avisos, postulaciones, CV, reseñas, compras y su perfil. Esta acción NO se puede deshacer.`)) return;
-    setBusy(u.id);
-    setError('');
-    const { error: err } = await supabase.rpc('admin_delete_user', { p_user: u.id });
-    setBusy('');
-    if (err) setError(friendlyError(err.message));
-    else {
-      notify('Usuario eliminado');
-      load();
-    }
-  };
-
-  const filtered = useMemo(() => {
-    const t = search.trim().toLowerCase();
-    return users.filter((u) => {
-      const text = !t || [u.full_name, u.email, u.city].some((v) => (v || '').toLowerCase().includes(t));
-      const f =
-        filter === 'todos' ||
-        (filter === 'comercios' && u.role === 'company') ||
-        (filter === 'pendientes' && u.verification_requested && !u.is_verified) ||
-        (filter === 'bloqueados' && u.is_blocked);
-      return text && f;
-    });
-  }, [users, search, filter]);
-
-  const pending = users.filter((u) => u.verification_requested && !u.is_verified).length;
-
-  return (
-    <>
-      {error && <p className="note err">{error}</p>}
-      <div className="admin-tools">
-        <label className="search">
-          <span className="sr">Buscar usuarios</span>
-          <input type="search" placeholder="Buscá por nombre, email o localidad" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Search size={22} aria-hidden="true" />
-        </label>
-        <select className="fbtn" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar usuarios">
-          <option value="todos">Todos</option>
-          <option value="comercios">Comercios</option>
-          <option value="pendientes">Verificación pendiente{pending ? ` (${pending})` : ''}</option>
-          <option value="bloqueados">Bloqueados</option>
-        </select>
-      </div>
-      <p className="count">
-        {filtered.length} de {users.length}
-      </p>
-      {loading ? (
-        <p className="count">Cargando…</p>
-      ) : filtered.length === 0 ? (
-        <Empty title="No hay usuarios" text="Probá con otra búsqueda o sacá el filtro." />
-      ) : (
-        <div className="admin-table users" role="table">
-          <div className="admin-row user head" role="row">
-            <span role="columnheader">Persona</span>
-            <span role="columnheader">Rol</span>
-            <span role="columnheader">Actividad</span>
-            <span role="columnheader">Estado</span>
-            <span role="columnheader">Acciones</span>
-          </div>
-          {filtered.map((u) => (
-            <div className={`admin-row user${u.is_blocked ? ' blocked' : ''}`} role="row" key={u.id}>
-              <span role="cell">
-                <b>{u.full_name || 'Sin nombre'}</b>
-                <small>{u.email}</small>
-              </span>
-              <span role="cell">
-                <select
-                  className="fbtn mini"
-                  value={u.role}
-                  disabled={busy === u.id}
-                  aria-label={`Rol de ${u.full_name || u.email}`}
-                  onChange={(e) =>
-                    setUser(u, { role: e.target.value }, e.target.value === 'company' ? 'Ahora es comercio' : 'Ahora es trabajador')
-                  }
-                >
-                  <option value="worker">Trabajador</option>
-                  <option value="company">Comercio</option>
-                </select>
-              </span>
-              <span role="cell">
-                <small>
-                  {u.listings} publicaciones · {u.applications} postulaciones
-                </small>
-              </span>
-              <span role="cell">
-                <span className="user-flags">
-                  {u.is_admin && <span className="pill active">Admin</span>}
-                  {u.is_blocked && <span className="pill expired">Bloqueado</span>}
-                  {u.is_verified && <span className="pill verified">Verificado</span>}
-                  {!u.is_blocked && !u.is_verified && u.verification_requested && <span className="pill paused">Pide verificación</span>}
-                </span>
-              </span>
-              <span role="cell" className="admin-acts">
-                <button
-                  className="btn btn-line btn-xs"
-                  disabled={busy === u.id || activityLoading}
-                  onClick={() => viewActivity(u)}
-                  title="Ver actividad completa"
-                >
-                  <Eye size={14} aria-hidden="true" />
-                </button>
-                {u.verification_requested && !u.is_verified ? (
-                  <>
-                    <button
-                      className="btn btn-line btn-xs"
-                      disabled={busy === u.id}
-                      onClick={() => setUser(u, { is_verified: true, verification_requested: false }, 'Verificación aceptada')}
-                      title="Aceptar pedido de verificación"
-                    >
-                      Aceptar verificación
-                    </button>
-                    <button
-                      className="btn btn-line btn-xs"
-                      disabled={busy === u.id}
-                      onClick={() => setUser(u, { verification_requested: false }, 'Pedido de verificación rechazado')}
-                      title="Rechazar pedido de verificación"
-                    >
-                      Rechazar
-                    </button>
-                  </>
-                ) : u.is_verified ? (
-                  <button
-                    className="btn btn-line btn-xs"
-                    disabled={busy === u.id}
-                    onClick={() => setUser(u, { is_verified: false }, 'Verificación quitada')}
-                    title="Quitar verificación"
-                  >
-                    Quitar verificación
-                  </button>
-                ) : null}
-                <button
-                  className="btn btn-line btn-xs"
-                  disabled={busy === u.id}
-                  onClick={() => setUser(u, { is_admin: !u.is_admin }, u.is_admin ? 'Ya no es administrador' : 'Ahora es administrador')}
-                  title={u.is_admin ? 'Quitar administrador' : 'Hacer administrador'}
-                >
-                  {u.is_admin ? 'Quitar admin' : 'Hacer admin'}
-                </button>
-                <button
-                  className={`btn btn-xs ${u.is_blocked ? 'btn-line' : 'btn-danger'}`}
-                  disabled={busy === u.id}
-                  onClick={() => setUser(u, { is_blocked: !u.is_blocked }, u.is_blocked ? 'Cuenta desbloqueada' : 'Cuenta bloqueada')}
-                >
-                  {u.is_blocked ? 'Desbloquear' : 'Bloquear'}
-                </button>
-                <button
-                  className="btn btn-danger btn-xs"
-                  disabled={busy === u.id}
-                  onClick={() => deleteUser(u)}
-                  title="Eliminar usuario y todos sus datos"
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-      <UserActivityModal user={activityUser} data={activityData} onClose={() => setActivityUser(null)} loading={activityLoading} />
-    </>
-  );
-}
-
 // ---------- pagos ----------
 function PaymentsTab() {
   const [purchases, setPurchases] = useState(null);
@@ -832,10 +613,9 @@ export default function Admin({ notify, onSettingsSaved }) {
       {tab === 'jobs' && <ListingsTab key="jobs" kind="job" notify={notify} />}
       {tab === 'services' && <ListingsTab key="services" kind="service" notify={notify} />}
       {tab === 'cvs' && <ResumesTab notify={notify} />}
-      {tab === 'users' && <UsersTab notify={notify} />}
+      {tab === 'users' && <UsersPanel notify={notify} />}
       {tab === 'pagos' && <PaymentsTab />}
       {tab === 'recibidos' && <ReportsTab notify={notify} />}
     </section>
   );
 }
-
