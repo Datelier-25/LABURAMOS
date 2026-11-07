@@ -154,8 +154,16 @@ export default function JobSign({
           </div>
         )}
         <div className="card-info">
-          <div className="card-badges">
-            <span className="pill pill-job">Laburo</span>
+          <div className="card-top">
+            <div className="card-badges">
+              <span className="pill pill-job">Laburo</span>
+            </div>
+            {job.location && (
+              <span className="where" title={job.location}>
+                <MapPin size={18} aria-hidden="true" />
+                <span>{job.location}</span>
+              </span>
+            )}
           </div>
           <h3>{job.title}</h3>
           <p className="who-row">
@@ -163,12 +171,6 @@ export default function JobSign({
               <Store size={18} aria-hidden="true" />
               <span className="who-name">{job.company_name}</span>
             </span>
-            {job.location && (
-              <span className="where">
-                <MapPin size={18} aria-hidden="true" />
-                <span>{job.location}</span>
-              </span>
-            )}
           </p>
           {(payLabel || conditions.length > 0) && (
             <p className="meta-row pay card-pay">
@@ -301,8 +303,16 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
           )}
         </div>
         <div className="card-info">
-          <div className="card-badges">
-            <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
+          <div className="card-top">
+            <div className="card-badges">
+              <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
+            </div>
+            {service.city && (
+              <span className="where" title={service.city}>
+                <MapPin size={18} aria-hidden="true" />
+                <span>{service.city}</span>
+              </span>
+            )}
           </div>
           <h3>{service.title}</h3>
           <p className="who-row">
@@ -310,12 +320,6 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
               {isAsk ? <Store size={18} aria-hidden="true" /> : <User size={18} aria-hidden="true" />}
               <span className="who-name">{nameWithPrefix(service.provider_name, service.provider_prefix)}</span>
             </span>
-            {service.city && (
-              <span className="where">
-                <MapPin size={18} aria-hidden="true" />
-                <span>{service.city}</span>
-              </span>
-            )}
           </p>
           {service.price && (
             <p className="meta-row pay card-pay">
