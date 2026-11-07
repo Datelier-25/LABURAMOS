@@ -643,16 +643,35 @@ function UsersTab({ notify }) {
                 >
                   <Eye size={14} aria-hidden="true" />
                 </button>
-                {u.role === 'company' && (
+                {u.verification_requested && !u.is_verified ? (
+                  <>
+                    <button
+                      className="btn btn-line btn-xs"
+                      disabled={busy === u.id}
+                      onClick={() => setUser(u, { is_verified: true, verification_requested: false }, 'Verificación aceptada')}
+                      title="Aceptar pedido de verificación"
+                    >
+                      Aceptar verificación
+                    </button>
+                    <button
+                      className="btn btn-line btn-xs"
+                      disabled={busy === u.id}
+                      onClick={() => setUser(u, { verification_requested: false }, 'Pedido de verificación rechazado')}
+                      title="Rechazar pedido de verificación"
+                    >
+                      Rechazar
+                    </button>
+                  </>
+                ) : u.is_verified ? (
                   <button
                     className="btn btn-line btn-xs"
                     disabled={busy === u.id}
-                    onClick={() => setUser(u, { is_verified: !u.is_verified }, u.is_verified ? 'Verificación quitada' : 'Comercio verificado')}
-                    title={u.is_verified ? 'Quitar verificación' : 'Verificar comercio'}
+                    onClick={() => setUser(u, { is_verified: false }, 'Verificación quitada')}
+                    title="Quitar verificación"
                   >
-                    {u.is_verified ? 'Quitar verificación' : 'Verificar'}
+                    Quitar verificación
                   </button>
-                )}
+                ) : null}
                 <button
                   className="btn btn-line btn-xs"
                   disabled={busy === u.id}
