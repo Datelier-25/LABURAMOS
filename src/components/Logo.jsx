@@ -10,8 +10,8 @@ const SRC = {
     claro: { src: '/marca/logotipo-claro.png', ratio: 1465 / 189 },
     horizontal: { src: '/marca/logotipo-horizontal.png', ratio: 1465 / 189 },
   },
-  isotipo: { color: { src: '/marca/isotipo-caballo.png', ratio: 1 } },
-  busto: { color: { src: '/marca/isotipo.png', ratio: 1 } },
+  isotipo: { color: { src: '/marca/isotipo-caballo.png', ratio: 446 / 107 } },
+  busto: { color: { src: '/marca/isotipo.png', ratio: 446 / 107 } },
 };
 
 export default function Logo({ type = 'logotipo', variant = 'color', size = 44, className = '' }) {
