@@ -1030,6 +1030,29 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .btn-xs { height: 32px; padding: 0 11px; font-size: 0.8rem; }
 .fbtn.mini { height: 34px; padding: 0 10px; font-size: 0.85rem; }
 
+/* ---------- modal de actividad de usuario ---------- */
+.admin-activity { padding: 20px; }
+.admin-activity-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.admin-activity-loading { text-align: center; padding: 40px; color: var(--muted); }
+.admin-activity-section { margin-bottom: 24px; }
+.admin-activity-section h4 { font-size: 1rem; font-weight: 800; margin: 0 0 12px; color: var(--ink); }
+.admin-activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.admin-activity-card { background: var(--mist); border-radius: 12px; padding: 14px; text-align: center; }
+.admin-activity-card b { display: block; font-size: 1.8rem; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+.admin-activity-card span { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.admin-activity-list { display: grid; gap: 8px; }
+.admin-activity-item { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; transition: box-shadow 0.15s; }
+.admin-activity-item:hover { box-shadow: 0 4px 12px -4px rgba(14, 26, 75, 0.15); }
+.admin-activity-meta { display: flex; flex-direction: column; gap: 4px; text-align: right; white-space: nowrap; }
+.admin-activity-meta small { color: var(--muted); font-size: 0.78rem; }
+.admin-activity-empty { text-align: center; padding: 40px; color: var(--muted); }
+.admin-activity-empty p { margin: 0; }
+
+@media (max-width: 640px) {
+  .admin-activity-item { grid-template-columns: 1fr; gap: 8px; }
+  .admin-activity-meta { flex-direction: row; flex-wrap: wrap; text-align: left; justify-content: flex-start; gap: 12px; }
+}
+
 /* ---------- calificar: cumplimiento, responsabilidad y comunicación ---------- */
 .review-dlg { max-width: 500px; }
 .rate-row { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; }

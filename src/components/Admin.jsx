@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
+import { Eye, FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_TYPES, PAY_MODES as MODES, SERVICE_CATEGORIES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
 import { CvModal } from './Candidates';
+import UserActivityModal from './UserActivityModal';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -492,6 +493,9 @@ function UsersTab({ notify }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [busy, setBusy] = useState('');
+  const [activityUser, setActivityUser] = useState(null);
+  const [activityData, setActivityData] = useState(null);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -520,6 +524,32 @@ function UsersTab({ notify }) {
     if (err) setError(friendlyError(err.message));
     else {
       notify(message);
+      load();
+    }
+  };
+
+  const viewActivity = async (u) => {
+    setActivityUser(u);
+    setActivityLoading(true);
+    setActivityData(null);
+    const { data, error: err } = await supabase.rpc('admin_user_activity', { p_user: u.id });
+    setActivityLoading(false);
+    if (err) {
+      notify(friendlyError(err.message), 'err');
+    } else {
+      setActivityData(data);
+    }
+  };
+
+  const deleteUser = async (u) => {
+    if (!window.confirm(`¿Eliminar a ${u.full_name || u.email}? Se borrarán TODOS sus datos: avisos, postulaciones, CV, reseñas, compras y su perfil. Esta acción NO se puede deshacer.`)) return;
+    setBusy(u.id);
+    setError('');
+    const { error: err } = await supabase.rpc('admin_delete_user', { p_user: u.id });
+    setBusy('');
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify('Usuario eliminado');
       load();
     }
   };
@@ -605,6 +635,14 @@ function UsersTab({ notify }) {
                 </span>
               </span>
               <span role="cell" className="admin-acts">
+                <button
+                  className="btn btn-line btn-xs"
+                  disabled={busy === u.id || activityLoading}
+                  onClick={() => viewActivity(u)}
+                  title="Ver actividad completa"
+                >
+                  <Eye size={14} aria-hidden="true" />
+                </button>
                 {u.role === 'company' && (
                   <button
                     className="btn btn-line btn-xs"
@@ -630,11 +668,20 @@ function UsersTab({ notify }) {
                 >
                   {u.is_blocked ? 'Desbloquear' : 'Bloquear'}
                 </button>
+                <button
+                  className="btn btn-danger btn-xs"
+                  disabled={busy === u.id}
+                  onClick={() => deleteUser(u)}
+                  title="Eliminar usuario y todos sus datos"
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                </button>
               </span>
             </div>
           ))}
         </div>
       )}
+      <UserActivityModal user={activityUser} data={activityData} onClose={() => setActivityUser(null)} loading={activityLoading} />
     </>
   );
 }
@@ -772,3 +819,4 @@ export default function Admin({ notify, onSettingsSaved }) {
     </section>
   );
 }
+
