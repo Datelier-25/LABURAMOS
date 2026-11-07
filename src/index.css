@@ -1144,7 +1144,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .avatar-crop input[type="range"] { width: 100%; accent-color: var(--ultra); }
 
 /* ==========================================================================
-   Panel de usuarios: diseño basado en tarjetas (mejorado)
+   Panel de usuarios: tarjeta horizontal compacta y limpia
    ========================================================================== */
 
 .users-panel { margin-top: 10px; }
@@ -1210,7 +1210,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 }
 
 .user-card:hover { box-shadow: 0 8px 24px -6px rgba(14, 26, 75, 0.08); border-color: var(--line); }
-.user-card.blocked { border-color: #ffe3dd; background: #fff9f8; opacity: 0.9; }
+.user-card.blocked { border-color: #ffe3dd; background: #fff9f8; opacity: 0.95; }
 
 .user-avatar {
   width: 44px;
@@ -1225,7 +1225,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   flex: 0 0 auto;
 }
 
-/* Meta: todo en línea */
+/* Meta: nombre, email, rol en columna izquierda */
 .user-meta {
   display: flex;
   flex-direction: column;
@@ -1298,14 +1298,14 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   color: #374151;
 }
 
-/* Actividad: números al lado */
+/* Actividad: números pequeños entre meta y acciones */
 .user-activity {
   display: flex;
   flex-direction: column;
   gap: 2px;
   align-items: flex-start;
   justify-content: center;
-  min-width: 110px;
+  width: 100px;
   font-size: 0.75rem;
   color: #6b7280;
   font-weight: 600;
@@ -1319,7 +1319,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 }
 
 .stat-item .value {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--ink);
 }
@@ -1331,14 +1331,13 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   letter-spacing: 0.02em;
 }
 
-/* Acciones: todas en línea a la derecha */
+/* Acciones: botones compactos a la derecha, sin min-width grande */
 .user-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   justify-content: flex-end;
-  min-width: 200px;
 }
 
 .btn-icon {
