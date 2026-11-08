@@ -1,3 +1,0 @@
-# Cloudflare Pages / Netlify: SPA con History API.
-# Cualquier ruta que no sea un archivo estático devuelve index.html.
-/*  /index.html  200
