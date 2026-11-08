@@ -9,7 +9,7 @@ Host alternativo mientras Netlify tiene el deploy bloqueado por créditos
 |---|---|
 | Cuenta | `Fvontivero@gmail.com's Account` (`541937cb8317e928d808e16e66d3965b`) |
 | Proyecto | Worker `laburamosapp` (assets estáticos) |
-| URL | `https://laburamosapp.fvontivero.workers.dev` |
+| URL | `https://laburamosapp.laburos-y-oficios.workers.dev` |
 | Config | `wrangler.jsonc` en la raíz del repo |
 
 Es un **Worker con assets estáticos** (no un proyecto Pages): Cloudflare publica
@@ -35,7 +35,7 @@ son públicas):
 |---|---|
 | `VITE_SUPABASE_URL` | `https://fcfomffkmxcakqmbugje.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | la anon/publishable key del Supabase de LaburamosApp |
-| `VITE_SITE_URL` | `https://laburamosapp.fvontivero.workers.dev` |
+| `VITE_SITE_URL` | `https://laburamosapp.laburos-y-oficios.workers.dev` |
 
 Nunca cargar la `service_role` ni la clave de Mercado Pago: todo lo que empieza
 con `VITE_` queda visible en el navegador.
@@ -55,8 +55,8 @@ con `VITE_` queda visible en el navegador.
 
 En Supabase (proyecto `fcfomffkmxcakqmbugje`) → **Authentication → URL Configuration**:
 
-- **Site URL**: `https://laburamosapp.fvontivero.workers.dev`
-- **Redirect URLs**: agregar `https://laburamosapp.fvontivero.workers.dev/**`
+- **Site URL**: `https://laburamosapp.laburos-y-oficios.workers.dev`
+- **Redirect URLs**: agregar `https://laburamosapp.laburos-y-oficios.workers.dev/**`
 
 Sin esto, los mails de confirmación y de recuperación siguen apuntando a Netlify.
 

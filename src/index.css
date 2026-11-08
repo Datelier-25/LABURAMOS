@@ -35,6 +35,11 @@
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
+/* Bloqueo de scroll mientras hay una ventana modal abierta (ver lib/scrollLock.js).
+   El contador compartido evita que el body quede bloqueado al cerrar ventanas
+   anidadas en distinto orden. */
+html.scroll-locked, html.scroll-locked body { overflow: hidden; }
+
 body {
   margin: 0;
   font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -816,6 +821,15 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .zone-or::before, .zone-or::after { content: ''; height: 2px; background: var(--line); flex: 1; }
 .zone-all { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 999px; border: 2px solid var(--ink); background: #fff; color: var(--ink); font-weight: 800; }
 .zone-note { color: var(--muted); font-size: 0.88rem; font-weight: 600; }
+
+/* En pantallas bajas la bienvenida de zona puede superar el alto disponible.
+   Dejamos que el fondo scrollee y el cierre quede siempre a la vista. */
+.zone-welcome { overflow-y: auto; }
+@media (max-width: 700px) {
+  .zone-welcome { align-items: flex-start; }
+  .zone-welcome .place-dlg { max-height: none; }
+  .zone-welcome .place-head { position: sticky; top: 0; z-index: 1; background: #fff; }
+}
 
 /* ---------- ampliación de radio ---------- */
 .radius-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 14px 0 4px; }

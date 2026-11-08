@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Eye, EyeOff, LocateFixed, SlidersHorizontal, X } from 'lucide-react';
 import { initials } from '../lib/utils';
@@ -223,11 +224,10 @@ function FilterSheet({ groups, segment, toggles, distance, onClear, onClose, tot
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onClose]);
 

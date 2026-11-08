@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
@@ -121,11 +122,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onClose]);
 

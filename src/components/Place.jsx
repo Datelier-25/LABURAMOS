@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import { ChevronDown, LocateFixed, MapPin, X } from 'lucide-react';
 import { ALL_ZONE, isAll, locateMe, placeLabel, sameZone, searchPlaces, usePlaces, zoneShort, zoneText } from '../lib/geo';
@@ -22,11 +23,10 @@ function PlaceDialog({ title, current, withProvinces, onPick, onClose }) {
       closeRef.current();
     };
     window.addEventListener('keydown', onKey, true);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, []);
 

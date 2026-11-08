@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Pencil, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -34,14 +35,13 @@ export default function UserActivityModal({ user, data, onClose, loading, error,
 
   useEffect(() => {
     const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
     const el = dialog.current;
     el.showModal();
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     closeButton.current?.focus();
     return () => {
       el.close();
-      document.body.style.overflow = previousOverflow;
+      unlock();
       if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, []);

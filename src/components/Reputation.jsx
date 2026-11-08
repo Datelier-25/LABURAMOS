@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import { BadgeCheck, ShieldCheck, Star, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -120,11 +121,10 @@ function ReputationModal({ data, onClose }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onClose]);
 

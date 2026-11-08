@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { FileText, Mail, Phone, Search, ShieldCheck, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ageFrom, friendlyError, plural, timeAgo, toneFromName, waLink } from '../lib/utils';
@@ -16,11 +17,10 @@ export function CvModal({ resume, onClose }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onClose]);
   return (

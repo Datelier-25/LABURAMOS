@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lockScroll } from '../lib/scrollLock';
 import { FileText, Loader2, ShieldCheck, UserRound, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
@@ -18,11 +19,10 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && !sending && onClose();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onClose, sending]);
 

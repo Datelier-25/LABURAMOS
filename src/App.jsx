@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient';
 import useSaved from './lib/useSaved';
 import { useZone } from './lib/geo';
 import { useSettings } from './lib/settings';
+import { lockScroll } from './lib/scrollLock';
 import AuthScreen from './components/AuthScreen';
 import ResetPassword from './components/ResetPassword';
 import Nav from './components/Nav';
@@ -64,7 +65,7 @@ const pathFor = (id) => (id === 'home' ? '/' : `/${id}`);
 
 // Dominio público del sitio. Se configura por entorno (Netlify, Cloudflare Pages…) con
 // VITE_SITE_URL; herramientas/postbuild.mjs usa el mismo valor para el sitemap y robots.
-const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://laburamosapp.netlify.app').replace(/\/+$/, '');
+const SITE_URL = (import.meta.env?.VITE_SITE_URL || 'https://laburamosapp.laburos-y-oficios.workers.dev').replace(/\/+$/, '');
 
 const TITLES = {
   home: 'LaburamosApp · Laburos, oficios y changas cerca tuyo',
@@ -121,11 +122,7 @@ export default function App() {
   // Si abrimos el ingreso (modal), bloqueamos el scroll del fondo
   useEffect(() => {
     if (!authOpen) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return lockScroll();
   }, [authOpen]);
 
   // La sesión de Supabase cierra el ingreso después de loguearse
