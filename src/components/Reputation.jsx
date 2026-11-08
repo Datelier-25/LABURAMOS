@@ -36,7 +36,7 @@ export function reviewScore(r) {
 
 // Puntaje público de una cuenta: número (sobre 100) y cantidad de valoraciones.
 // Tocar el puntaje abre el detalle y las reseñas escritas.
-export function Reputation({ data, className = '', showStatus = false, showReviews = true }) {
+export function Reputation({ data, className = '', showStatus = false, showReviews = true, readOnly = false }) {
   const [open, setOpen] = useState(false);
   const reviews = Number(data?.reviews || 0);
   const score = Number(data?.score || 0);
@@ -75,7 +75,7 @@ export function Reputation({ data, className = '', showStatus = false, showRevie
         </span>
         {showReviews && <span className="divider" aria-hidden="true" />}
         {showReviews && (reviews > 0 ? (
-          <button type="button" className="rep-score tone-high" style={{ background: 'none', border: 'none' }} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
+          <button type="button" disabled={readOnly} className="rep-score tone-high" style={{ background: 'none', border: 'none' }} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
             <Star size={18} aria-hidden="true" fill="currentColor" />
             <b>{score}</b>
             <span>· {reviews} {reviews === 1 ? 'valoración' : 'valoraciones'}</span>
@@ -83,7 +83,7 @@ export function Reputation({ data, className = '', showStatus = false, showRevie
         ) : (
           <span className="rep-empty">Sin valoraciones</span>
         ))}
-        {showReviews && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
+        {showReviews && !readOnly && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
       </span>
     );
   }
@@ -98,13 +98,13 @@ export function Reputation({ data, className = '', showStatus = false, showRevie
         </span>
       )}
       {showReviews && reviews > 0 && (
-        <button type="button" className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
+        <button type="button" disabled={readOnly} className={`rep-score tone-${scoreTone(score)}`} onClick={() => setOpen(true)} title={scoreTitle} aria-label={scoreTitle}>
           <ShieldCheck size={14} aria-hidden="true" />
           <b>{score}</b>
           <small>({reviews})</small>
         </button>
       )}
-      {showReviews && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
+      {showReviews && !readOnly && open && <ReputationModal data={data} onClose={() => setOpen(false)} />}
     </span>
   );
 }

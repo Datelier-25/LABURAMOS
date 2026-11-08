@@ -1,3 +1,5 @@
+import Logo from './Logo';
+
 // Pantalla que se muestra cuando faltan las variables de Supabase en Vite.
 // Evita que la app intente conectarse a una base equivocada y explica qué hacer.
 export default function ConfigScreen() {
@@ -21,11 +23,7 @@ export default function ConfigScreen() {
           boxShadow: '0 20px 60px rgba(10, 30, 60, .10)',
         }}
       >
-        <img
-          src="/marca/logotipo.png"
-          alt="LaburamosApp"
-          style={{ height: 38, width: 'auto', marginBottom: 22 }}
-        />
+        <div style={{ marginBottom: 22 }}><Logo size={38} /></div>
         <h1 style={{ fontSize: 'clamp(24px, 4vw, 34px)', lineHeight: 1.1, margin: '0 0 10px' }}>
           Falta conectar Supabase
         </h1>

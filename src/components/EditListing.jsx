@@ -17,7 +17,7 @@ const clean = (value) => {
 
 // Edición de un aviso propio (o de cualquiera, si la cuenta es admin).
 // La base vuelve a validar la propiedad en admin_update_listing.
-export default function EditListing({ kind, item, onClose, onSaved }) {
+export default function EditListing({ kind, item, onClose, onSaved, embedded = false, onBusyChange }) {
   const isJob = kind === 'job';
   const [f, setF] = useState({
     title: item.title || '',
@@ -44,6 +44,7 @@ export default function EditListing({ kind, item, onClose, onSaved }) {
   const set = (patch) => setF((x) => ({ ...x, ...patch }));
 
   useEffect(() => {
+    if (embedded) return;
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -52,11 +53,12 @@ export default function EditListing({ kind, item, onClose, onSaved }) {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [onClose, embedded]);
 
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
+    onBusyChange?.(true);
     setError('');
     const common = {
       title: f.title,
@@ -95,25 +97,22 @@ export default function EditListing({ kind, item, onClose, onSaved }) {
     });
     if (payload.province) payload.province = clean(payload.province);
 
-    const { error: err } = await supabase.rpc('admin_update_listing', {
-      p_kind: kind,
-      p_id: item.id,
-      p: payload,
-    });
-    setSaving(false);
-    if (err) setError(friendlyError(err.message));
-    else {
+    try {
+      const { error: err } = await supabase.rpc('admin_update_listing', {
+        p_kind: kind, p_id: item.id, p: payload,
+      });
+      if (err) throw err;
       onSaved?.(kind, item.id);
       onClose?.();
-    }
+    } catch (err) { setError(friendlyError(err.message)); }
+    finally { setSaving(false); onBusyChange?.(false); }
   };
 
-  return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <form className="place-dlg admin-edit" role="dialog" aria-modal="true" aria-label="Editar publicación" onSubmit={save}>
+  const form = (
+      <form className={`place-dlg admin-edit${embedded ? ' au-embedded-edit' : ''}`} role={embedded ? undefined : 'dialog'} aria-modal={embedded ? undefined : 'true'} aria-label="Editar publicación" onSubmit={save}>
         <div className="place-head">
           <h2>Editar {isJob ? 'aviso' : 'servicio'}</h2>
-          <button type="button" className="x-sm" onClick={onClose} aria-label="Cerrar">
+          <button type="button" className="x-sm" disabled={saving} onClick={onClose} aria-label="Cerrar edición">
             <X size={18} />
           </button>
         </div>
@@ -245,6 +244,7 @@ export default function EditListing({ kind, item, onClose, onSaved }) {
               <option value="active">Activo</option>
               <option value="paused">Pausado</option>
               {isJob && <option value="filled">Cubierto</option>}
+              {f.status === 'expired' && <option value="expired">Vencido</option>}
             </select>
           </label>
           <label className="field">
@@ -262,6 +262,6 @@ export default function EditListing({ kind, item, onClose, onSaved }) {
           {saving ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </form>
-    </div>
   );
+  return embedded ? form : <div className="overlay" onMouseDown={(e) => !saving && e.target === e.currentTarget && onClose?.()}>{form}</div>;
 }

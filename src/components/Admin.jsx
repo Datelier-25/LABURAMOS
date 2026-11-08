@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Eye, FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
+import { FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_TYPES, PAY_MODES as MODES, SERVICE_CATEGORIES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
 import { CvModal } from './Candidates';
-import UserActivityModal from './UserActivityModal';
 import UsersPanel from './UsersPanel';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
@@ -592,30 +591,32 @@ function ReportsTab({ notify }) {
   );
 }
 
-export default function Admin({ notify, onSettingsSaved }) {
-  const [tab, setTab] = useState('config');
+export default function Admin({ notify, onSettingsSaved, currentUser }) {
+  const [tab, setTab] = useState('users');
   return (
-    <section className="wrap page">
-      <header className="page-head">
+    <section className="wrap page admin-page">
+      <header className={tab === 'users' ? 'sr' : 'page-head admin-page-head'}>
         <div>
           <h1 className="page-title">Administración</h1>
           <p className="lede">Configurá duraciones y precios, y revisá, editá o eliminá cualquier publicación o CV de la app.</p>
         </div>
       </header>
-      <div className="admin-tabs" role="tablist">
+      <nav className="admin-tabs" aria-label="Secciones de Administración">
         {TABS.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
+          <button type="button" key={t.id} aria-pressed={tab === t.id} aria-controls="admin-tab-content" className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
             {t.label}
           </button>
         ))}
-      </div>
+      </nav>
+      <div id="admin-tab-content">
       {tab === 'config' && <SettingsTab notify={notify} onSaved={onSettingsSaved} />}
       {tab === 'jobs' && <ListingsTab key="jobs" kind="job" notify={notify} />}
       {tab === 'services' && <ListingsTab key="services" kind="service" notify={notify} />}
       {tab === 'cvs' && <ResumesTab notify={notify} />}
-      {tab === 'users' && <UsersPanel notify={notify} />}
+      {tab === 'users' && <UsersPanel notify={notify} currentUser={currentUser} />}
       {tab === 'pagos' && <PaymentsTab />}
       {tab === 'recibidos' && <ReportsTab notify={notify} />}
+      </div>
     </section>
   );
 }

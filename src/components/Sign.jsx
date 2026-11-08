@@ -16,6 +16,12 @@ import { nameWithPrefix } from '../lib/prefixes';
 import { Reputation } from './Reputation';
 import EditListing from './EditListing';
 
+// Si falta una ilustración en el despliegue, la tarjeta conserva su imagen de respaldo.
+function ListingArt({ src, emoji }) {
+  const [failed, setFailed] = useState(false);
+  return src && !failed ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="plate-emoji">{emoji}</span>;
+}
+
 // Fotos del aviso (hasta 5). En la vista previa no son enlaces.
 function ServicePhotos({ service, preview }) {
   const photos = (service.photos || []).filter(Boolean).slice(0, MAX_SERVICE_PHOTOS);
@@ -56,7 +62,7 @@ function CardActs({ saved, onSave, onShare, onReport, dead }) {
       <button type="button" disabled={dead || !onShare} onClick={share} aria-label="Compartir aviso con otra persona">
         <Share2 size={16} aria-hidden="true" /> {shareHint || 'Compartir'}
       </button>
-      {onReport && (
+      {(onReport || dead) && (
         <button type="button" disabled={dead} onClick={onReport} aria-label="Denunciar aviso">
           <AlertTriangle size={16} aria-hidden="true" /> Denunciar
         </button>
@@ -146,11 +152,7 @@ export default function JobSign({
       <div className="card-body">
         {!compact && (
           <div className="plate" aria-hidden="true">
-            {emote ? (
-              <img src={emote} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
-            ) : (
-              <span className="plate-emoji">{emojiOf(job.category)}</span>
-            )}
+            <ListingArt key={emote} src={emote} emoji={emojiOf(job.category)} />
           </div>
         )}
         <div className="card-info">
@@ -189,7 +191,7 @@ export default function JobSign({
       </div>
 
       <div className="plate-bottom">
-        <Reputation data={job.reputation} showStatus showReviews={false} />
+        <Reputation data={job.reputation} showStatus showReviews={false} readOnly={preview} />
       </div>
 
       <div className="card-extra">
@@ -294,13 +296,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
     <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
       <div className="card-body">
         <div className={`plate${photosList[0] ? ' photo' : ''}`} aria-hidden="true">
-          {photosList[0] ? (
-            <img src={servicePhotoUrl(photosList[0])} alt="" loading="lazy" />
-          ) : emote ? (
-            <img src={emote} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
-          ) : (
-            <span className="plate-emoji">{emoji}</span>
-          )}
+          <ListingArt key={photosList[0] || emote} src={photosList[0] ? servicePhotoUrl(photosList[0]) : emote} emoji={emoji} />
         </div>
         <div className="card-info">
           <div className="card-top">
@@ -332,7 +328,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
       </div>
 
       <div className="plate-bottom">
-        <Reputation data={service.reputation} showStatus />
+        <Reputation data={service.reputation} showStatus readOnly={preview} />
       </div>
 
       <div className="card-extra">

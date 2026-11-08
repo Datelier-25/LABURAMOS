@@ -6,6 +6,7 @@ import ConfigScreen from './components/ConfigScreen.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { supabaseConfigMissing } from './supabaseClient'
 import './index.css'
+import './admin.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
