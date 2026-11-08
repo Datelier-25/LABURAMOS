@@ -85,12 +85,12 @@ export default function UserActivityModal({ user, data, onClose, loading }) {
                     <div key={s.id} className="admin-activity-item">
                       <div>
                         <b>{s.title}</b>
-                        <small> · {s.category} · {s.mode} · {s.location}</small>
+                        <small> · {s.category} · {s.mode === 'ofrece' ? 'Ofrece' : s.mode === 'busca' ? 'Busca' : s.mode} · {s.location}</small>
                       </div>
                       <div className="admin-activity-meta">
                         <span className={`pill ${s.status === 'active' ? 'active' : s.status === 'paused' ? 'paused' : s.status === 'filled' ? 'verified' : 'expired'}`}>{s.status}</span>
                         <small>Creado: {fmt(s.created_at)} · Vence: {fmt(s.expires_at)}</small>
-                        <small>{s.applications_count} contactos</small>
+                        {s.applications_count > 0 && <small>{s.applications_count} contactos</small>}
                       </div>
                     </div>
                   ))}
@@ -105,8 +105,11 @@ export default function UserActivityModal({ user, data, onClose, loading }) {
                   {applications.map((a) => (
                     <div key={a.id} className="admin-activity-item">
                       <div>
-                        <b>{a.job_title || a.service_title}</b>
-                        <small> · {a.status === 'pending' ? 'Pendiente' : a.status === 'accepted' ? 'Aceptada' : a.status === 'rejected' ? 'Rechazada' : a.status}</small>
+                        <b>{a.job_title || a.service_title || 'Publicación eliminada'}</b>
+                        <small>
+                          {a.company_name ? ` · ${a.company_name}` : ''}
+                          {a.status ? ` · ${a.status === 'pending' ? 'Pendiente' : a.status === 'accepted' ? 'Aceptada' : a.status === 'rejected' ? 'Rechazada' : a.status}` : ''}
+                        </small>
                       </div>
                       <div className="admin-activity-meta">
                         <small>{fmtDateTime(a.created_at)}</small>
@@ -164,7 +167,7 @@ export default function UserActivityModal({ user, data, onClose, loading }) {
                 <div className="admin-activity-item">
                   <div>
                     <b>{cv.headline || 'Sin título'}</b>
-                    <small> · {cv.availability || '—'} · ${cv.salary_expectation || '—'}</small>
+                    <small> · {cv.availability || '—'}{cv.salary_expectation ? ` · $${cv.salary_expectation}` : ''}</small>
                   </div>
                   <div className="admin-activity-meta">
                     <small>Actualizado: {fmt(cv.updated_at)}</small>
