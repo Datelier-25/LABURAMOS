@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   Clock3,
   MapPin,
+  Pencil,
   Share2,
   Store,
   User,
@@ -43,9 +44,12 @@ function ServicePhotos({ service, preview }) {
   );
 }
 
-// Fila de tres acciones (Guardar / Compartir / Denunciar) de la tarjeta.
-function CardActs({ saved, onSave, onShare, onReport, dead }) {
+// Fila de acciones de la tarjeta: Guardar / Compartir (+ Editar o Denunciar).
+// Para el administrador, editar es un lápiz compacto a la derecha de Denunciar.
+function CardActs({ saved, onSave, onShare, onReport, onEdit, editIcon = false, dead }) {
   const [shareHint, setShareHint] = useState('');
+  const showReport = !!onReport || dead;
+  const adminEdit = !!onEdit && editIcon;
   const share = async () => {
     if (!onShare) return;
     const result = await onShare();
@@ -55,28 +59,28 @@ function CardActs({ saved, onSave, onShare, onReport, dead }) {
     }
   };
   return (
-    <div className="card-acts">
+    <div className={`card-acts${adminEdit ? ' has-edit-icon' : ''}${adminEdit && showReport ? ' has-report' : ''}`}>
       <button type="button" disabled={dead} className={saved ? 'on' : ''} onClick={onSave} aria-label={saved ? 'Quitar de guardados' : 'Guardar aviso'} aria-pressed={saved}>
         <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" /> {saved ? 'Guardado' : 'Guardar'}
       </button>
       <button type="button" disabled={dead || !onShare} onClick={share} aria-label="Compartir aviso con otra persona">
         <Share2 size={16} aria-hidden="true" /> {shareHint || 'Compartir'}
       </button>
-      {(onReport || dead) && (
+      {onEdit && !editIcon && (
+        <button type="button" disabled={dead} onClick={onEdit} aria-label="Editar aviso">
+          <Pencil size={16} aria-hidden="true" /> Editar
+        </button>
+      )}
+      {showReport && (
         <button type="button" disabled={dead} onClick={onReport} aria-label="Denunciar aviso">
           <AlertTriangle size={16} aria-hidden="true" /> Denunciar
         </button>
       )}
-    </div>
-  );
-}
-
-function editButton(onClick) {
-  return (
-    <div className="edit-row">
-      <button type="button" className="edit-btn" onClick={onClick}>
-        ✎ Editar
-      </button>
+      {onEdit && editIcon && (
+        <button type="button" className="card-edit-icon" disabled={dead} onClick={onEdit} aria-label="Editar aviso" title="Editar aviso">
+          <Pencil size={17} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }
@@ -208,8 +212,6 @@ export default function JobSign({
         )}
       </div>
 
-      {canEdit && editButton(() => setEditing(true))}
-
       {(interactive || preview) && (
         <>
           <CardActs
@@ -217,6 +219,8 @@ export default function JobSign({
             onSave={onSave ? () => onSave(job.id) : undefined}
             onShare={preview ? undefined : share}
             onReport={canReport ? () => onReport({ kind: 'job', job }) : undefined}
+            onEdit={canEdit && !preview ? () => setEditing(true) : undefined}
+            editIcon={canEdit && !!user?.isAdmin}
             dead={preview}
           />
           {!preview &&
@@ -335,8 +339,6 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
         {service.description && <p className="desc">{service.description}</p>}
       </div>
 
-      {canEdit && editButton(() => setEditing(true))}
-
       {extraPhotos.length > 0 && (
         <ServicePhotos service={{ ...service, photos: extraPhotos }} preview={preview} />
       )}
@@ -348,6 +350,8 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
             onSave={onSave ? () => onSave(service.id) : undefined}
             onShare={preview ? undefined : share}
             onReport={canReport ? () => onReport({ kind: 'service', service }) : undefined}
+            onEdit={canEdit && !preview ? () => setEditing(true) : undefined}
+            editIcon={canEdit && !!user?.isAdmin}
             dead={preview}
           />
           {cta}

@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Check, Download, Lock, Mail, MapPin, Phone, Plus, Share2, Trash2, X } from 'lucide-react';
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Lightbulb,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Share2,
+  Tags,
+  Trash2,
+  UserRoundCheck,
+  X,
+} from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { AVAILABILITY, ageFrom, cleanPhone, friendlyError, isValidPhone, money } from '../lib/utils';
 import { SKILL_GROUPS } from '../lib/skills';
@@ -108,6 +125,10 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
   const [loadError, setLoadError] = useState('');
   const [skillDraft, setSkillDraft] = useState('');
   const [skillTab, setSkillTab] = useState(SKILL_GROUPS[0].id);
+  const [tool, setTool] = useState(null); // 'ideas' | 'skills' | null
+  const [ideaIndex, setIdeaIndex] = useState(0);
+  const toolsRef = useRef(null);
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [access, setAccess] = useState(null); // lo que devuelve cv_access()
   const [paying, setPaying] = useState(false);
   const [payNote, setPayNote] = useState(null); // { type, text }
@@ -125,8 +146,12 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
   useEffect(() => {
     let off = false;
     (async () => {
-      const { data, error: loadErr } = await supabase.from('resumes').select('*').eq('user_id', user.id).maybeSingle();
+      const [{ data, error: loadErr }, { data: prof }] = await Promise.all([
+        supabase.from('resumes').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle(),
+      ]);
       if (off) return;
+      if (prof?.avatar_url) setAvatarUrl(prof.avatar_url);
       if (loadErr) {
         // No mostramos el formulario vacío: guardar así pisaría el CV existente
         setLoadError('No pudimos cargar tu CV. Revisá tu conexión y recargá la página.');
@@ -169,6 +194,28 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
     return () => document.body.classList.remove('on-cv');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Las ventanas de ideas y habilidades se cierran al tocar afuera o con Escape.
+  useEffect(() => {
+    if (!tool) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setTool(null);
+    };
+    const onDown = (e) => {
+      if (!toolsRef.current?.contains(e.target)) setTool(null);
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [tool]);
+
+  // Si cambia la profesión, las ideas disponibles cambian: volvemos a la primera.
+  useEffect(() => {
+    setIdeaIndex(0);
+  }, [form.profession]);
 
   // Vuelta de Mercado Pago: esperamos la confirmación del pago (llega por el aviso al servidor)
   useEffect(() => {
@@ -238,6 +285,37 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
       notify('Foto cargada. Guardá el CV para que quede.');
     } catch (err) {
       setError(friendlyError(err.message || 'No pudimos subir la foto.'));
+    }
+    setUploading(false);
+  };
+
+  // Reutiliza la foto del perfil: copia una versión comprimida al bucket privado del CV.
+  const useProfilePhoto = async () => {
+    if (!avatarUrl) return;
+    setError('');
+    setUploading(true);
+    try {
+      let original;
+      try {
+        const res = await fetch(avatarUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error('fetch');
+        original = await res.blob();
+      } catch {
+        // Si el navegador no puede leer la URL pública, la bajamos con la sesión.
+        const { data, error: downErr } = await supabase.storage.from('avatars').download(`${user.id}/avatar.jpg`);
+        if (downErr) throw downErr;
+        original = data;
+      }
+      const blob = await compress(original);
+      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+      const { error: upErr } = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) throw upErr;
+      const old = form.photo_path;
+      set({ photo_path: path });
+      if (old && old !== path) supabase.storage.from(PHOTO_BUCKET).remove([old]);
+      notify('Usamos tu foto de perfil. Guardá el CV para que quede.');
+    } catch (err) {
+      setError(friendlyError(err.message || 'No pudimos usar tu foto de perfil.'));
     }
     setUploading(false);
   };
@@ -371,6 +449,8 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
 
   const age = ageFrom(form.birth_date);
   const skillGroup = SKILL_GROUPS.find((g) => g.id === skillTab) || SKILL_GROUPS[0];
+  const ideas = ideasFor(form.profession);
+  const ideaText = ideas[Math.min(ideaIndex, ideas.length - 1)] || ideas[0];
   const checks = [form.full_name, form.profession, form.summary, form.photo_path, form.skills.length, form.experience.length || form.education.length, isValidPhone(form.phone)];
   const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
   const canShare = form.profession && isValidPhone(form.phone);
@@ -473,79 +553,127 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
           </div>
         </div>
 
-        <div className="cvdoc" style={themeVars(form.theme)}>
-          {/* Trama de marcas de agua mientras se arma: el CV limpio sale solo con "Descargar PDF" */}
-          <div className="cv-tiles" aria-hidden="true" />
-          {/* ---------- izquierda arriba: foto ---------- */}
-          <div className="cv-photo-cell">
-            <div className="cv-photo">
-              {photoUrl ? <img src={photoUrl} alt="Tu foto" /> : <Camera size={34} aria-hidden="true" />}
-              <button type="button" className="cv-photo-btn" onClick={() => fileInput.current?.click()} disabled={uploading}>
-                {uploading ? 'Subiendo…' : form.photo_path ? 'Cambiar foto' : 'Agregar foto'}
-              </button>
-              {form.photo_path && !uploading && (
-                <button type="button" className="cv-photo-x" onClick={() => set({ photo_path: '' })} aria-label="Quitar foto">
+        {/* Herramientas fuera de la hoja: ideas para la presentación y habilidades */}
+        <div className="cv-tools" ref={toolsRef}>
+          <button
+            type="button"
+            className={`cv-focus${tool === 'ideas' ? ' on' : ''}`}
+            onClick={() => setTool((t) => (t === 'ideas' ? null : 'ideas'))}
+            aria-expanded={tool === 'ideas'}
+            aria-controls="cv-ideas-pop"
+            title="Ideas para la presentación"
+          >
+            <Lightbulb size={19} aria-hidden="true" /> Ideas
+          </button>
+          <button
+            type="button"
+            className={`cv-focus${tool === 'skills' ? ' on' : ''}`}
+            onClick={() => setTool((t) => (t === 'skills' ? null : 'skills'))}
+            aria-expanded={tool === 'skills'}
+            aria-controls="cv-skills-pop"
+            title="Elegir habilidades"
+          >
+            <Tags size={19} aria-hidden="true" /> Habilidades
+            <span className="cv-focus-count">{form.skills.length}</span>
+          </button>
+
+          {tool === 'ideas' && (
+            <div className="cv-tool-pop" id="cv-ideas-pop" role="dialog" aria-label="Ideas para la presentación">
+              <div className="cv-tool-head">
+                <b>
+                  Ideas para la presentación <small>{ideaIndex + 1}/{ideas.length}</small>
+                </b>
+                <button type="button" className="cv-tool-x" onClick={() => setTool(null)} aria-label="Cerrar ideas">
                   <X size={16} />
                 </button>
+              </div>
+              <p className="cv-idea-text" aria-live="polite">{ideaText}</p>
+              <div className="cv-tool-nav">
+                <button
+                  type="button"
+                  onClick={() => setIdeaIndex((i) => (i - 1 + ideas.length) % ideas.length)}
+                  disabled={ideas.length < 2}
+                  aria-label="Idea anterior"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span>Pasá las ideas con las flechas</span>
+                <button
+                  type="button"
+                  onClick={() => setIdeaIndex((i) => (i + 1) % ideas.length)}
+                  disabled={ideas.length < 2}
+                  aria-label="Idea siguiente"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ink btn-sm"
+                onClick={() => {
+                  set({ summary: ideaText.slice(0, MAX_SUMMARY) });
+                  setTool(null);
+                  notify('Idea agregada a tu presentación');
+                }}
+              >
+                <Check size={16} /> Usar esta idea
+              </button>
+              <small className="cv-tool-note">Después podés cambiarla a tu gusto en la presentación.</small>
+            </div>
+          )}
+
+          {tool === 'skills' && (
+            <div className="cv-tool-pop" id="cv-skills-pop" role="dialog" aria-label="Elegir habilidades">
+              <div className="cv-tool-head">
+                <b>
+                  Habilidades <small>{form.skills.length}/{MAX_SKILLS}</small>
+                </b>
+                <button type="button" className="cv-tool-x" onClick={() => setTool(null)} aria-label="Cerrar habilidades">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {form.skills.length > 0 ? (
+                <ul className="cv-skill-chips">
+                  {form.skills.map((s) => (
+                    <li key={s}>
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => set({ skills: form.skills.filter((x) => x !== s) })}
+                        aria-label={`Quitar ${s}`}
+                      >
+                        <X size={13} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="cv-tool-note">Todavía no elegiste habilidades. Sumá las que mejor te representen.</p>
               )}
-              <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="sr" onChange={onPhoto} tabIndex={-1} />
-            </div>
-          </div>
 
-          {/* ---------- centro y derecha arriba: nombre y profesión ---------- */}
-          <div className="cv-head">
-            <Ed className="cv-name" placeholder="Nombre y apellido" value={form.full_name} onChange={(e) => set({ full_name: e.target.value })} aria-label="Nombre y apellido" maxLength={80} />
-            <Ed className="cv-role" placeholder="Profesión u oficio" value={form.profession} onChange={(e) => set({ profession: e.target.value })} aria-label="Profesión u oficio" maxLength={80} />
-          </div>
-
-          {/* ---------- izquierda: datos, habilidades y contacto ---------- */}
-          <aside className="cv-side">
-            <div className="cv-block">
-              <h3>Datos</h3>
-              <label className="cv-line">
-                <span>Nacimiento</span>
-                <Ed type="date" value={form.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ birth_date: e.target.value })} />
-              </label>
-              {age !== null && <p className="cv-age">{age} años</p>}
-              <PlaceField value={form.place} onChange={(place) => set({ place })} />
-              <label className="cv-line">
-                <span>Barrio</span>
-                <Ed placeholder="Centro, Barrio Norte…" value={form.neighborhood} onChange={(e) => set({ neighborhood: e.target.value })} maxLength={60} />
-              </label>
-              <small className="cv-hint">
-                <MapPin size={13} aria-hidden="true" /> Solo se muestran la localidad y el barrio, nunca tu dirección.
-              </small>
-            </div>
-
-            <div className="cv-block">
-              <h3>
-                Habilidades <small>{form.skills.length}/{MAX_SKILLS}</small>
-              </h3>
-              <ul className="cv-skills">
-                {form.skills.map((s) => (
-                  <li key={s}>
-                    {s}
-                    <button type="button" onClick={() => set({ skills: form.skills.filter((x) => x !== s) })} aria-label={`Quitar ${s}`}>
-                      <X size={13} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
               {form.skills.length < MAX_SKILLS && (
-                <Ed
-                  placeholder="O escribí la tuya y tocá Enter"
-                  value={skillDraft}
-                  maxLength={40}
-                  onChange={(e) => (e.target.value.endsWith(',') ? addSkill(e.target.value) : setSkillDraft(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addSkill();
-                    }
-                  }}
-                  onBlur={() => addSkill()}
-                />
+                <div className="cv-skill-add">
+                  <input
+                    placeholder="Escribí la tuya y tocá Enter"
+                    value={skillDraft}
+                    maxLength={40}
+                    onChange={(e) => (e.target.value.endsWith(',') ? addSkill(e.target.value) : setSkillDraft(e.target.value))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
+                    onBlur={() => addSkill()}
+                    aria-label="Escribir una habilidad"
+                  />
+                  <button type="button" className="btn btn-line btn-sm" onClick={() => addSkill()} aria-label="Agregar habilidad">
+                    <Plus size={16} /> Agregar
+                  </button>
+                </div>
               )}
+
               <div className="skill-pick">
                 <div className="skill-tabs" role="group" aria-label="Áreas de habilidades">
                   {SKILL_GROUPS.map((g) => (
@@ -579,6 +707,59 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
                   })}
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="cvdoc" style={themeVars(form.theme)}>
+          {/* Trama de marcas de agua mientras se arma: el CV limpio sale solo con "Descargar PDF" */}
+          <div className="cv-tiles" aria-hidden="true" />
+          {/* ---------- izquierda arriba: foto ---------- */}
+          <div className="cv-photo-cell">
+            <div className="cv-photo-stack">
+              <div className="cv-photo">
+                {photoUrl ? <img src={photoUrl} alt="Tu foto" /> : <Camera size={34} aria-hidden="true" />}
+                <button type="button" className="cv-photo-btn" onClick={() => fileInput.current?.click()} disabled={uploading}>
+                  {uploading ? 'Subiendo…' : form.photo_path ? 'Cambiar foto' : 'Agregar foto'}
+                </button>
+                {form.photo_path && !uploading && (
+                  <button type="button" className="cv-photo-x" onClick={() => set({ photo_path: '' })} aria-label="Quitar foto">
+                    <X size={16} />
+                  </button>
+                )}
+                <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="sr" onChange={onPhoto} tabIndex={-1} />
+              </div>
+              {avatarUrl && (
+                <button type="button" className="cv-photo-use" onClick={useProfilePhoto} disabled={uploading}>
+                  <UserRoundCheck size={15} aria-hidden="true" /> Usar mi foto de perfil
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ---------- centro y derecha arriba: nombre y profesión ---------- */}
+          <div className="cv-head">
+            <Ed className="cv-name" placeholder="Nombre y apellido" value={form.full_name} onChange={(e) => set({ full_name: e.target.value })} aria-label="Nombre y apellido" maxLength={80} />
+            <Ed className="cv-role" placeholder="Profesión u oficio" value={form.profession} onChange={(e) => set({ profession: e.target.value })} aria-label="Profesión u oficio" maxLength={80} />
+          </div>
+
+          {/* ---------- izquierda: datos, habilidades y contacto ---------- */}
+          <aside className="cv-side">
+            <div className="cv-block">
+              <h3>Datos</h3>
+              <label className="cv-line">
+                <span>Nacimiento</span>
+                <Ed type="date" value={form.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ birth_date: e.target.value })} />
+              </label>
+              {age !== null && <p className="cv-age">{age} años</p>}
+              <PlaceField value={form.place} onChange={(place) => set({ place })} />
+              <label className="cv-line">
+                <span>Barrio</span>
+                <Ed placeholder="Centro, Barrio Norte…" value={form.neighborhood} onChange={(e) => set({ neighborhood: e.target.value })} maxLength={60} />
+              </label>
+              <small className="cv-hint">
+                <MapPin size={13} aria-hidden="true" /> Solo se muestran la localidad y el barrio, nunca tu dirección.
+              </small>
             </div>
 
             <div className="cv-block">
@@ -628,14 +809,6 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
                 maxLength={MAX_SUMMARY}
                 onChange={(e) => set({ summary: e.target.value })}
               />
-              <div className="ideas">
-                <span>¿No sabés qué poner? Usá una idea y cambiala a tu gusto:</span>
-                {ideasFor(form.profession).map((t) => (
-                  <button key={t} type="button" className="idea" onClick={() => set({ summary: t.slice(0, MAX_SUMMARY) })}>
-                    {t}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div className="cv-block">
