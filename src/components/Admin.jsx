@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
+import { FileText, Pause, Pencil, Play, Search, Trash2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { JOB_CATEGORIES, JOB_TYPES, PAY_MODES as MODES, SERVICE_CATEGORIES, friendlyError, money } from '../lib/utils';
+import { PAY_MODES as MODES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
 import { CvModal } from './Candidates';
 import UsersPanel from './UsersPanel';
+import EditListing from './EditListing';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -137,129 +138,6 @@ function SettingsTab({ notify, onSaved }) {
         {saving ? 'Guardando…' : 'Guardar configuración'}
       </button>
     </form>
-  );
-}
-
-// ---------- editar una publicación ----------
-function EditListing({ kind, item, onClose, onSaved }) {
-  const isJob = kind === 'job';
-  const [f, setF] = useState({
-    ...item,
-    expires: item.expires_at ? item.expires_at.slice(0, 10) : '',
-    requirements: item.requirements || '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const set = (patch) => setF((x) => ({ ...x, ...patch }));
-
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const save = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    const p = {
-      title: f.title,
-      category: f.category,
-      description: f.description || '',
-      phone: f.phone || '',
-      status: f.status,
-      ...(f.expires ? { expires_at: new Date(`${f.expires}T23:59:59`).toISOString() } : {}),
-      ...(isJob
-        ? { company_name: f.company_name, job_type: f.job_type, requirements: f.requirements }
-        : { provider_name: f.provider_name, intent: f.intent || 'ofrece' }),
-    };
-    const { error: err } = await supabase.rpc('admin_update_listing', { p_kind: kind, p_id: item.id, p });
-    setSaving(false);
-    if (err) setError(friendlyError(err.message));
-    else onSaved();
-  };
-
-  return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form className="place-dlg admin-edit" role="dialog" aria-modal="true" aria-label="Editar publicación" onSubmit={save}>
-        <div className="place-head">
-          <h2>Editar {isJob ? 'aviso' : 'servicio'}</h2>
-          <button type="button" className="x-sm" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
-        {error && <p className="note err">{error}</p>}
-        <label className="field">
-          <span>Título</span>
-          <input required value={f.title || ''} onChange={(e) => set({ title: e.target.value })} />
-        </label>
-        <div className="two">
-          <label className="field">
-            <span>{isJob ? 'Comercio o empresa' : 'Nombre'}</span>
-            <input value={(isJob ? f.company_name : f.provider_name) || ''} onChange={(e) => set(isJob ? { company_name: e.target.value } : { provider_name: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>Rubro</span>
-            <select value={f.category} onChange={(e) => set({ category: e.target.value })}>
-              {(isJob ? JOB_CATEGORIES : SERVICE_CATEGORIES).map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {isJob ? (
-          <label className="field">
-            <span>Modalidad</span>
-            <select value={f.job_type} onChange={(e) => set({ job_type: e.target.value })}>
-              {JOB_TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <label className="field">
-            <span>Tipo</span>
-            <select value={f.intent || 'ofrece'} onChange={(e) => set({ intent: e.target.value })}>
-              <option value="ofrece">Ofrece un servicio</option>
-              <option value="busca">Busca quien le haga un trabajo</option>
-            </select>
-          </label>
-        )}
-        <label className="field">
-          <span>Descripción</span>
-          <textarea value={f.description || ''} onChange={(e) => set({ description: e.target.value })} />
-        </label>
-        {isJob && (
-          <label className="field">
-            <span>Requisitos</span>
-            <input value={f.requirements} onChange={(e) => set({ requirements: e.target.value })} />
-          </label>
-        )}
-        <div className="two">
-          <label className="field">
-            <span>Estado</span>
-            <select value={f.status} onChange={(e) => set({ status: e.target.value })}>
-              <option value="active">Activo</option>
-              <option value="paused">Pausado</option>
-              {isJob && <option value="filled">Cubierto</option>}
-            </select>
-          </label>
-          <label className="field">
-            <span>Vence el</span>
-            <input type="date" value={f.expires} onChange={(e) => set({ expires: e.target.value })} />
-          </label>
-        </div>
-        <div className="two">
-          <label className="field">
-            <span>WhatsApp</span>
-            <input value={f.phone || ''} onChange={(e) => set({ phone: e.target.value })} />
-          </label>
-        </div>
-        <button className="btn btn-ink btn-lg btn-block" disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar cambios'}
-        </button>
-      </form>
-    </div>
   );
 }
 

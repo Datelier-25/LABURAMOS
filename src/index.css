@@ -1007,6 +1007,20 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .photo-add span { padding: 0 6px; line-height: 1.15; }
 .photo-add:hover { border-color: var(--ultra); color: var(--ultra); }
 
+/* Portada de las fotos en la edición: la primera es la imagen principal. */
+.photo-slot .photo-cover {
+  position: absolute; left: 4px; top: 4px; padding: 2px 7px; border-radius: 999px;
+  background: var(--ink); color: #fff; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.5;
+}
+.photo-slot .photo-cover-btn {
+  position: absolute; left: 4px; right: auto; top: auto; bottom: 4px;
+  width: auto; height: 22px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 999px; background: rgba(255, 255, 255, 0.94); color: var(--ink);
+  font-size: 0.64rem; font-weight: 700; opacity: 0; transition: opacity 0.15s, background 0.15s;
+}
+.photo-slot:hover .photo-cover-btn, .photo-slot:focus-within .photo-cover-btn { opacity: 1; }
+.photo-slot .photo-cover-btn:hover { background: #fff; }
+
 /* ---------- habilidades sugeridas en el CV ---------- */
 .skill-pick { display: grid; gap: 7px; margin-top: 2px; }
 .skill-tabs { display: flex; flex-wrap: wrap; gap: 5px; }

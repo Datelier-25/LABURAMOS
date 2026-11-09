@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { lockScroll } from '../lib/scrollLock';
-import { X } from 'lucide-react';
+import { ImagePlus, Star, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import {
   JOB_CATEGORIES,
@@ -10,6 +10,7 @@ import {
   friendlyError,
 } from '../lib/utils';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
+import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 
 const clean = (value) => {
   const text = String(value ?? '').trim();
@@ -43,6 +44,75 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const set = (patch) => setF((x) => ({ ...x, ...patch }));
+
+  // Fotos del servicio: la primera es la portada de la tarjeta.
+  const [photos, setPhotos] = useState(() =>
+    isJob ? [] : (item.photos || []).filter(Boolean).map((path) => ({ path, url: servicePhotoUrl(path) }))
+  );
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photosToDelete, setPhotosToDelete] = useState([]);
+  const addedRef = useRef(new Set()); // rutas subidas en esta edición
+  const savedRef = useRef(false);
+
+  // Si se cierra sin guardar, borramos las fotos nuevas para no dejar archivos sueltos.
+  useEffect(() => () => {
+    if (savedRef.current) return;
+    const pendientes = [...addedRef.current];
+    if (pendientes.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(pendientes);
+  }, []);
+
+  const onPhotos = async (e) => {
+    const files = Array.from(e.target.files || []).slice(0, MAX_SERVICE_PHOTOS - photos.length);
+    e.target.value = '';
+    if (!files.length) return;
+    setError('');
+    setPhotoBusy(true);
+    const { data: authData } = await supabase.auth.getUser();
+    const uid = authData?.user?.id;
+    if (!uid) {
+      setError('Tu sesión expiró. Volvé a ingresar.');
+      setPhotoBusy(false);
+      return;
+    }
+    const added = [];
+    for (const file of files) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+        setError('Las fotos tienen que ser JPG, PNG o WebP.');
+        continue;
+      }
+      try {
+        const blob = await compressImage(file);
+        const path = `${uid}/${crypto.randomUUID()}.jpg`;
+        const { error: upErr } = await supabase.storage.from(SERVICE_PHOTO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+        if (upErr) throw upErr;
+        addedRef.current.add(path);
+        added.push({ path, url: servicePhotoUrl(path) });
+      } catch (err) {
+        setError(friendlyError(err.message || 'No pudimos subir la foto.'));
+      }
+    }
+    if (added.length) setPhotos((prev) => [...prev, ...added].slice(0, MAX_SERVICE_PHOTOS));
+    setPhotoBusy(false);
+  };
+
+  const removePhoto = (path) => {
+    setPhotos((prev) => prev.filter((p) => p.path !== path));
+    if (addedRef.current.has(path)) {
+      addedRef.current.delete(path);
+      void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove([path]);
+    } else {
+      setPhotosToDelete((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    }
+  };
+
+  // La primera foto se usa como imagen principal de la publicación.
+  const makeCover = (path) => {
+    setPhotos((prev) => {
+      const chosen = prev.find((p) => p.path === path);
+      if (!chosen) return prev;
+      return [chosen, ...prev.filter((p) => p.path !== path)];
+    });
+  };
 
   useEffect(() => {
     if (embedded) return;
@@ -89,6 +159,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           price: f.price,
           city: f.city,
           province: f.province,
+          photos: photos.map((p) => p.path),
         };
 
     // Los campos vacíos se mandan como null para poder borrarlos.
@@ -102,6 +173,11 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
         p_kind: kind, p_id: item.id, p: payload,
       });
       if (err) throw err;
+      savedRef.current = true;
+      // Las fotos quitadas se borran recién cuando el cambio quedó guardado.
+      // Si edita un admin y el archivo es de otra persona, la política de
+      // Storage puede impedirlo: la publicación igual deja de mostrarlo.
+      if (photosToDelete.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(photosToDelete);
       onSaved?.(kind, item.id);
       onClose?.();
     } catch (err) { setError(friendlyError(err.message)); }
@@ -230,6 +306,37 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           <textarea value={f.description} onChange={(e) => set({ description: e.target.value })} />
         </label>
 
+        {!isJob && (
+          <div className="field">
+            <span>Fotos de la publicación</span>
+            <div className="photo-pick">
+              {photos.map((p, i) => (
+                <div className="photo-slot" key={p.path}>
+                  <img src={p.url} alt={`Foto ${i + 1}`} />
+                  <button type="button" onClick={() => removePhoto(p.path)} disabled={saving || photoBusy} aria-label={`Quitar foto ${i + 1}`}>
+                    <X size={14} />
+                  </button>
+                  {i === 0 ? (
+                    <span className="photo-cover">Portada</span>
+                  ) : (
+                    <button type="button" className="photo-cover-btn" onClick={() => makeCover(p.path)} disabled={saving || photoBusy} aria-label={`Usar la foto ${i + 1} como portada`}>
+                      <Star size={12} aria-hidden="true" /> Portada
+                    </button>
+                  )}
+                </div>
+              ))}
+              {photos.length < MAX_SERVICE_PHOTOS && (
+                <label className="photo-add">
+                  <ImagePlus size={20} aria-hidden="true" />
+                  <span>{photoBusy ? 'Subiendo…' : 'Agregar foto'}</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr" disabled={photoBusy || saving} onChange={onPhotos} />
+                </label>
+              )}
+            </div>
+            <small>La primera foto es la portada de la tarjeta. Hasta {MAX_SERVICE_PHOTOS} fotos; se achican solas para que carguen rápido.</small>
+          </div>
+        )}
+
         {isJob && (
           <label className="field">
             <span>Requisitos (opcional)</span>
@@ -258,8 +365,8 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           <input inputMode="tel" value={f.phone} onChange={(e) => set({ phone: e.target.value })} />
         </label>
 
-        <button className="btn btn-ink btn-lg btn-block" disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar cambios'}
+        <button className="btn btn-ink btn-lg btn-block" disabled={saving || photoBusy}>
+          {saving ? 'Guardando…' : photoBusy ? 'Subiendo foto…' : 'Guardar cambios'}
         </button>
       </form>
   );
