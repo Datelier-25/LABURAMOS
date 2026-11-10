@@ -105,7 +105,6 @@ export default function JobSign({
   const [applying, setApplying] = useState(false);
   const [editing, setEditing] = useState(false);
   const interactive = !compact && !preview;
-  const long = (job.description || '').length > 130 || !!job.requirements;
   const canEdit = !!user && (user.isAdmin || user.id === job.company_id);
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
   const emote = plateEmote(job);
@@ -205,7 +204,7 @@ export default function JobSign({
             <strong>Requisitos:</strong> {job.requirements}
           </p>
         )}
-        {interactive && long && (
+        {interactive && (
           <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
             {open ? 'Ver menos' : 'Ver más'}
           </button>
@@ -261,6 +260,7 @@ export default function JobSign({
 export function ServiceCard({ service, user, onLogin, preview = false, onReport, saved = false, onSave, onChanged }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const interactive = !preview;
   const canEdit = !!user && (user.isAdmin || user.id === service.owner_id);
@@ -269,7 +269,6 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   const emoji = isAsk ? '🔎' : emojiOf(service.category);
   const emote = plateEmote(service);
   const photosList = (service.photos || []).filter(Boolean);
-  const extraPhotos = photosList.slice(1);
   const share = () =>
     shareListing({
       title: `${service.title} · LaburamosApp`,
@@ -297,7 +296,7 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
     );
 
   return (
-    <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}`}>
+    <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}${open ? ' open' : ''}`}>
       <div className="card-body">
         <div className={`plate${photosList[0] ? ' photo' : ''}`} aria-hidden="true">
           <ListingArt key={photosList[0] || emote} src={photosList[0] ? servicePhotoUrl(photosList[0]) : emote} emoji={emoji} />
@@ -305,7 +304,11 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
         <div className="card-info">
           <div className="card-top">
             <div className="card-badges">
-              <span className={`pill pill-${intent}`}>{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
+              <span className={`pill pill-${intent}`}>
+                <span className="pill-label-full">{isAsk ? 'Estoy buscando a alguien' : 'Ofrezco mi servicio'}</span>
+                <span className="pill-label-mid">{isAsk ? 'Busco a alguien' : 'Ofrezco servicio'}</span>
+                <span className="pill-label-tiny">{isAsk ? 'Busco' : 'Ofrezco'}</span>
+              </span>
             </div>
             {service.city && (
               <span className="where" title={service.city}>
@@ -337,11 +340,13 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
 
       <div className="card-extra">
         {service.description && <p className="desc">{service.description}</p>}
+        {interactive && (
+          <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
+            {open ? 'Ver menos' : 'Ver más'}
+          </button>
+        )}
+        {open && <ServicePhotos service={service} preview={preview} />}
       </div>
-
-      {extraPhotos.length > 0 && (
-        <ServicePhotos service={{ ...service, photos: extraPhotos }} preview={preview} />
-      )}
 
       {(interactive || preview) && (
         <>
