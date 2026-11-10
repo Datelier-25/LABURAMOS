@@ -762,12 +762,14 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .empty h3 { font-size: clamp(1.7rem, 3.6vw, 2.6rem); font-weight: 800; font-stretch: 78%; line-height: 1; letter-spacing: -0.02em; }
 .empty p { color: var(--muted); max-width: 44ch; }
 .skel { min-height: 270px; border-radius: 26px; background: linear-gradient(90deg, var(--mist) 0, #fff 50%, var(--mist) 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; }
-.toast { position: fixed; left: 50%; bottom: 26px; z-index: 120; display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; padding: 14px 22px; border-radius: 999px; font-weight: 700; opacity: 0; transform: translate(-50%, 30px); pointer-events: none; transition: opacity 0.3s, transform 0.45s var(--ease-pop); }
+.toast { position: fixed; left: 50%; bottom: 26px; z-index: 140; display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; padding: 14px 22px; border-radius: 999px; font-weight: 700; opacity: 0; transform: translate(-50%, 30px); pointer-events: none; transition: opacity 0.3s, transform 0.45s var(--ease-pop); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast i { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; }
 
 /* ---------- ventana de publicar ---------- */
-.overlay { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(14, 26, 75, 0.6); animation: fade 0.2s; }
+/* por encima de .auth-overlay (100) y .auth-close (110): el diálogo de
+   localidad se abre desde el registro y tiene que quedar clickeable */
+.overlay { position: fixed; inset: 0; z-index: 130; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(14, 26, 75, 0.6); animation: fade 0.2s; }
 .sheet { position: relative; display: grid; grid-template-columns: 0.9fr 1.1fr; width: min(980px, 100%); max-height: calc(100svh - 40px); overflow: auto; background: #fff; border-radius: 30px; animation: pop 0.4s var(--ease-pop); }
 .sheet-preview { --hole: var(--mist); background: var(--mist); padding: 34px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
 .sheet-preview .cap { font-weight: 700; color: var(--muted); }
