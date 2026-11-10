@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { lockScroll } from '../lib/scrollLock';
-import { ImagePlus, Star, X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import {
   JOB_CATEGORIES,
@@ -15,6 +15,7 @@ import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import { isPremium, listingLimits, normalizeLink } from '../lib/premium';
 import { useSettings } from '../lib/settings';
+import EmotePicker from './EmotePicker';
 import LinkFields from './LinkFields';
 import RequirementItems from './RequirementItems';
 
@@ -56,6 +57,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
     apply_channel: item.apply_channel === 'email' ? 'email' : 'whatsapp',
     apply_email: item.apply_email || '',
     phone: item.phone || '',
+    icon: item.icon || '',
     status: item.status || 'active',
     expires: item.expires_at ? item.expires_at.slice(0, 10) : '',
   });
@@ -64,12 +66,20 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
   const set = (patch) => setF((x) => ({ ...x, ...patch }));
   const [links, setLinks] = useState(() => (item.links || []).filter(Boolean));
 
-  // Fotos del servicio: la primera es la portada de la tarjeta.
+  // Fotos de la galería: se muestran dentro de “Ver más”.
   const [photos, setPhotos] = useState(() =>
     isJob ? [] : (item.photos || []).filter(Boolean).map((path) => ({ path, url: servicePhotoUrl(path) }))
   );
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photosToDelete, setPhotosToDelete] = useState([]);
+
+  // Imagen de la tarjeta: foto propia o logo. Es independiente de la galería.
+  const [cover, setCover] = useState(() =>
+    !isJob && item.cover_photo ? { path: item.cover_photo, url: servicePhotoUrl(item.cover_photo) } : null
+  );
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coversToDelete, setCoversToDelete] = useState([]);
+
   const addedRef = useRef(new Set()); // rutas subidas en esta edición
   const savedRef = useRef(false);
 
@@ -79,6 +89,60 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
     const pendientes = [...addedRef.current];
     if (pendientes.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(pendientes);
   }, []);
+
+  // Al reemplazar o quitar la portada, el archivo se borra cuando el cambio se guarda.
+  const discardCover = (prev) => {
+    if (!prev) return;
+    if (addedRef.current.has(prev.path)) {
+      addedRef.current.delete(prev.path);
+      void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove([prev.path]);
+    } else {
+      setCoversToDelete((list) => (list.includes(prev.path) ? list : [...list, prev.path]));
+    }
+  };
+
+  const onCover = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setError('La imagen tiene que ser JPG, PNG o WebP.');
+      return;
+    }
+    setError('');
+    setCoverBusy(true);
+    const { data: authData } = await supabase.auth.getUser();
+    const uid = authData?.user?.id;
+    if (!uid) {
+      setError('Tu sesión expiró. Volvé a ingresar.');
+      setCoverBusy(false);
+      return;
+    }
+    try {
+      const blob = await compressImage(file);
+      const path = `${uid}/${crypto.randomUUID()}.jpg`;
+      const { error: upErr } = await supabase.storage.from(SERVICE_PHOTO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) throw upErr;
+      addedRef.current.add(path);
+      discardCover(cover);
+      setCover({ path, url: servicePhotoUrl(path) });
+      set({ icon: '' });
+    } catch (err) {
+      setError(friendlyError(err.message || 'No pudimos subir la imagen.'));
+    }
+    setCoverBusy(false);
+  };
+
+  const removeCover = () => {
+    discardCover(cover);
+    setCover(null);
+  };
+
+  // Elegir un emote reemplaza la portada: la tarjeta muestra una sola imagen.
+  const chooseEmote = (icon) => {
+    if (icon && cover) removeCover();
+    set({ icon });
+  };
 
   const onPhotos = async (e) => {
     const files = Array.from(e.target.files || []).slice(0, limits.photos - photos.length);
@@ -122,15 +186,6 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
     } else {
       setPhotosToDelete((prev) => (prev.includes(path) ? prev : [...prev, path]));
     }
-  };
-
-  // La primera foto se usa como imagen principal de la publicación.
-  const makeCover = (path) => {
-    setPhotos((prev) => {
-      const chosen = prev.find((p) => p.path === path);
-      if (!chosen) return prev;
-      return [chosen, ...prev.filter((p) => p.path !== path)];
-    });
   };
 
   useEffect(() => {
@@ -203,6 +258,8 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           price: f.price,
           city: f.city,
           province: f.province,
+          icon: f.icon,
+          cover_photo: cover?.path || null,
           photos: photos.map((p) => p.path),
         };
 
@@ -222,6 +279,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       // Si edita un admin y el archivo es de otra persona, la política de
       // Storage puede impedirlo: la publicación igual deja de mostrarlo.
       if (photosToDelete.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(photosToDelete);
+      if (coversToDelete.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(coversToDelete);
       onSaved?.(kind, item.id);
       onClose?.();
     } catch (err) { setError(friendlyError(err.message)); }
@@ -361,37 +419,54 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
         </div>
 
         {!isJob && (
-          <div className="field">
-            <span>Fotos de la publicación</span>
-            <div className="photo-pick">
-              {photos.map((p, i) => (
-                <div className="photo-slot" key={p.path}>
-                  <img src={p.url} alt={`Foto ${i + 1}`} />
-                  <button type="button" onClick={() => removePhoto(p.path)} disabled={saving || photoBusy} aria-label={`Quitar foto ${i + 1}`}>
-                    <X size={14} />
-                  </button>
-                  {i === 0 ? (
-                    <span className="photo-cover">Portada</span>
-                  ) : (
-                    <button type="button" className="photo-cover-btn" onClick={() => makeCover(p.path)} disabled={saving || photoBusy} aria-label={`Usar la foto ${i + 1} como portada`}>
-                      <Star size={12} aria-hidden="true" /> Portada
+          <>
+            <div className="field">
+              <span>Imagen de la tarjeta</span>
+              <div className="cover-pick">
+                {cover ? (
+                  <div className="cover-slot">
+                    <img src={cover.url} alt="Imagen de la tarjeta" />
+                    <button type="button" onClick={removeCover} disabled={saving || coverBusy} aria-label="Quitar imagen de la tarjeta">
+                      <X size={14} />
                     </button>
-                  )}
-                </div>
-              ))}
-              {photos.length < limits.photos && (
-                <label className="photo-add">
-                  <ImagePlus size={20} aria-hidden="true" />
-                  <span>{photoBusy ? 'Subiendo…' : 'Agregar foto'}</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr" disabled={photoBusy || saving} onChange={onPhotos} />
-                </label>
-              )}
+                  </div>
+                ) : (
+                  <label className="cover-add">
+                    <ImagePlus size={20} aria-hidden="true" />
+                    <span>{coverBusy ? 'Subiendo…' : 'Subir foto o logo'}</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr" disabled={coverBusy || saving} onChange={onCover} />
+                  </label>
+                )}
+              </div>
+              {!cover && <EmotePicker value={f.icon} onChange={chooseEmote} />}
+              <small>La foto, el logo o el emote que se ve en la tarjeta. No se repite dentro de “Ver más”.</small>
             </div>
-            <small>
-              La primera foto es la portada de la tarjeta. Hasta {limits.photos} fotos; se achican solas para que carguen rápido.
-              {premiumUpgrade && settings?.premium_include_photos ? ' Con premium podés sumar más.' : ''}
-            </small>
-          </div>
+
+            <div className="field">
+              <span>Fotos de la publicación</span>
+              <div className="photo-pick">
+                {photos.map((p, i) => (
+                  <div className="photo-slot" key={p.path}>
+                    <img src={p.url} alt={`Foto ${i + 1}`} />
+                    <button type="button" onClick={() => removePhoto(p.path)} disabled={saving || photoBusy} aria-label={`Quitar foto ${i + 1}`}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {photos.length < limits.photos && (
+                  <label className="photo-add">
+                    <ImagePlus size={20} aria-hidden="true" />
+                    <span>{photoBusy ? 'Subiendo…' : 'Agregar foto'}</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr" disabled={photoBusy || saving} onChange={onPhotos} />
+                  </label>
+                )}
+              </div>
+              <small>
+                Hasta {limits.photos} fotos. Se muestran dentro de “Ver más”; la imagen de la tarjeta no se repite.
+                {premiumUpgrade && settings?.premium_include_photos ? ' Con premium podés sumar más.' : ''}
+              </small>
+            </div>
+          </>
         )}
 
         {isJob && (

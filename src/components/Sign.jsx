@@ -17,7 +17,7 @@ import {
   User,
 } from 'lucide-react';
 import { emojiOf, intentOf, mailtoLink, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
-import { plateEmote } from '../lib/emotes';
+import { emoteUrl, plateEmote } from '../lib/emotes';
 import { servicePhotoUrl } from '../lib/photos';
 import { isPremium, linkKind, linkLabel, listingLimits, visibleLinks } from '../lib/premium';
 import { nameWithPrefix } from '../lib/prefixes';
@@ -30,9 +30,9 @@ function ListingArt({ src, emoji }) {
   return src && !failed ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="plate-emoji">{emoji}</span>;
 }
 
-// Fotos del aviso. El límite depende del plan (gratis o premium).
-function ServicePhotos({ service, preview, limit = 5 }) {
-  const photos = (service.photos || []).filter(Boolean).slice(0, limit);
+// Fotos de la galería del aviso. El límite depende del plan (gratis o premium).
+function ServicePhotos({ service, preview, limit = 5, photos: list }) {
+  const photos = (list || service.photos || []).filter(Boolean).slice(0, limit);
   if (!photos.length) return null;
   return (
     <div className={`scard-photos n${photos.length}`}>
@@ -357,6 +357,15 @@ export function ServiceCard({ service, user, settings, onLogin, preview = false,
   const emoji = isAsk ? '🔎' : emojiOf(service.category);
   const emote = plateEmote(service);
   const photosList = (service.photos || []).filter(Boolean);
+  // Portada: foto/logo elegido > emote elegido > primera foto (avisos viejos) > emote del rubro.
+  // Cuando la portada sale de la galería, esa foto no se repite en “Ver más”.
+  const chosenEmote = service.icon ? emoteUrl(service.icon) : null;
+  const legacyCover = !service.cover_photo && !chosenEmote ? photosList[0] : null;
+  const plateSrc = service.cover_photo
+    ? servicePhotoUrl(service.cover_photo)
+    : chosenEmote || (legacyCover ? servicePhotoUrl(legacyCover) : emote);
+  const hasPhotoCover = !!service.cover_photo || !!legacyCover;
+  const galleryPhotos = legacyCover ? photosList.slice(1) : photosList;
   const share = () =>
     shareListing({
       title: `${service.title} · LaburamosApp`,
@@ -386,8 +395,8 @@ export function ServiceCard({ service, user, settings, onLogin, preview = false,
   return (
     <article id={`svc-${service.id}`} className={`scard ${intent} ${toneOf(service.category)}${open ? ' open' : ''}`}>
       <div className="card-body">
-        <div className={`plate${photosList[0] ? ' photo' : ''}`} aria-hidden="true">
-          <ListingArt key={photosList[0] || emote} src={photosList[0] ? servicePhotoUrl(photosList[0]) : emote} emoji={emoji} />
+        <div className={`plate${hasPhotoCover ? ' photo' : ''}`} aria-hidden="true">
+          <ListingArt key={plateSrc || emote} src={plateSrc} emoji={emoji} />
         </div>
         <div className="card-info">
           <div className="card-top">
@@ -437,7 +446,7 @@ export function ServiceCard({ service, user, settings, onLogin, preview = false,
           </button>
         )}
         {open && <ListingLinks links={links} />}
-        {open && <ServicePhotos service={service} preview={preview} limit={limits.photos} />}
+        {open && <ServicePhotos service={service} photos={galleryPhotos} preview={preview} limit={limits.photos} />}
       </div>
 
       {(interactive || preview) && (

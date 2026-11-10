@@ -5,9 +5,9 @@ import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, cleanRequirementItems, friendlyError, isValidEmail, isValidPhone } from '../lib/utils';
 import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import { listingLimits, normalizeLink } from '../lib/premium';
-import { EMOTE_OPTIONS, emoteUrl } from '../lib/emotes';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import JobSign, { ServiceCard } from './Sign';
+import EmotePicker from './EmotePicker';
 import LinkFields from './LinkFields';
 import RequirementItems from './RequirementItems';
 import { PlaceField } from './Place';
@@ -20,39 +20,7 @@ const startPlace = (user, zone) => {
 };
 
 // Selector de emote: miniaturas del catálogo (30 oficios × hombre/mujer).
-export function EmotePicker({ value, onChange }) {
-  return (
-    <>
-      {value && (
-        <div className="emote-pick">
-          <span className="emote-cur">
-            <img src={emoteUrl(value)} alt="" />
-          </span>
-          <button type="button" className="chip" onClick={() => onChange('')}>
-            Quitar emote
-          </button>
-        </div>
-      )}
-      <details className="emote-picker">
-        <summary>{value ? 'Elegir otro emote' : 'Elegir emote'}</summary>
-        <div className="emote-grid" role="group" aria-label="Catálogo de emotes">
-          {EMOTE_OPTIONS.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className={`emote${value === o.id ? ' on' : ''}`}
-              title={`${o.label} (${o.cat})`}
-              onClick={() => onChange(o.id)}
-              aria-pressed={value === o.id}
-            >
-              <img src={o.url} alt="" loading="lazy" />
-            </button>
-          ))}
-        </div>
-      </details>
-    </>
-  );
-}
+export { default as EmotePicker } from './EmotePicker';
 
 export default function PublishModal({ type, intent: startIntent = null, user, zone, settings, onClose, onCreated, onSafety }) {
   const isJob = type === 'job';
@@ -77,8 +45,8 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     apply_email: '',
     phone: user.phone || '',
     place: startPlace(user, zone),
-    icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
-    photos: [], // { path, url } — hasta el límite del plan, solo en servicios
+    icon: '', // emote de la tarjeta (id del PNG); se usa si no hay portada ni fotos
+    photos: [], // { path, url } — galería de "Ver más", solo en servicios
     links: [], // links de Maps, Instagram, Facebook, WhatsApp o web
   });
 
@@ -95,9 +63,46 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       : form.salary.trim() || null
     : null;
   const publishedPayType = form.publish_salary ? form.pay_type : null;
+  const [cover, setCover] = useState(null); // { path, url } — imagen de la tarjeta
+  const [coverBusy, setCoverBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
 
-  // Sube las fotos elegidas (máx. 3). Se guardan en la carpeta de la persona.
+  // Portada de la tarjeta: foto propia o logo. Es independiente de la galería.
+  const onCover = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setError('La imagen tiene que ser JPG, PNG o WebP.');
+      return;
+    }
+    setError('');
+    setCoverBusy(true);
+    try {
+      const blob = await compressImage(file);
+      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+      const { error: upErr } = await supabase.storage.from(SERVICE_PHOTO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) throw upErr;
+      setCover({ path, url: servicePhotoUrl(path) });
+      set({ icon: '' });
+    } catch (err) {
+      setError(friendlyError(err.message || 'No pudimos subir la imagen.'));
+    }
+    setCoverBusy(false);
+  };
+
+  const removeCover = () => {
+    if (cover) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove([cover.path]);
+    setCover(null);
+  };
+
+  // Elegir un emote reemplaza la portada: la tarjeta muestra una sola imagen.
+  const chooseEmote = (icon) => {
+    if (icon && cover) removeCover();
+    set({ icon });
+  };
+
+  // Sube las fotos de la galería (no cuentan la portada). Se guardan en la carpeta de la persona.
   const onPhotos = async (e) => {
     const files = Array.from(e.target.files || []).slice(0, limits.photos - form.photos.length);
     e.target.value = '';
@@ -203,6 +208,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           province: form.place.province,
           price: form.price.trim() || null,
           icon: form.icon.trim() || null,
+          cover_photo: cover?.path || null,
           photos: form.photos.map((p) => p.path),
           links: cleanLinks,
         });
@@ -242,6 +248,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     city,
     price: form.price.trim() || null,
     icon: form.icon.trim() || null,
+    cover_photo: cover?.url || null,
     photos: form.photos.map((p) => p.url),
     links: form.links.map(normalizeLink).filter(Boolean),
   };
@@ -439,7 +446,30 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           </div>
           {!isJob && (
             <div className="field">
-              <span>Fotos (opcional)</span>
+              <span>Imagen de la tarjeta (opcional)</span>
+              <div className="cover-pick">
+                {cover ? (
+                  <div className="cover-slot">
+                    <img src={cover.url} alt="Imagen de la tarjeta" />
+                    <button type="button" onClick={removeCover} aria-label="Quitar imagen de la tarjeta">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cover-add">
+                    <ImagePlus size={20} aria-hidden="true" />
+                    <span>{coverBusy ? 'Subiendo…' : 'Subir foto o logo'}</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr" disabled={coverBusy} onChange={onCover} />
+                  </label>
+                )}
+              </div>
+              {!cover && <EmotePicker value={form.icon} onChange={chooseEmote} />}
+              <small>Se ve en la tarjeta: puede ser una foto tuya, el logo de tu negocio o un emote. No se repite dentro de “Ver más”.</small>
+            </div>
+          )}
+          {!isJob && (
+            <div className="field">
+              <span>Fotos de la publicación (opcional)</span>
               <div className="photo-pick">
                 {form.photos.map((p, i) => (
                   <div className="photo-slot" key={p.path}>
@@ -458,16 +488,9 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                 )}
               </div>
               <small>
-                Hasta {limits.photos} fotos. Se achican solas para que carguen rápido.
+                Hasta {limits.photos} fotos. Se muestran dentro de “Ver más”; la imagen de la tarjeta no se repite.
                 {premiumUpgrade && settings?.premium_include_photos ? ' Con premium podés sumar más.' : ''}
               </small>
-            </div>
-          )}
-          {!isJob && !form.photos.length && (
-            <div className="field">
-              <span>Emote de la tarjeta (opcional)</span>
-              <EmotePicker value={form.icon} onChange={(icon) => set({ icon })} />
-              <small>Elegí una ilustración de oficio para tu tarjeta. Se usa solo si no subís fotos.</small>
             </div>
           )}
           {isJob && (

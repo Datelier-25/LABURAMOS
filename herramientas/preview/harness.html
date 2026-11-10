@@ -27,6 +27,8 @@ const DATA = {
     { id: 's1', intent: 'ofrece', title: 'Contador Público', provider_name: 'Facundo Ontivero', category: 'Profesionales', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Monotributo, responsables inscriptos, certificaciones y balances.', status: 'active', expires_at: later, created_at: iso(10), owner_id: 'u1' },
     { id: 's2', intent: 'busca', title: 'Busco parquero', provider_name: 'Facundo Ontivero', category: 'Otros', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Necesito alguien que corte el pasto, son 50 m2 en sección quinta.', status: 'active', expires_at: later, created_at: iso(2), owner_id: 'u1', is_urgent: true },
     { id: 's3', intent: 'ofrece', title: 'Plomería y gas matriculado', provider_name: 'Juan Pérez', category: 'Oficios', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Instalaciones, pérdidas y destapaciones. Urgencias.', status: 'active', expires_at: later, created_at: iso(50), owner_id: 'u2' },
+    { id: 's4', intent: 'ofrece', title: 'Diseños de autor', provider_name: 'Marta Diseño', provider_prefix: 'Dis.', category: 'Moda', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Vestidos a medida y diseños exclusivos para eventos.', status: 'active', expires_at: later, created_at: iso(6), owner_id: 'u2', cover_photo: 'http://localhost:5201/emotes/sastre_mujer.png', photos: ['http://localhost:5201/emotes/peluquero_mujer.png', 'http://localhost:5201/emotes/peluquero_hombre.png'] },
+    { id: 's5', intent: 'ofrece', title: 'Contador con fotos antiguas', provider_name: 'Facundo Ontivero', category: 'Profesionales', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Aviso de prueba: la primera foto es la portada y no debe repetirse en Ver más.', status: 'active', expires_at: later, created_at: iso(8), owner_id: 'u1', photos: ['http://localhost:5201/emotes/contador_hombre.png', 'http://localhost:5201/emotes/contador_mujer.png'] },
   ],
   resumes: [
     { user_id: 'w1', full_name: 'Ana Pereyra', profession: 'Vendedora', summary: 'Tengo experiencia en atención al público y caja.', birth_date: '1998-04-10', city: 'Bragado', province: 'Buenos Aires', phone: '2342556677', email: 'ana@example.com', availability: 'Media jornada', skills_list: ['Atención al público', 'Caja'], education: [{ title: 'Secundario completo', place: 'Escuela Normal', from: '2011', to: '2016' }], experience_list: [{ role: 'Vendedora', place: 'Kiosco Central', from: '2021-03', to: '', current: true, tasks: 'Caja y reposición' }], theme: { bg: 'azul', title: 'naranja' }, updated_at: iso(20) },
@@ -78,6 +80,7 @@ export function createClient() {
     functions: { invoke: async () => ({ data: null, error: { context: { json: async () => ({ error: 'pago_no_configurado' }) } } }) },
     auth: {
       getSession: async () => ({ data: { session: SESSION } }),
+      getUser: async () => ({ data: { user: SESSION?.user || null } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: async () => ({}),
       signUp: async () => ({ data: {}, error: null }),
