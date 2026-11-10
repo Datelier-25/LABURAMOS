@@ -330,7 +330,16 @@ export function Filters({ groups = [], segment, toggles = [], distance, extra = 
   );
 }
 
-export function Footer({ go, links }) {
+export function Footer({ go, links, settings }) {
+  const instagramUrl = settings?.instagram_url || 'https://instagram.com/laburamosapp';
+  const instagramHandle = (() => {
+    try {
+      const handle = new URL(instagramUrl).pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
+      return handle ? `@${handle}` : '@laburamosapp';
+    } catch {
+      return '@laburamosapp';
+    }
+  })();
   return (
     <footer className="foot">
       <div className="wrap">
@@ -345,6 +354,10 @@ export function Footer({ go, links }) {
                 {l.label}
               </button>
             ))}
+            <a href={instagramUrl} target="_blank" rel="noreferrer" className="foot-instagram" aria-label={`Nuestro Instagram ${instagramHandle}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              {instagramHandle}
+            </a>
           </div>
         </div>
       </div>

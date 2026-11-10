@@ -396,7 +396,7 @@ export default function App() {
         {view === 'contacto' && <Contacto settings={settings} notify={notify} />}
       </main>
 
-      <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }, { id: 'contacto', label: 'Sugerencias / Denuncias' }]} />
+      <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }, { id: 'contacto', label: 'Sugerencias / Denuncias' }]} settings={settings} />
 
       {!modal && (
         <button className="fab" onClick={() => openPublish(defaultPublish)} aria-label="Publicar un aviso">

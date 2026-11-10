@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
   cv_mode: 'por_dias',
   cv_days: 30,
   contact_email: 'laburamosapp@gmail.com',
+  instagram_url: 'https://instagram.com/laburamosapp',
   premium_enabled: false,
   premium_price: 3000,
   premium_days: 30,

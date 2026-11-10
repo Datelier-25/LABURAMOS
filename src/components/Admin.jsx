@@ -44,6 +44,7 @@ function SettingsTab({ notify, onSaved }) {
           job_days: 30,
           service_days: 30,
           contact_email: 'laburamosapp@gmail.com',
+          instagram_url: 'https://instagram.com/laburamosapp',
           premium_enabled: false,
           premium_price: 3000,
           premium_days: 30,
@@ -85,6 +86,7 @@ function SettingsTab({ notify, onSaved }) {
         job_days: days[1],
         service_days: days[2],
         contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
+        instagram_url: cfg.instagram_url?.trim() || 'https://instagram.com/laburamosapp',
         premium_enabled: cfg.premium_enabled,
         premium_price: premiumPrice,
         premium_days: days[3],
@@ -116,6 +118,14 @@ function SettingsTab({ notify, onSaved }) {
       <div className="field">
         <span>Correo de contacto</span>
         <input type="email" value={cfg.contact_email || ''} onChange={(e) => set({ contact_email: e.target.value })} />
+      </div>
+
+      <h2 className="block-title">Redes sociales</h2>
+      <p className="lede">Links oficiales que se muestran en el pie de la app y en la pantalla de bienvenida.</p>
+      <div className="field">
+        <span>Instagram oficial</span>
+        <input type="url" value={cfg.instagram_url || ''} onChange={(e) => set({ instagram_url: e.target.value })} placeholder="https://instagram.com/laburamosapp" />
+        <small>Ejemplo: https://instagram.com/laburamosapp</small>
       </div>
 
       <h2 className="block-title">Duración de las publicaciones</h2>

@@ -423,8 +423,11 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .foot-big span { color: var(--orange); }
 .foot-cols { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; color: #c9cfee; }
 .foot-cols p { max-width: 46ch; }
-.foot-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
 .foot-links button { background: none; border: 0; padding: 4px 0; color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--sun); text-decoration-thickness: 2px; }
+.foot-instagram { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: #fff; font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: transform 0.2s, opacity 0.2s; }
+.foot-instagram:hover { transform: translateY(-2px); opacity: 0.9; }
+.foot-instagram svg { flex: none; }
 
 /* ---------- páginas interiores ---------- */
 .page { padding-bottom: 20px; }
