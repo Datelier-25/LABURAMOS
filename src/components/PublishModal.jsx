@@ -464,7 +464,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                 )}
               </div>
               {!cover && <EmotePicker value={form.icon} onChange={chooseEmote} />}
-              <small>Se ve en la tarjeta: puede ser una foto tuya, el logo de tu negocio o un emote. No se repite dentro de “Ver más”.</small>
+              <small>Se ve en la tarjeta: puede ser una foto tuya, el logo de tu negocio o un emote. Si no elegís una, se usa la primera foto de la publicación.</small>
             </div>
           )}
           {!isJob && (

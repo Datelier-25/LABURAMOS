@@ -439,7 +439,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
                 )}
               </div>
               {!cover && <EmotePicker value={f.icon} onChange={chooseEmote} />}
-              <small>La foto, el logo o el emote que se ve en la tarjeta. No se repite dentro de “Ver más”.</small>
+              <small>La foto, el logo o el emote que se ve en la tarjeta. Si no elegís una, se usa la primera foto de la publicación.</small>
             </div>
 
             <div className="field">
