@@ -321,6 +321,25 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 .link-row button { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: #8a1e08; display: grid; place-items: center; }
 .link-add { justify-self: start; display: inline-flex; align-items: center; gap: 5px; }
 .premium-lock { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff7e0; color: #7a4b00; font-weight: 700; font-size: 0.9rem; }
+
+/* requisitos por ítem (excluyente / no excluyente) */
+.req-editor { display: grid; gap: 8px; }
+.req-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.req-row > input:not([type="checkbox"]) { flex: 1 1 220px; min-width: 0; }
+.req-flag { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid var(--line); font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.req-flag input { width: 16px; height: 16px; accent-color: var(--orange); }
+.req-del { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: #8a1e08; display: grid; place-items: center; }
+.req-add { justify-self: start; display: inline-flex; align-items: center; gap: 5px; }
+.req-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.req-list { margin: 8px 0 2px; }
+.req-list strong { display: block; margin-bottom: 5px; font-size: 13px; }
+.req-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.req-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; border-radius: 10px; background: #f5f6fa; font-size: 13.5px; }
+.req-badge { flex: none; padding: 2px 8px; border-radius: 999px; background: #e9ecf5; color: #4a527a; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.req-badge.on { background: #ffe1d2; color: #8a2f00; }
+.apply-channel { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; font-size: 13px; color: #3b4270; }
+.apply-channel svg { flex: none; }
+.apply-channel a { color: var(--ultra); font-weight: 700; word-break: break-all; }
 .premium-config { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--mist); margin-bottom: 18px; }
 .premium-config .two { gap: 10px; }
 .pill.premium { background: #f4b400; color: #3d2a00; display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; }

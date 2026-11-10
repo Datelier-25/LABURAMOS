@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { lockScroll } from '../lib/scrollLock';
-import { FileText, Loader2, ShieldCheck, UserRound, X } from 'lucide-react';
+import { FileText, Loader2, Mail, MessageCircle, ShieldCheck, UserRound, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
 
@@ -8,13 +8,14 @@ const MAX_PDF = 5 * 1024 * 1024;
 
 // Al postularse se puede mandar el CV armado en LaburamosApp o un PDF propio.
 // El PDF se sube al bucket privado "cvs" y la empresa lo abre desde Postulantes.
-export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv, notify }) {
+export default function ApplyModal({ job, user, applyChannel = 'whatsapp', applyUrl, onClose, onDone, onEditCv, notify }) {
   const [mode, setMode] = useState('app');
   const [file, setFile] = useState(null);
   const [resume, setResume] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const input = useRef(null);
+  const byEmail = applyChannel === 'email';
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && !sending && onClose();
@@ -64,14 +65,19 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
     if (mode === 'file' && !file) return setError('Elegí un PDF o usá tu CV de LaburamosApp.');
 
     // La pestaña se abre dentro del clic para que el navegador no la bloquee.
-    const win = waUrl ? window.open('', '_blank') : null;
+    // Con email no hace falta: al final se abre el cliente de correo.
+    const win = !byEmail && applyUrl ? window.open('', '_blank') : null;
     setSending(true);
     setError('');
 
-    const goWhatsApp = () => {
-      if (!waUrl) return;
-      if (win && !win.closed) win.location.href = waUrl;
-      else window.location.href = waUrl;
+    const goContact = () => {
+      if (!applyUrl) return;
+      if (byEmail) {
+        window.location.href = applyUrl;
+        return;
+      }
+      if (win && !win.closed) win.location.href = applyUrl;
+      else window.location.href = applyUrl;
     };
 
     try {
@@ -88,7 +94,7 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
       const { error: err } = await supabase.from('applications').insert({
         job_id: job.id,
         email: user?.email || null,
-        cv_contact: 'whatsapp',
+        cv_contact: byEmail ? 'email' : 'whatsapp',
         cv_kind: path ? 'file' : 'app',
         cv_path: path,
         cv_name: path ? file.name.slice(0, 120) : null,
@@ -101,7 +107,7 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
         if (err.code === '23505') {
           notify?.('Ya te habías postulado a este aviso.');
           onClose();
-          goWhatsApp();
+          goContact();
           return;
         }
         throw err;
@@ -110,7 +116,7 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
       notify?.(path ? 'Postulación enviada con tu CV en PDF.' : 'Postulación enviada. Tu CV ya está en Postulantes.');
       onDone?.();
       onClose();
-      goWhatsApp();
+      goContact();
     } catch (err) {
       if (win && !win.closed) win.close();
       const msg = (err?.message || '').includes('aviso_no_disponible')
@@ -193,7 +199,13 @@ export default function ApplyModal({ job, user, waUrl, onClose, onDone, onEditCv
         {error && <p className="note err">{error}</p>}
 
         <p className="note apply-note">
-          <ShieldCheck size={15} aria-hidden="true" /> Solo los comercios verificados pueden abrir tu CV. Después de enviar se abre el chat de WhatsApp.
+          <ShieldCheck size={15} aria-hidden="true" /> Solo los comercios verificados pueden abrir tu CV. Después de enviar se abre {byEmail ? 'tu correo' : 'el chat de WhatsApp'}.
+        </p>
+        <p className="note apply-note">
+          {byEmail ? <Mail size={15} aria-hidden="true" /> : <MessageCircle size={15} aria-hidden="true" />}
+          {byEmail
+            ? `Este aviso recibe postulaciones por email${job.apply_email ? ` (${job.apply_email})` : ''}.`
+            : 'Este aviso recibe postulaciones por WhatsApp.'}
         </p>
 
         <div className="apply-acts">

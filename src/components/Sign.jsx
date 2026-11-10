@@ -7,6 +7,7 @@ import {
   Clock3,
   Crown,
   Globe,
+  Mail,
   MapPin,
   MessageCircle,
   Pencil,
@@ -15,7 +16,7 @@ import {
   ThumbsUp,
   User,
 } from 'lucide-react';
-import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
+import { emojiOf, intentOf, mailtoLink, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { plateEmote } from '../lib/emotes';
 import { servicePhotoUrl } from '../lib/photos';
 import { isPremium, linkKind, linkLabel, listingLimits, visibleLinks } from '../lib/premium';
@@ -77,6 +78,17 @@ function PremiumMark() {
       <Crown size={14} aria-hidden="true" /> Premium
     </span>
   );
+}
+
+// Requisitos del aviso: los ítems nuevos o, si es un aviso viejo, el texto único.
+function requirementList(job) {
+  if (Array.isArray(job.requirement_items) && job.requirement_items.length) {
+    return job.requirement_items
+      .map((item) => ({ text: String(item?.text || '').trim(), required: !!item?.required }))
+      .filter((item) => item.text);
+  }
+  const legacy = String(job.requirements || '').trim();
+  return legacy ? [{ text: legacy, required: false }] : [];
 }
 
 // Fila de acciones de la tarjeta: Guardar / Compartir (+ Editar o Denunciar).
@@ -144,7 +156,16 @@ export default function JobSign({
   const canEdit = !!user && (user.isAdmin || user.id === job.company_id);
   const premium = isPremium(job);
   const links = interactive || preview ? visibleLinks(job, settings) : [];
+  const requirements = requirementList(job);
+  const applyByEmail = job.apply_channel === 'email' && !!job.apply_email;
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
+  const applyUrl = applyByEmail
+    ? mailtoLink(
+        job.apply_email,
+        `Postulación: ${job.title} · LaburamosApp`,
+        `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''} Mi CV está en Postulantes de LaburamosApp.`
+      )
+    : waLink(job.phone, message);
   const emote = plateEmote(job);
   const salaryText = String(job.salary || '').trim();
   const payLabel = !salaryText
@@ -178,7 +199,7 @@ export default function JobSign({
     if (!onApply || applying) return;
     setApplying(true);
     try {
-      await onApply(job, waLink(job.phone, message));
+      await onApply(job, { channel: applyByEmail ? 'email' : 'whatsapp', url: applyUrl });
     } finally {
       setApplying(false);
     }
@@ -240,9 +261,31 @@ export default function JobSign({
 
       <div className="card-extra">
         {!compact && job.description && <p className="desc">{job.description}</p>}
-        {open && job.requirements && (
-          <p className="desc">
-            <strong>Requisitos:</strong> {job.requirements}
+        {open && requirements.length > 0 && (
+          <div className="req-list">
+            <strong>Requisitos</strong>
+            <ul>
+              {requirements.map((req, i) => (
+                <li key={i}>
+                  <span>{req.text}</span>
+                  <span className={`req-badge${req.required ? ' on' : ''}`}>
+                    {req.required ? 'Excluyente' : 'No excluyente'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {open && (
+          <p className="apply-channel">
+            {applyByEmail ? <Mail size={15} aria-hidden="true" /> : <MessageCircle size={15} aria-hidden="true" />}
+            {applyByEmail ? (
+              <span>
+                Postulaciones por email: <a href={`mailto:${job.apply_email}`}>{job.apply_email}</a>
+              </span>
+            ) : (
+              <span>Postulaciones por WhatsApp</span>
+            )}
           </p>
         )}
         {open && <ListingLinks links={links} />}

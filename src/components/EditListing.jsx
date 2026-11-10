@@ -7,13 +7,16 @@ import {
   JOB_PAY_TYPES,
   JOB_TYPES,
   SERVICE_CATEGORIES,
+  cleanRequirementItems,
   friendlyError,
+  isValidEmail,
 } from '../lib/utils';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import { isPremium, listingLimits, normalizeLink } from '../lib/premium';
 import { useSettings } from '../lib/settings';
 import LinkFields from './LinkFields';
+import RequirementItems from './RequirementItems';
 
 const clean = (value) => {
   const text = String(value ?? '').trim();
@@ -45,7 +48,13 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
     city: isJob ? item.location || '' : item.city || '',
     province: item.province || '',
     description: item.description || '',
-    requirements: item.requirements || '',
+    requirement_items: Array.isArray(item.requirement_items)
+      ? item.requirement_items.map((req) => ({ text: req?.text || '', required: !!req?.required }))
+      : item.requirements
+        ? [{ text: item.requirements, required: false }]
+        : [],
+    apply_channel: item.apply_channel === 'email' ? 'email' : 'whatsapp',
+    apply_email: item.apply_email || '',
     phone: item.phone || '',
     status: item.status || 'active',
     expires: item.expires_at ? item.expires_at.slice(0, 10) : '',
@@ -155,6 +164,10 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       setError(`Esta publicación permite hasta ${limits.photos} fotos. Quitá las que sobren para guardar.`);
       return;
     }
+    if (isJob && f.apply_channel === 'email' && !isValidEmail(f.apply_email)) {
+      setError('Ingresá un email válido para recibir las postulaciones.');
+      return;
+    }
     setSaving(true);
     onBusyChange?.(true);
     const common = {
@@ -177,7 +190,10 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           duration: f.duration,
           location: f.city,
           province: f.province,
-          requirements: f.requirements,
+          requirement_items: cleanRequirementItems(f.requirement_items),
+          requirements: cleanRequirementItems(f.requirement_items).map((req) => req.text).join(' · ') || null,
+          apply_channel: f.apply_channel,
+          apply_email: f.apply_channel === 'email' ? f.apply_email.trim() : null,
         }
       : {
           ...common,
@@ -379,10 +395,50 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
         )}
 
         {isJob && (
-          <label className="field">
-            <span>Requisitos (opcional)</span>
-            <input value={f.requirements} onChange={(e) => set({ requirements: e.target.value })} />
-          </label>
+          <>
+            <div className="field">
+              <span>Requisitos (opcional)</span>
+              <RequirementItems
+                items={f.requirement_items}
+                onChange={(items) => set({ requirement_items: items })}
+                disabled={saving}
+              />
+            </div>
+            <div className="field">
+              <span>¿Dónde se reciben las postulaciones?</span>
+              <div className="tiles">
+                <button
+                  type="button"
+                  className={`tile${f.apply_channel === 'whatsapp' ? ' on' : ''}`}
+                  onClick={() => set({ apply_channel: 'whatsapp' })}
+                  aria-pressed={f.apply_channel === 'whatsapp'}
+                >
+                  <b>WhatsApp</b>
+                  <small>Al número del aviso</small>
+                </button>
+                <button
+                  type="button"
+                  className={`tile${f.apply_channel === 'email' ? ' on' : ''}`}
+                  onClick={() => set({ apply_channel: 'email' })}
+                  aria-pressed={f.apply_channel === 'email'}
+                >
+                  <b>Email</b>
+                  <small>A un correo que indiques</small>
+                </button>
+              </div>
+              {f.apply_channel === 'email' && (
+                <label className="field">
+                  <span>Email para postulaciones</span>
+                  <input
+                    type="email"
+                    placeholder="rrhh@tuempresa.com"
+                    value={f.apply_email}
+                    onChange={(e) => set({ apply_email: e.target.value })}
+                  />
+                </label>
+              )}
+            </div>
+          </>
         )}
 
         <div className="two">

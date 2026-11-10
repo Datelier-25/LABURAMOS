@@ -114,6 +114,23 @@ export function waLink(phone, text = '') {
   return `https://wa.me/549${cleanPhone(phone)}?text=${encodeURIComponent(text)}`;
 }
 
+// Enlace de correo con asunto y cuerpo ya codificados.
+export function mailtoLink(email, subject = '', body = '') {
+  const params = [];
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+  if (body) params.push(`body=${encodeURIComponent(body)}`);
+  return `mailto:${email}${params.length ? `?${params.join('&')}` : ''}`;
+}
+
+export const isValidEmail = (raw = '') => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(raw).trim());
+
+// Requisitos del aviso: texto limpio, sin ítems vacíos y con un tope de 10.
+export const cleanRequirementItems = (items = []) =>
+  (Array.isArray(items) ? items : [])
+    .map((item) => ({ text: String(item?.text ?? '').trim(), required: !!item?.required }))
+    .filter((item) => item.text)
+    .slice(0, 10);
+
 // Compartir el aviso con quien uno quiera: link público (no el WhatsApp de quien
 // publica). Usa el menú nativo del sistema si existe; si no, copia el link y abre
 // WhatsApp sin destinatario para elegir el contacto.
@@ -169,6 +186,9 @@ export function friendlyError(message = '') {
   if (m.includes('estado_invalido') || m.includes('tipo_invalido')) return 'No se pudo cambiar el aviso. Probá de nuevo.';
   if (m.includes('row-level security')) return 'Tu cuenta no tiene permiso para hacer esto.';
   if (m.includes('aviso_no_disponible')) return 'Este aviso ya no está disponible.';
+  if (m.includes('email_invalido')) return 'Revisá el email: tiene que ser una dirección válida.';
+  if (m.includes('requisito')) return 'Revisá los requisitos: cada uno tiene que tener un texto de hasta 200 caracteres.';
+  if (m.includes('medio_invalido')) return 'Elegí WhatsApp o email para recibir las postulaciones.';
   if (m.includes('no_encontrado')) return 'No encontramos esa publicación: puede que ya la hayan eliminado.';
   if (m.includes('phone')) return 'Revisá el número de WhatsApp.';
   if (m.includes('failed to fetch') || m.includes('network')) return 'Sin conexión. Revisá tu internet e intentá de nuevo.';

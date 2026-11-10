@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { lockScroll } from '../lib/scrollLock';
 import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
+import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, cleanRequirementItems, friendlyError, isValidEmail, isValidPhone } from '../lib/utils';
 import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
 import { listingLimits, normalizeLink } from '../lib/premium';
 import { EMOTE_OPTIONS, emoteUrl } from '../lib/emotes';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import JobSign, { ServiceCard } from './Sign';
 import LinkFields from './LinkFields';
+import RequirementItems from './RequirementItems';
 import { PlaceField } from './Place';
 
 // Localidad inicial: la del perfil; si no, la zona elegida (si es una localidad)
@@ -71,7 +72,9 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     duration: '',
     price: '',
     description: '',
-    requirements: '',
+    requirement_items: [{ text: '', required: false }],
+    apply_channel: 'whatsapp',
+    apply_email: '',
     phone: user.phone || '',
     place: startPlace(user, zone),
     icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
@@ -157,8 +160,13 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       setError(`Podés cargar hasta ${limits.links} ${limits.links === 1 ? 'link' : 'links'}.`);
       return;
     }
+    if (isJob && form.apply_channel === 'email' && !isValidEmail(form.apply_email)) {
+      setError('Ingresá un email válido para recibir las postulaciones.');
+      return;
+    }
     setLoading(true);
     const phone = cleanPhone(form.phone);
+    const requirementItems = isJob ? cleanRequirementItems(form.requirement_items) : [];
 
     const { error: err } = isJob
       ? await supabase.from('jobs').insert({
@@ -171,7 +179,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           province: form.place.province,
           phone,
           description: form.description.trim(),
-          requirements: form.requirements.trim() || null,
+          requirement_items: requirementItems,
+          requirements: requirementItems.map((req) => req.text).join(' · ') || null,
+          apply_channel: form.apply_channel,
+          apply_email: form.apply_channel === 'email' ? form.apply_email.trim() : null,
           salary: publishedSalary,
           pay_type: publishedPayType,
           schedule: form.schedule.trim() || null,
@@ -217,6 +228,9 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     duration: form.duration.trim() || null,
     icon: form.icon.trim() || null,
     links: form.links.map(normalizeLink).filter(Boolean),
+    requirement_items: cleanRequirementItems(form.requirement_items),
+    apply_channel: form.apply_channel,
+    apply_email: form.apply_email.trim() || null,
   };
   const previewService = {
     intent: form.intent,
@@ -371,10 +385,48 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
             />
           </label>
           {isJob && (
-            <label className="field">
+            <div className="field">
               <span>Requisitos (opcional)</span>
-              <input placeholder="Experiencia previa, edad mínima, etc." value={form.requirements} onChange={(e) => set({ requirements: e.target.value })} />
-            </label>
+              <RequirementItems items={form.requirement_items} onChange={(items) => set({ requirement_items: items })} />
+            </div>
+          )}
+          {isJob && (
+            <div className="field">
+              <span>¿Dónde querés recibir las postulaciones?</span>
+              <div className="tiles">
+                <button
+                  type="button"
+                  className={`tile${form.apply_channel === 'whatsapp' ? ' on' : ''}`}
+                  onClick={() => set({ apply_channel: 'whatsapp' })}
+                  aria-pressed={form.apply_channel === 'whatsapp'}
+                >
+                  <b>WhatsApp</b>
+                  <small>Te escriben al número del aviso</small>
+                </button>
+                <button
+                  type="button"
+                  className={`tile${form.apply_channel === 'email' ? ' on' : ''}`}
+                  onClick={() => set({ apply_channel: 'email' })}
+                  aria-pressed={form.apply_channel === 'email'}
+                >
+                  <b>Email</b>
+                  <small>Las postulaciones llegan a tu correo</small>
+                </button>
+              </div>
+              {form.apply_channel === 'email' && (
+                <label className="field">
+                  <span>Email para postulaciones</span>
+                  <input
+                    type="email"
+                    required
+                    placeholder="rrhh@tuempresa.com"
+                    value={form.apply_email}
+                    onChange={(e) => set({ apply_email: e.target.value })}
+                  />
+                </label>
+              )}
+              <small>Las y los postulantes cargan su CV en la app y después se abre el contacto que elijas.</small>
+            </div>
           )}
           <div className="field">
             <span>Links (opcional)</span>

@@ -105,7 +105,7 @@ export default function App() {
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
-  const [applyFor, setApplyFor] = useState(null); // { job, waUrl } mientras elige el CV
+  const [applyFor, setApplyFor] = useState(null); // { job, applyChannel, applyUrl } mientras elige el CV
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ text: '', show: false });
@@ -305,15 +305,19 @@ export default function App() {
   };
 
   // "Postularme": abre el paso donde se elige el CV (el de la app o un PDF).
-  // El envío y la apertura de WhatsApp se hacen en ApplyModal.
-  const openApply = (job, waUrl) => {
+  // El envío y la apertura del contacto (WhatsApp o email) se hacen en ApplyModal.
+  const openApply = (job, target) => {
     if (!user) return requireLogin();
     if (!job?.id) return;
     if (job.company_id === user.id) {
       notify('No podés postularte a un aviso propio.');
       return;
     }
-    setApplyFor({ job, waUrl });
+    setApplyFor({
+      job,
+      applyChannel: target?.channel === 'email' ? 'email' : 'whatsapp',
+      applyUrl: target?.url || null,
+    });
   };
 
   const handleCreated = () => {
@@ -410,7 +414,8 @@ export default function App() {
         <ApplyModal
           job={applyFor.job}
           user={user}
-          waUrl={applyFor.waUrl}
+          applyChannel={applyFor.applyChannel}
+          applyUrl={applyFor.applyUrl}
           notify={notify}
           onClose={() => setApplyFor(null)}
           onDone={() => setApplyFor(null)}
