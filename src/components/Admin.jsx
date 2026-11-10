@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Pause, Pencil, Play, Search, Trash2 } from 'lucide-react';
+import { Crown, FileText, Pause, Pencil, Play, Search, Trash2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { PAY_MODES as MODES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
 import { CvModal } from './Candidates';
 import UsersPanel from './UsersPanel';
 import EditListing from './EditListing';
+import { isPremium } from '../lib/premium';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -35,7 +36,25 @@ function SettingsTab({ notify, onSaved }) {
       .maybeSingle()
       .then(({ data, error: err }) => {
         if (err) setError(friendlyError(err.message));
-        setCfg({ cv_paid_enabled: false, cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 30, service_days: 30, contact_email: 'laburamosapp@gmail.com', ...data });
+        setCfg({
+          cv_paid_enabled: false,
+          cv_price: 3000,
+          cv_mode: 'por_dias',
+          cv_days: 30,
+          job_days: 30,
+          service_days: 30,
+          contact_email: 'laburamosapp@gmail.com',
+          premium_enabled: false,
+          premium_price: 3000,
+          premium_days: 30,
+          premium_include_links: true,
+          premium_include_photos: true,
+          free_links_limit: 1,
+          premium_links_limit: 3,
+          free_photos_limit: 5,
+          premium_photos_limit: 10,
+          ...data,
+        });
       });
   }, []);
 
@@ -46,9 +65,15 @@ function SettingsTab({ notify, onSaved }) {
     e.preventDefault();
     setError('');
     const price = num(cfg.cv_price);
-    const days = [num(cfg.cv_days), num(cfg.job_days), num(cfg.service_days)];
+    const premiumPrice = num(cfg.premium_price);
+    const days = [num(cfg.cv_days), num(cfg.job_days), num(cfg.service_days), num(cfg.premium_days)];
+    const limits = [num(cfg.free_links_limit), num(cfg.premium_links_limit), num(cfg.free_photos_limit), num(cfg.premium_photos_limit)];
     if (!(price > 0) || price > 1000000) return setError('Poné un precio mayor a $0.');
+    if (!(premiumPrice >= 0) || premiumPrice > 1000000) return setError('El precio del premium tiene que ser $0 o más.');
     if (days.some((d) => !(d >= 1 && d <= 365))) return setError('Los días tienen que estar entre 1 y 365.');
+    if (limits.some((n) => !(n >= 0 && n <= 20))) return setError('Los límites de links y fotos tienen que estar entre 0 y 20.');
+    if (limits[1] < limits[0]) return setError('El premium no puede permitir menos links que el plan gratis.');
+    if (limits[3] < limits[2]) return setError('El premium no puede permitir menos fotos que el plan gratis.');
     setSaving(true);
     const { error: err } = await supabase
       .from('app_settings')
@@ -60,6 +85,15 @@ function SettingsTab({ notify, onSaved }) {
         job_days: days[1],
         service_days: days[2],
         contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
+        premium_enabled: cfg.premium_enabled,
+        premium_price: premiumPrice,
+        premium_days: days[3],
+        premium_include_links: cfg.premium_include_links,
+        premium_include_photos: cfg.premium_include_photos,
+        free_links_limit: limits[0],
+        premium_links_limit: limits[1],
+        free_photos_limit: limits[2],
+        premium_photos_limit: limits[3],
         updated_at: new Date().toISOString(),
       })
       .eq('id', 1);
@@ -134,6 +168,69 @@ function SettingsTab({ notify, onSaved }) {
         </div>
       </div>
 
+      <h2 className="block-title">Premium por publicación</h2>
+      <p className="lede">
+        Permite sumar links y más fotos a un aviso. Por ahora se activa a mano desde “Avisos de empleo” o “Servicios”; el cobro con Mercado Pago queda para la próxima etapa.
+      </p>
+      <label className="switch">
+        <input className="sr" type="checkbox" checked={cfg.premium_enabled} onChange={(e) => set({ premium_enabled: e.target.checked })} />
+        <span className="sw" aria-hidden="true" />
+        <span>
+          <b>Ofrecer premium</b>
+          <small>{cfg.premium_enabled ? 'El panel muestra la opción de activar premium en cada publicación.' : 'El premium está desactivado. Las publicaciones usan los límites gratis.'}</small>
+        </span>
+      </label>
+      <div className="two">
+        <label className="field">
+          <span>Precio del premium (en pesos)</span>
+          <input inputMode="decimal" value={cfg.premium_price} onChange={(e) => set({ premium_price: e.target.value.replace(/[^\d.,]/g, '') })} />
+        </label>
+        <label className="field">
+          <span>Duración del premium (días)</span>
+          <input inputMode="numeric" value={cfg.premium_days} onChange={(e) => set({ premium_days: e.target.value.replace(/\D/g, '') })} />
+        </label>
+      </div>
+
+      <div className="premium-config">
+        <label className="switch">
+          <input className="sr" type="checkbox" checked={cfg.premium_include_links} onChange={(e) => set({ premium_include_links: e.target.checked })} />
+          <span className="sw" aria-hidden="true" />
+          <span>
+            <b>Incluir links en el premium</b>
+            <small>{cfg.premium_include_links ? 'Los links extra se desbloquean con el premium.' : 'Los links quedan disponibles para todos con el límite más alto.'}</small>
+          </span>
+        </label>
+        <div className="two">
+          <label className="field">
+            <span>Links sin premium</span>
+            <input inputMode="numeric" value={cfg.free_links_limit} onChange={(e) => set({ free_links_limit: e.target.value.replace(/\D/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Links con premium</span>
+            <input inputMode="numeric" value={cfg.premium_links_limit} onChange={(e) => set({ premium_links_limit: e.target.value.replace(/\D/g, '') })} />
+          </label>
+        </div>
+
+        <label className="switch">
+          <input className="sr" type="checkbox" checked={cfg.premium_include_photos} onChange={(e) => set({ premium_include_photos: e.target.checked })} />
+          <span className="sw" aria-hidden="true" />
+          <span>
+            <b>Incluir fotos extra en el premium</b>
+            <small>{cfg.premium_include_photos ? 'Las fotos extra se desbloquean con el premium.' : 'Las fotos quedan disponibles para todos con el límite más alto.'}</small>
+          </span>
+        </label>
+        <div className="two">
+          <label className="field">
+            <span>Fotos sin premium</span>
+            <input inputMode="numeric" value={cfg.free_photos_limit} onChange={(e) => set({ free_photos_limit: e.target.value.replace(/\D/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Fotos con premium</span>
+            <input inputMode="numeric" value={cfg.premium_photos_limit} onChange={(e) => set({ premium_photos_limit: e.target.value.replace(/\D/g, '') })} />
+          </label>
+        </div>
+      </div>
+
       <button className="btn btn-ink btn-lg" disabled={saving}>
         {saving ? 'Guardando…' : 'Guardar configuración'}
       </button>
@@ -142,7 +239,7 @@ function SettingsTab({ notify, onSaved }) {
 }
 
 // ---------- avisos y servicios ----------
-function ListingsTab({ kind, notify }) {
+function ListingsTab({ kind, notify, settings }) {
   const isJob = kind === 'job';
   const table = isJob ? 'jobs' : 'services';
   const [items, setItems] = useState([]);
@@ -151,6 +248,7 @@ function ListingsTab({ kind, notify }) {
   const [search, setSearch] = useState('');
   const [state, setState] = useState('');
   const [editing, setEditing] = useState(null);
+  const [premiumBusy, setPremiumBusy] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -188,6 +286,19 @@ function ListingsTab({ kind, notify }) {
     if (err) setError(friendlyError(err.message));
     else {
       notify('Publicación eliminada');
+      load();
+    }
+  };
+
+  const togglePremium = async (item) => {
+    const enable = !isPremium(item);
+    if (enable && !settings?.premium_enabled && !window.confirm('El premium está desactivado en Configuración. ¿Querés activarlo igual para esta publicación?')) return;
+    setPremiumBusy(item.id);
+    const { data, error: err } = await supabase.rpc('admin_set_listing_premium', { p_kind: kind, p_id: item.id, p_enabled: enable });
+    setPremiumBusy(null);
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify(enable ? `Premium activo hasta el ${fmt(data)}` : 'Premium quitado');
       load();
     }
   };
@@ -244,11 +355,25 @@ function ListingsTab({ kind, notify }) {
                 <span role="cell">{(isJob ? i.location : i.city) || '—'}</span>
                 <span role="cell">
                   <span className={`pill ${st}`}>{LISTING_STATUS[st]}</span>
+                  {isPremium(i) && (
+                    <span className="pill premium" title={`Premium hasta el ${fmt(i.premium_until)}`}>
+                      <Crown size={11} aria-hidden="true" /> Premium
+                    </span>
+                  )}
                 </span>
                 <span role="cell">{fmt(i.expires_at)}</span>
                 <span role="cell" className="admin-acts">
                   <button className="icon-sq" onClick={() => setEditing(i)} aria-label="Editar" title="Editar">
                     <Pencil size={16} />
+                  </button>
+                  <button
+                    className={`icon-sq${isPremium(i) ? ' premium' : ''}`}
+                    onClick={() => togglePremium(i)}
+                    disabled={premiumBusy === i.id}
+                    aria-label={isPremium(i) ? 'Quitar premium' : 'Activar premium'}
+                    title={isPremium(i) ? `Quitar premium (vence el ${fmt(i.premium_until)})` : 'Activar premium'}
+                  >
+                    <Crown size={16} />
                   </button>
                   {i.status === 'active' ? (
                     <button className="icon-sq" onClick={() => setStatus(i, 'paused')} aria-label="Pausar" title="Pausar">
@@ -469,7 +594,7 @@ function ReportsTab({ notify }) {
   );
 }
 
-export default function Admin({ notify, onSettingsSaved, currentUser }) {
+export default function Admin({ notify, onSettingsSaved, currentUser, settings }) {
   const [tab, setTab] = useState('users');
   return (
     <section className="wrap page admin-page">
@@ -488,8 +613,8 @@ export default function Admin({ notify, onSettingsSaved, currentUser }) {
       </nav>
       <div id="admin-tab-content">
       {tab === 'config' && <SettingsTab notify={notify} onSaved={onSettingsSaved} />}
-      {tab === 'jobs' && <ListingsTab key="jobs" kind="job" notify={notify} />}
-      {tab === 'services' && <ListingsTab key="services" kind="service" notify={notify} />}
+      {tab === 'jobs' && <ListingsTab key="jobs" kind="job" notify={notify} settings={settings} />}
+      {tab === 'services' && <ListingsTab key="services" kind="service" notify={notify} settings={settings} />}
       {tab === 'cvs' && <ResumesTab notify={notify} />}
       {tab === 'users' && <UsersPanel notify={notify} currentUser={currentUser} />}
       {tab === 'pagos' && <PaymentsTab />}

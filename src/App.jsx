@@ -389,7 +389,7 @@ export default function App() {
         {view === 'oficios' && <ServiceList key={`${refreshKey}-${zoneKey}`} {...common} />}
         {view === 'cv' && user && <MyResume user={user} zone={zone} notify={notify} payReturn={PAY_RETURN} />}
         {view === 'candidatos' && user && <Candidates user={user} notify={notify} />}
-        {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} currentUser={user} />}
+        {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} currentUser={user} settings={settings} />}
         {view === 'avisos' && user && <MyPosts key={refreshKey} user={user} settings={settings} onPublish={openPublish} notify={notify} />}
         {view === 'perfil' && user && <Profile user={user} notify={notify} onUpdated={(patch) => setProfile((p) => ({ ...p, ...patch }))} />}
         {view === 'seguridad' && <Safety go={go} />}

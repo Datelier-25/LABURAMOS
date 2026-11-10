@@ -3,10 +3,12 @@ import { lockScroll } from '../lib/scrollLock';
 import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { JOB_CATEGORIES, JOB_PAY_TYPES, JOB_TYPES, SERVICE_CATEGORIES, cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
-import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
+import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
+import { listingLimits, normalizeLink } from '../lib/premium';
 import { EMOTE_OPTIONS, emoteUrl } from '../lib/emotes';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
 import JobSign, { ServiceCard } from './Sign';
+import LinkFields from './LinkFields';
 import { PlaceField } from './Place';
 
 // Localidad inicial: la del perfil; si no, la zona elegida (si es una localidad)
@@ -73,11 +75,17 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     phone: user.phone || '',
     place: startPlace(user, zone),
     icon: '', // emote de la tarjeta (id del PNG); se usa si no hay fotos
-    photos: [], // { path, url } — hasta 5, solo en servicios
+    photos: [], // { path, url } — hasta el límite del plan, solo en servicios
+    links: [], // links de Maps, Instagram, Facebook, WhatsApp o web
   });
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const isAsk = !isJob && form.intent === 'busca';
+  // Al publicar todavía no hay premium activo: se usan los límites gratis.
+  const limits = listingLimits(settings, false);
+  const premiumUpgrade = !!settings?.premium_enabled
+    && ((settings?.premium_include_links && Number(settings?.premium_links_limit) > limits.links)
+      || (settings?.premium_include_photos && Number(settings?.premium_photos_limit) > limits.photos));
   const publishedSalary = form.publish_salary
     ? form.pay_type === 'A convenir'
       ? 'A convenir'
@@ -88,7 +96,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
 
   // Sube las fotos elegidas (máx. 3). Se guardan en la carpeta de la persona.
   const onPhotos = async (e) => {
-    const files = Array.from(e.target.files || []).slice(0, MAX_SERVICE_PHOTOS - form.photos.length);
+    const files = Array.from(e.target.files || []).slice(0, limits.photos - form.photos.length);
     e.target.value = '';
     if (!files.length) return;
     setError('');
@@ -109,7 +117,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
         setError(friendlyError(err.message || 'No pudimos subir la foto.'));
       }
     }
-    if (added.length) set({ photos: [...form.photos, ...added].slice(0, MAX_SERVICE_PHOTOS) });
+    if (added.length) set({ photos: [...form.photos, ...added].slice(0, limits.photos) });
     setPhotoBusy(false);
   };
 
@@ -140,6 +148,15 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       setError('Ingresá un WhatsApp válido: código de área y número, sin 0 ni 15. Ejemplo: 2342112233');
       return;
     }
+    const cleanLinks = form.links.map(normalizeLink).filter(Boolean);
+    if (form.links.some((link) => link.trim() && !normalizeLink(link))) {
+      setError('Revisá los links: tienen que ser direcciones web válidas.');
+      return;
+    }
+    if (cleanLinks.length > limits.links) {
+      setError(`Podés cargar hasta ${limits.links} ${limits.links === 1 ? 'link' : 'links'}.`);
+      return;
+    }
     setLoading(true);
     const phone = cleanPhone(form.phone);
 
@@ -160,6 +177,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           schedule: form.schedule.trim() || null,
           duration: form.duration.trim() || null,
           icon: form.icon.trim() || null,
+          links: cleanLinks,
         })
       : await supabase.from('services').insert({
           owner_id: user.id,
@@ -175,6 +193,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           price: form.price.trim() || null,
           icon: form.icon.trim() || null,
           photos: form.photos.map((p) => p.path),
+          links: cleanLinks,
         });
 
     if (err) {
@@ -197,6 +216,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     schedule: form.schedule.trim() || null,
     duration: form.duration.trim() || null,
     icon: form.icon.trim() || null,
+    links: form.links.map(normalizeLink).filter(Boolean),
   };
   const previewService = {
     intent: form.intent,
@@ -209,6 +229,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     price: form.price.trim() || null,
     icon: form.icon.trim() || null,
     photos: form.photos.map((p) => p.url),
+    links: form.links.map(normalizeLink).filter(Boolean),
   };
 
   const heading = isJob ? 'Publicá tu aviso' : isAsk ? 'Pedí un servicio' : 'Anunciá tu servicio';
@@ -222,7 +243,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
 
         <div className="sheet-preview">
           <p className="cap">Así se va a ver tu {isJob ? 'cartel' : isAsk ? 'pedido' : 'tarjeta'}</p>
-          {isJob ? <JobSign job={previewJob} preview /> : <ServiceCard service={previewService} preview />}
+          {isJob ? <JobSign job={previewJob} preview settings={settings} /> : <ServiceCard service={previewService} preview settings={settings} />}
         </div>
 
         <form className="sheet-form" onSubmit={handleSubmit}>
@@ -355,6 +376,15 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
               <input placeholder="Experiencia previa, edad mínima, etc." value={form.requirements} onChange={(e) => set({ requirements: e.target.value })} />
             </label>
           )}
+          <div className="field">
+            <span>Links (opcional)</span>
+            {limits.links > 0 ? (
+              <LinkFields links={form.links} onChange={(links) => set({ links })} limit={limits.links} upgrade={premiumUpgrade} />
+            ) : (
+              <p className="premium-lock">Incluir links en la publicación es parte del premium.</p>
+            )}
+            <small>Podés sumar Google Maps, Instagram, Facebook, WhatsApp o tu sitio web.</small>
+          </div>
           {!isJob && (
             <div className="field">
               <span>Fotos (opcional)</span>
@@ -367,7 +397,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                     </button>
                   </div>
                 ))}
-                {form.photos.length < MAX_SERVICE_PHOTOS && (
+                {form.photos.length < limits.photos && (
                   <label className="photo-add">
                     <ImagePlus size={20} aria-hidden="true" />
                     <span>{photoBusy ? 'Subiendo…' : `Agregar foto`}</span>
@@ -375,7 +405,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
                   </label>
                 )}
               </div>
-              <small>Hasta {MAX_SERVICE_PHOTOS} fotos. Se achican solas para que carguen rápido.</small>
+              <small>
+                Hasta {limits.photos} fotos. Se achican solas para que carguen rápido.
+                {premiumUpgrade && settings?.premium_include_photos ? ' Con premium podés sumar más.' : ''}
+              </small>
             </div>
           )}
           {!isJob && !form.photos.length && (

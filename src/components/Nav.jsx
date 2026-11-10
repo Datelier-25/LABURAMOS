@@ -1,8 +1,25 @@
-import { X } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Download, X } from 'lucide-react';
 import Logo from './Logo';
 import { initials } from '../lib/utils';
+import { useInstallPrompt } from '../lib/install';
 
 export default function Nav({ user, profile, view, go, links, onLogout, onLogin, onPublish, menuOpen, setMenuOpen }) {
+  const { installed, ios, promptInstall } = useInstallPrompt();
+  const [installHint, setInstallHint] = useState('');
+
+  const handleInstall = async () => {
+    setInstallHint('');
+    const opened = await promptInstall();
+    if (!opened) {
+      setInstallHint(
+        ios
+          ? 'En Safari tocá Compartir y elegí “Agregar a inicio”.'
+          : 'Abrí el menú del navegador y elegí “Instalar app” o “Agregar a pantalla de inicio”.'
+      );
+    }
+  };
+
   return (
     <>
       <header className="nav">
@@ -69,6 +86,25 @@ export default function Nav({ user, profile, view, go, links, onLogout, onLogin,
             </button>
           ))}
         </nav>
+        <div className="menu-install">
+          {installed ? (
+            <p className="menu-install-ok">
+              <CheckCircle2 size={17} aria-hidden="true" /> La app ya está en la pantalla de inicio.
+            </p>
+          ) : (
+            <>
+              <button type="button" className="btn btn-sun menu-install-btn" onClick={handleInstall}>
+                <Download size={18} aria-hidden="true" /> Descargar la app
+              </button>
+              <small>Se agrega a la pantalla del celular y se abre como una app.</small>
+              {installHint && (
+                <p className="menu-install-hint" role="status">
+                  {installHint}
+                </p>
+              )}
+            </>
+          )}
+        </div>
         <div className="menu-foot">
           {user ? (
             <>

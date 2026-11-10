@@ -2,17 +2,23 @@ import { useState } from 'react';
 import {
   AlertTriangle,
   Bookmark,
+  Camera,
   CircleDollarSign,
   Clock3,
+  Crown,
+  Globe,
   MapPin,
+  MessageCircle,
   Pencil,
   Share2,
   Store,
+  ThumbsUp,
   User,
 } from 'lucide-react';
 import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { plateEmote } from '../lib/emotes';
-import { MAX_SERVICE_PHOTOS, servicePhotoUrl } from '../lib/photos';
+import { servicePhotoUrl } from '../lib/photos';
+import { isPremium, linkKind, linkLabel, listingLimits, visibleLinks } from '../lib/premium';
 import { nameWithPrefix } from '../lib/prefixes';
 import { Reputation } from './Reputation';
 import EditListing from './EditListing';
@@ -23,9 +29,9 @@ function ListingArt({ src, emoji }) {
   return src && !failed ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="plate-emoji">{emoji}</span>;
 }
 
-// Fotos del aviso (hasta 5). En la vista previa no son enlaces.
-function ServicePhotos({ service, preview }) {
-  const photos = (service.photos || []).filter(Boolean).slice(0, MAX_SERVICE_PHOTOS);
+// Fotos del aviso. El límite depende del plan (gratis o premium).
+function ServicePhotos({ service, preview, limit = 5 }) {
+  const photos = (service.photos || []).filter(Boolean).slice(0, limit);
   if (!photos.length) return null;
   return (
     <div className={`scard-photos n${photos.length}`}>
@@ -41,6 +47,35 @@ function ServicePhotos({ service, preview }) {
         )
       )}
     </div>
+  );
+}
+
+const LINK_ICONS = { maps: MapPin, instagram: Camera, facebook: ThumbsUp, whatsapp: MessageCircle, web: Globe };
+
+// Links de la publicación (Maps, Instagram, Facebook, WhatsApp o web).
+// Se muestran dentro de “Ver más”.
+function ListingLinks({ links }) {
+  if (!links?.length) return null;
+  return (
+    <div className="listing-links">
+      {links.map((link) => {
+        const kind = linkKind(link);
+        const Icon = LINK_ICONS[kind] || Globe;
+        return (
+          <a key={link} className="listing-link" href={link} target="_blank" rel="noreferrer noopener" title={link}>
+            <Icon size={15} aria-hidden="true" /> {linkLabel(link)}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+function PremiumMark() {
+  return (
+    <span className="premium-mark" title="Publicación premium" aria-label="Publicación premium">
+      <Crown size={14} aria-hidden="true" /> Premium
+    </span>
   );
 }
 
@@ -89,6 +124,7 @@ function CardActs({ saved, onSave, onShare, onReport, onEdit, editIcon = false, 
 export default function JobSign({
   job,
   user,
+  settings,
   saved = false,
   onSave,
   onLogin,
@@ -106,6 +142,8 @@ export default function JobSign({
   const [editing, setEditing] = useState(false);
   const interactive = !compact && !preview;
   const canEdit = !!user && (user.isAdmin || user.id === job.company_id);
+  const premium = isPremium(job);
+  const links = interactive || preview ? visibleLinks(job, settings) : [];
   const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
   const emote = plateEmote(job);
   const salaryText = String(job.salary || '').trim();
@@ -170,7 +208,10 @@ export default function JobSign({
               </span>
             )}
           </div>
-          <h3>{job.title}</h3>
+          <h3>
+            {job.title}
+            {premium && <PremiumMark />}
+          </h3>
           <p className="who-row">
             <span className="who">
               <Store size={18} aria-hidden="true" />
@@ -204,6 +245,7 @@ export default function JobSign({
             <strong>Requisitos:</strong> {job.requirements}
           </p>
         )}
+        {open && <ListingLinks links={links} />}
         {interactive && (
           <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
             {open ? 'Ver menos' : 'Ver más'}
@@ -257,7 +299,7 @@ export default function JobSign({
 }
 
 // Tarjeta de servicio. "ofrece": la vidriera de un oficio o negocio. "busca": un pedido de trabajo.
-export function ServiceCard({ service, user, onLogin, preview = false, onReport, saved = false, onSave, onChanged }) {
+export function ServiceCard({ service, user, settings, onLogin, preview = false, onReport, saved = false, onSave, onChanged }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
   const [open, setOpen] = useState(false);
@@ -265,6 +307,9 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
   const interactive = !preview;
   const canEdit = !!user && (user.isAdmin || user.id === service.owner_id);
   const canReport = !preview && !!onReport && user?.id !== service.owner_id;
+  const premium = isPremium(service);
+  const limits = listingLimits(settings, premium);
+  const links = interactive || preview ? visibleLinks(service, settings) : [];
   const deepUrl = `${window.location.origin}${window.location.pathname}#/aviso/svc/${service.id}`;
   const emoji = isAsk ? '🔎' : emojiOf(service.category);
   const emote = plateEmote(service);
@@ -317,7 +362,10 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
               </span>
             )}
           </div>
-          <h3>{service.title}</h3>
+          <h3>
+            {service.title}
+            {premium && <PremiumMark />}
+          </h3>
           <p className="who-row">
             <span className="who">
               {isAsk ? <Store size={18} aria-hidden="true" /> : <User size={18} aria-hidden="true" />}
@@ -345,7 +393,8 @@ export function ServiceCard({ service, user, onLogin, preview = false, onReport,
             {open ? 'Ver menos' : 'Ver más'}
           </button>
         )}
-        {open && <ServicePhotos service={service} preview={preview} />}
+        {open && <ListingLinks links={links} />}
+        {open && <ServicePhotos service={service} preview={preview} limit={limits.photos} />}
       </div>
 
       {(interactive || preview) && (

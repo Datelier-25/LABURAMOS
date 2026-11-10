@@ -10,7 +10,10 @@ import {
   friendlyError,
 } from '../lib/utils';
 import { PROFESSION_PREFIXES } from '../lib/prefixes';
-import { MAX_SERVICE_PHOTOS, SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
+import { SERVICE_PHOTO_BUCKET, compressImage, servicePhotoUrl } from '../lib/photos';
+import { isPremium, listingLimits, normalizeLink } from '../lib/premium';
+import { useSettings } from '../lib/settings';
+import LinkFields from './LinkFields';
 
 const clean = (value) => {
   const text = String(value ?? '').trim();
@@ -21,6 +24,12 @@ const clean = (value) => {
 // La base vuelve a validar la propiedad en admin_update_listing.
 export default function EditListing({ kind, item, onClose, onSaved, embedded = false, onBusyChange }) {
   const isJob = kind === 'job';
+  const [settings] = useSettings();
+  const premium = isPremium(item);
+  const limits = listingLimits(settings, premium);
+  const premiumUpgrade = !!settings?.premium_enabled
+    && ((settings?.premium_include_links && Number(settings?.premium_links_limit) > limits.links)
+      || (settings?.premium_include_photos && Number(settings?.premium_photos_limit) > limits.photos));
   const [f, setF] = useState({
     title: item.title || '',
     name: (isJob ? item.company_name : item.provider_name) || '',
@@ -44,6 +53,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const set = (patch) => setF((x) => ({ ...x, ...patch }));
+  const [links, setLinks] = useState(() => (item.links || []).filter(Boolean));
 
   // Fotos del servicio: la primera es la portada de la tarjeta.
   const [photos, setPhotos] = useState(() =>
@@ -62,7 +72,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
   }, []);
 
   const onPhotos = async (e) => {
-    const files = Array.from(e.target.files || []).slice(0, MAX_SERVICE_PHOTOS - photos.length);
+    const files = Array.from(e.target.files || []).slice(0, limits.photos - photos.length);
     e.target.value = '';
     if (!files.length) return;
     setError('');
@@ -91,7 +101,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
         setError(friendlyError(err.message || 'No pudimos subir la foto.'));
       }
     }
-    if (added.length) setPhotos((prev) => [...prev, ...added].slice(0, MAX_SERVICE_PHOTOS));
+    if (added.length) setPhotos((prev) => [...prev, ...added].slice(0, limits.photos));
     setPhotoBusy(false);
   };
 
@@ -127,15 +137,33 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
 
   const save = async (e) => {
     e.preventDefault();
+    setError('');
+    const cleanLinks = links.map(normalizeLink).filter(Boolean);
+    if (links.some((link) => link.trim() && !normalizeLink(link))) {
+      setError('Revisá los links: tienen que ser direcciones web válidas.');
+      return;
+    }
+    const originalLinks = (item.links || []).filter(Boolean);
+    const linksChanged = cleanLinks.length !== originalLinks.length || cleanLinks.some((link, i) => link !== originalLinks[i]);
+    if (linksChanged && cleanLinks.length > limits.links) {
+      setError(`Esta publicación permite hasta ${limits.links} ${limits.links === 1 ? 'link' : 'links'}. Quitá los que sobren para guardar.`);
+      return;
+    }
+    const originalPhotos = (item.photos || []).filter(Boolean);
+    const photosChanged = !isJob && (photos.length !== originalPhotos.length || photos.some((p, i) => p.path !== originalPhotos[i]));
+    if (photosChanged && photos.length > limits.photos) {
+      setError(`Esta publicación permite hasta ${limits.photos} fotos. Quitá las que sobren para guardar.`);
+      return;
+    }
     setSaving(true);
     onBusyChange?.(true);
-    setError('');
     const common = {
       title: f.title,
       category: f.category,
       description: f.description,
       phone: f.phone,
       status: f.status,
+      links: cleanLinks,
       ...(f.expires ? { expires_at: `${f.expires}T23:59:59` } : {}),
     };
     const payload = isJob
@@ -306,6 +334,16 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           <textarea value={f.description} onChange={(e) => set({ description: e.target.value })} />
         </label>
 
+        <div className="field">
+          <span>Links (opcional)</span>
+          {limits.links > 0 ? (
+            <LinkFields links={links} onChange={setLinks} limit={limits.links} premium={premium} upgrade={premiumUpgrade} />
+          ) : (
+            <p className="premium-lock">Incluir links en la publicación es parte del premium.</p>
+          )}
+          <small>Google Maps, Instagram, Facebook, WhatsApp o tu sitio web. Se muestran dentro de “Ver más”.</small>
+        </div>
+
         {!isJob && (
           <div className="field">
             <span>Fotos de la publicación</span>
@@ -325,7 +363,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
                   )}
                 </div>
               ))}
-              {photos.length < MAX_SERVICE_PHOTOS && (
+              {photos.length < limits.photos && (
                 <label className="photo-add">
                   <ImagePlus size={20} aria-hidden="true" />
                   <span>{photoBusy ? 'Subiendo…' : 'Agregar foto'}</span>
@@ -333,7 +371,10 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
                 </label>
               )}
             </div>
-            <small>La primera foto es la portada de la tarjeta. Hasta {MAX_SERVICE_PHOTOS} fotos; se achican solas para que carguen rápido.</small>
+            <small>
+              La primera foto es la portada de la tarjeta. Hasta {limits.photos} fotos; se achican solas para que carguen rápido.
+              {premiumUpgrade && settings?.premium_include_photos ? ' Con premium podés sumar más.' : ''}
+            </small>
           </div>
         )}
 

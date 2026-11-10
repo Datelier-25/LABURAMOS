@@ -242,6 +242,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
                 key={job.id}
                 job={job}
                 user={user}
+                settings={settings}
                 saved={saved.includes(job.id)}
                 onSave={onSave}
                 onLogin={onLogin}
@@ -274,7 +275,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
         ) : (
           <div className="scards">
             {services.map((s) => (
-              <ServiceCard key={s.id} service={s} user={user} onLogin={onLogin} onReport={onReport} saved={savedSvc.includes(s.id)} onSave={onSaveSvc} />
+              <ServiceCard key={s.id} service={s} user={user} settings={settings} onLogin={onLogin} onReport={onReport} saved={savedSvc.includes(s.id)} onSave={onSaveSvc} />
             ))}
           </div>
         )}

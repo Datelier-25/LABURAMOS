@@ -8,6 +8,11 @@ import { supabaseConfigMissing } from './supabaseClient'
 import './index.css'
 import './admin.css'
 
+// Permite instalar la app en el celular (manifest + service worker).
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>{supabaseConfigMissing ? <ConfigScreen /> : <App />}</ErrorBoundary>

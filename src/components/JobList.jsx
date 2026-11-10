@@ -8,7 +8,7 @@ import JobSign from './Sign';
 import { Empty, Filters, SkeletonGrid } from './ui';
 import { ZonePicker } from './Place';
 
-export default function JobList({ user, zone, setZone, onPublish, onLogin, onApply, saved, onSave, onPrune, onReport, deep }) {
+export default function JobList({ user, zone, setZone, settings, onPublish, onLogin, onApply, saved, onSave, onPrune, onReport, deep }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -224,6 +224,7 @@ export default function JobList({ user, zone, setZone, onPublish, onLogin, onApp
                 key={job.id}
                 job={job}
                 user={user}
+                settings={settings}
                 saved={saved.includes(job.id)}
                 onSave={onSave}
                 onLogin={onLogin}

@@ -20,7 +20,7 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.jpeg': 'image/jpeg',
   '.jpg': 'image/jpeg',
-  '.js': 'text/plain; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
   '.jsx': 'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
