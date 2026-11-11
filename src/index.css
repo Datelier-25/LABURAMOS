@@ -1636,65 +1636,33 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 /* ---------- cartel de bienvenida ---------- */
 .welcome-overlay {
   position: fixed; inset: 0; z-index: 230; display: flex; align-items: center; justify-content: center;
-  padding: 18px; background: rgba(9, 12, 35, 0.86); backdrop-filter: blur(5px); animation: fade 0.2s;
+  padding: 58px 28px 28px; background: rgba(9, 12, 35, 0.88); backdrop-filter: blur(6px); animation: fade 0.2s;
 }
-/* Recuadro fijo: todas las imágenes entran en el mismo marco, sin cambiar el
-   tamaño de la ventana. La imagen se ve completa y el fondo la acompaña. */
+/* La imagen se muestra entera: toma su proporción real y solo se achica si no
+   entra en la pantalla. Nada de recortes ni marcos alrededor. */
 .welcome-card {
-  position: relative; display: flex; flex-direction: column;
-  width: min(92vw, 720px); height: min(78svh, 560px);
-  overflow: hidden; border-radius: 28px; background: #0b0e24;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 34px 90px -22px rgba(0, 0, 0, 0.82), 0 0 0 1px rgba(0, 0, 0, 0.2);
-  animation: pop 0.35s var(--ease-pop);
+  position: relative; display: inline-block; line-height: 0;
+  max-width: min(90vw, 720px); max-height: calc(100svh - 86px);
+  animation: pop 0.3s var(--ease-pop);
 }
-.welcome-head {
-  position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 14px 16px 10px; color: #fff;
+.welcome-image {
+  display: block; width: auto; height: auto;
+  max-width: min(90vw, 720px); max-height: calc(100svh - 86px);
+  border-radius: 20px; background: #fff; cursor: default;
+  box-shadow: 0 30px 90px -22px rgba(0, 0, 0, 0.85);
+  animation: welcome-in 0.3s ease;
 }
-.welcome-tag {
-  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12); font-size: 0.7rem; font-weight: 800;
-  letter-spacing: 0.09em; text-transform: uppercase; white-space: nowrap;
-}
-.welcome-head-right { display: flex; align-items: center; gap: 10px; }
-.welcome-counter { color: rgba(255, 255, 255, 0.62); font-weight: 700; font-size: 0.8rem; }
+.welcome-overlay.multi .welcome-image { cursor: pointer; }
 .welcome-close {
-  width: 40px; height: 40px; border: 0; border-radius: 50%; display: grid; place-items: center;
-  background: rgba(255, 255, 255, 0.14); color: #fff; transition: background 0.15s, transform 0.2s;
+  position: absolute; z-index: 2; top: -48px; right: 0;
+  width: 44px; height: 44px; border: 2px solid rgba(255, 255, 255, 0.85); border-radius: 50%;
+  display: grid; place-items: center;
+  background: #0b0e24; color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, transform 0.2s;
 }
-.welcome-close:hover { background: rgba(255, 255, 255, 0.28); transform: rotate(90deg); }
+.welcome-close:hover { background: #1b2a6b; transform: rotate(90deg); }
 .welcome-close:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
-.welcome-stage {
-  position: relative; z-index: 1; flex: 1; min-height: 0; display: grid; place-items: center;
-  padding: 0 18px 18px; overflow: hidden;
-  background: radial-gradient(circle at 50% 18%, #1b2250, #090b1c 72%);
-}
-.welcome-stage-bg {
-  position: absolute; inset: -46px; background-position: center; background-size: cover;
-  filter: blur(30px) saturate(1.25); opacity: 0.4; transform: scale(1.12);
-}
-.welcome-stage::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(9, 12, 35, 0.08), rgba(9, 12, 35, 0.58));
-}
-.welcome-stage img {
-  position: relative; z-index: 2; display: block; width: auto; height: auto;
-  max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 18px;
-  box-shadow: 0 18px 50px -14px rgba(0, 0, 0, 0.7);
-  animation: welcome-in 0.35s ease;
-}
-.welcome-foot {
-  position: relative; z-index: 3; display: flex; align-items: center; justify-content: center;
-  padding: 9px 16px 14px; background: #0b0e24;
-}
-.welcome-dots { display: flex; align-items: center; gap: 7px; }
-.welcome-dots button {
-  width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.42); transition: background 0.15s, transform 0.15s;
-}
-.welcome-dots button.on { background: #fff; transform: scale(1.35); }
-.welcome-dots button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 @keyframes welcome-in {
   from { opacity: 0; transform: scale(0.985); }
   to { opacity: 1; transform: scale(1); }
@@ -1709,7 +1677,7 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .welcome-help { margin: 0; color: var(--muted); font-weight: 600; font-size: 0.85rem; }
 .welcome-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 4px; }
 .welcome-thumb { position: relative; margin: 0; overflow: hidden; border: 2px solid var(--line); border-radius: 16px; background: #fff; }
-.welcome-thumb img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: var(--mist); }
+.welcome-thumb img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--mist); }
 .welcome-thumb-num {
   position: absolute; top: 8px; left: 8px; min-width: 24px; height: 24px; padding: 0 6px;
   display: grid; place-items: center; border-radius: 999px; background: rgba(9, 12, 35, 0.72);
@@ -1726,12 +1694,8 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .welcome-thumb-acts button:last-child:hover { background: #ffd9d2; }
 
 @media (max-width: 640px) {
-  .welcome-overlay { padding: 10px; }
-  .welcome-card { width: 94vw; height: min(84svh, 640px); border-radius: 22px; }
-  .welcome-head { padding: 12px 12px 8px; }
-  .welcome-tag { padding: 5px 10px; font-size: 0.66rem; }
-  .welcome-close { width: 38px; height: 38px; }
-  .welcome-stage { padding: 0 10px 10px; }
-  .welcome-stage img { border-radius: 14px; }
-  .welcome-foot { padding: 8px 12px 12px; }
+  .welcome-overlay { padding: 54px 18px 18px; }
+  .welcome-card { max-width: 90vw; max-height: calc(100svh - 72px); }
+  .welcome-image { max-width: 90vw; max-height: calc(100svh - 72px); border-radius: 16px; }
+  .welcome-close { width: 42px; height: 42px; top: -46px; right: 0; }
 }

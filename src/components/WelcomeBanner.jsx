@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { lockScroll } from '../lib/scrollLock';
 import { WELCOME_SLIDE_MS, welcomeImageUrl } from '../lib/welcome';
 
-// Cartel que recibe a quien entra al sitio. Muestra una imagen o varias que se
-// van alternando, y se cierra con la cruz (o con Escape) para seguir navegando.
+// Cartel que recibe a quien entra al sitio. Muestra la imagen completa, sin
+// recortes ni marcos extra, y se cierra con la cruz (o con Escape). Si hay
+// varias imágenes, se van alternando solas.
 export default function WelcomeBanner({ images = [], onClose }) {
   const list = images.map(welcomeImageUrl).filter(Boolean);
   const [index, setIndex] = useState(0);
@@ -49,50 +50,18 @@ export default function WelcomeBanner({ images = [], onClose }) {
   if (!list.length) return null;
 
   return createPortal(
-    <div className="welcome-overlay" role="dialog" aria-modal="true" aria-label="Novedades de LaburamosApp">
+    <div className={`welcome-overlay${list.length > 1 ? ' multi' : ''}`} role="dialog" aria-modal="true" aria-label="Cartel de bienvenida">
       <div className="welcome-card">
-        <header className="welcome-head">
-          <span className="welcome-tag">
-            <Sparkles size={14} aria-hidden="true" /> Novedades
-          </span>
-          <div className="welcome-head-right">
-            {list.length > 1 && (
-              <span className="welcome-counter">
-                {index + 1} / {list.length}
-              </span>
-            )}
-            <button ref={closeRef} type="button" className="welcome-close" onClick={onClose} aria-label="Cerrar cartel">
-              <X size={20} aria-hidden="true" />
-            </button>
-          </div>
-        </header>
-
-        <div className="welcome-stage">
-          <div
-            className="welcome-stage-bg"
-            style={{ backgroundImage: `url("${list[index]}")` }}
-            aria-hidden="true"
-          />
-          <img key={list[index]} src={list[index]} alt={`Novedad ${index + 1} de ${list.length}`} />
-        </div>
-
-        {list.length > 1 && (
-          <footer className="welcome-foot">
-            <div className="welcome-dots" role="tablist" aria-label="Imágenes del cartel">
-              {list.map((src, i) => (
-                <button
-                  key={`${src}-${i}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={i === index}
-                  aria-label={`Ver imagen ${i + 1}`}
-                  className={i === index ? 'on' : ''}
-                  onClick={() => setIndex(i)}
-                />
-              ))}
-            </div>
-          </footer>
-        )}
+        <button ref={closeRef} type="button" className="welcome-close" onClick={onClose} aria-label="Cerrar cartel">
+          <X size={22} aria-hidden="true" />
+        </button>
+        <img
+          key={list[index]}
+          className="welcome-image"
+          src={list[index]}
+          alt=""
+          onClick={() => list.length > 1 && setIndex((i) => (i + 1) % list.length)}
+        />
       </div>
     </div>,
     document.body

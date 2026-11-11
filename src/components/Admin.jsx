@@ -108,7 +108,7 @@ function WelcomeImagesField({ value, onChange, onRemove }) {
           {list.length} de {WELCOME_MAX_IMAGES}
         </span>
       </div>
-      <p className="welcome-help">JPG, PNG o WebP de hasta {WELCOME_MAX_FILE_MB} MB. Se achican solas antes de subirlas y se muestran completas dentro de un recuadro fijo.</p>
+      <p className="welcome-help">JPG, PNG o WebP de hasta {WELCOME_MAX_FILE_MB} MB. Se achican solas antes de subirlas y se muestran completas, sin recortes.</p>
       {error && <p className="note err">{error}</p>}
       {list.length > 0 && (
         <div className="welcome-grid">
@@ -292,7 +292,7 @@ function SettingsTab({ notify, onSaved }) {
 
       <h2 className="block-title">Cartel de bienvenida</h2>
       <p className="lede">
-        Es lo primero que ve quien entra a la app. Ideal para novedades, promociones o publicidad. Podés subir una imagen o varias: si hay más de una, se van alternando solas dentro del mismo recuadro. Cada persona lo cierra con la cruz y sigue navegando normalmente.
+        Es lo primero que ve quien entra a la app. Ideal para novedades, promociones o publicidad. Podés subir una imagen o varias: si hay más de una, se van alternando solas y se ven completas, sin recortes. Cada persona lo cierra con la cruz y sigue navegando normalmente.
       </p>
       <label className="switch">
         <input className="sr" type="checkbox" checked={cfg.welcome_enabled} onChange={(e) => set({ welcome_enabled: e.target.checked })} />
