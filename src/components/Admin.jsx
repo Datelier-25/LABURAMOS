@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Crown, FileText, Pause, Pencil, Play, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, CircleDollarSign, Crown, ExternalLink, FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { PAY_MODES as MODES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
@@ -7,6 +7,7 @@ import { CvModal } from './Candidates';
 import UsersPanel from './UsersPanel';
 import EditListing from './EditListing';
 import { isPremium } from '../lib/premium';
+import { AD_VIDEO_BUCKET, adVideoUrl } from '../lib/ads';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'config', label: 'Configuración' },
   { id: 'jobs', label: 'Avisos de empleo' },
   { id: 'services', label: 'Servicios' },
+  { id: 'ads', label: 'Anuncios' },
   { id: 'cvs', label: 'CVs' },
   { id: 'users', label: 'Usuarios' },
   { id: 'pagos', label: 'Pagos' },
@@ -54,6 +56,13 @@ function SettingsTab({ notify, onSaved }) {
           premium_links_limit: 3,
           free_photos_limit: 5,
           premium_photos_limit: 10,
+          ads_enabled: true,
+          ads_price_per_second: 100,
+          ads_max_seconds: 30,
+          ads_min_seconds: 5,
+          ads_days: 30,
+          ads_skip_seconds: 5,
+          ads_max_per_user: 3,
           ...data,
         });
       });
@@ -69,12 +78,24 @@ function SettingsTab({ notify, onSaved }) {
     const premiumPrice = num(cfg.premium_price);
     const days = [num(cfg.cv_days), num(cfg.job_days), num(cfg.service_days), num(cfg.premium_days)];
     const limits = [num(cfg.free_links_limit), num(cfg.premium_links_limit), num(cfg.free_photos_limit), num(cfg.premium_photos_limit)];
+    const adsPrice = num(cfg.ads_price_per_second);
+    const adsMax = num(cfg.ads_max_seconds);
+    const adsMin = num(cfg.ads_min_seconds);
+    const adsDays = num(cfg.ads_days);
+    const adsSkip = num(cfg.ads_skip_seconds);
+    const adsPerUser = num(cfg.ads_max_per_user);
     if (!(price > 0) || price > 1000000) return setError('Poné un precio mayor a $0.');
     if (!(premiumPrice >= 0) || premiumPrice > 1000000) return setError('El precio del premium tiene que ser $0 o más.');
     if (days.some((d) => !(d >= 1 && d <= 365))) return setError('Los días tienen que estar entre 1 y 365.');
     if (limits.some((n) => !(n >= 0 && n <= 20))) return setError('Los límites de links y fotos tienen que estar entre 0 y 20.');
     if (limits[1] < limits[0]) return setError('El premium no puede permitir menos links que el plan gratis.');
     if (limits[3] < limits[2]) return setError('El premium no puede permitir menos fotos que el plan gratis.');
+    if (!(adsPrice > 0) || adsPrice > 1000000) return setError('El precio por segundo de los anuncios tiene que ser mayor a $0.');
+    if (!(adsMax >= 5 && adsMax <= 30)) return setError('La duración máxima de los anuncios tiene que estar entre 5 y 30 segundos.');
+    if (!(adsMin >= 1 && adsMin <= adsMax)) return setError('La duración mínima de los anuncios tiene que estar entre 1 y la máxima.');
+    if (!(adsDays >= 1 && adsDays <= 365)) return setError('Los días de campaña tienen que estar entre 1 y 365.');
+    if (!(adsSkip >= 0 && adsSkip <= adsMax)) return setError('Los segundos para continuar tienen que estar entre 0 y la duración máxima.');
+    if (!(adsPerUser >= 1 && adsPerUser <= 20)) return setError('Los anuncios por usuario tienen que estar entre 1 y 20.');
     setSaving(true);
     const { error: err } = await supabase
       .from('app_settings')
@@ -96,6 +117,13 @@ function SettingsTab({ notify, onSaved }) {
         premium_links_limit: limits[1],
         free_photos_limit: limits[2],
         premium_photos_limit: limits[3],
+        ads_enabled: cfg.ads_enabled,
+        ads_price_per_second: adsPrice,
+        ads_max_seconds: adsMax,
+        ads_min_seconds: adsMin,
+        ads_days: adsDays,
+        ads_skip_seconds: adsSkip,
+        ads_max_per_user: adsPerUser,
         updated_at: new Date().toISOString(),
       })
       .eq('id', 1);
@@ -240,6 +268,55 @@ function SettingsTab({ notify, onSaved }) {
           </label>
         </div>
       </div>
+
+      <h2 className="block-title">Anuncios en video</h2>
+      <p className="lede">
+        Videos de hasta 30 segundos que se muestran en forma aleatoria antes de publicar, postularse o contactar a un servicio. El cobro se acredita a mano desde la pestaña “Anuncios”.
+      </p>
+      <label className="switch">
+        <input className="sr" type="checkbox" checked={cfg.ads_enabled} onChange={(e) => set({ ads_enabled: e.target.checked })} />
+        <span className="sw" aria-hidden="true" />
+        <span>
+          <b>Mostrar anuncios</b>
+          <small>{cfg.ads_enabled ? 'Los usuarios ven un anuncio antes de publicar, postularse o contactar.' : 'Los anuncios están desactivados: no se muestran ni se pueden crear nuevos.'}</small>
+        </span>
+      </label>
+      <div className="two">
+        <label className="field">
+          <span>Precio por segundo (en pesos)</span>
+          <input inputMode="decimal" value={cfg.ads_price_per_second} onChange={(e) => set({ ads_price_per_second: e.target.value.replace(/[^\d.,]/g, '') })} />
+        </label>
+        <label className="field">
+          <span>Duración de la campaña (días)</span>
+          <input inputMode="numeric" value={cfg.ads_days} onChange={(e) => set({ ads_days: e.target.value.replace(/\D/g, '') })} />
+        </label>
+      </div>
+      <div className="two">
+        <label className="field">
+          <span>Duración mínima del video (segundos)</span>
+          <input inputMode="numeric" value={cfg.ads_min_seconds} onChange={(e) => set({ ads_min_seconds: e.target.value.replace(/\D/g, '') })} />
+        </label>
+        <label className="field">
+          <span>Duración máxima del video (segundos)</span>
+          <input inputMode="numeric" value={cfg.ads_max_seconds} onChange={(e) => set({ ads_max_seconds: e.target.value.replace(/\D/g, '') })} />
+        </label>
+      </div>
+      <div className="two">
+        <label className="field">
+          <span>Segundos para poder continuar</span>
+          <input inputMode="numeric" value={cfg.ads_skip_seconds} onChange={(e) => set({ ads_skip_seconds: e.target.value.replace(/\D/g, '') })} />
+          <small>Cuenta regresiva antes de habilitar el botón “Continuar”.</small>
+        </label>
+        <label className="field">
+          <span>Anuncios activos por usuario</span>
+          <input inputMode="numeric" value={cfg.ads_max_per_user} onChange={(e) => set({ ads_max_per_user: e.target.value.replace(/\D/g, '') })} />
+          <small>Cuenta los anuncios pendientes o aprobados que no vencieron.</small>
+        </label>
+      </div>
+      <p className="ads-admin-hint">
+        <CircleDollarSign size={18} aria-hidden="true" />
+        Precio de ejemplo: {money(Number(String(cfg.ads_price_per_second).replace(',', '.')) * Number(cfg.ads_max_seconds || 0))} por un video de {cfg.ads_max_seconds || 0} segundos.
+      </p>
 
       <button className="btn btn-ink btn-lg" disabled={saving}>
         {saving ? 'Guardando…' : 'Guardar configuración'}
@@ -604,6 +681,295 @@ function ReportsTab({ notify }) {
   );
 }
 
+// ---------- anuncios en video ----------
+const AD_REVIEW = { pending: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado' };
+const AD_PAY = { pending: 'Sin pago', paid: 'Pagado' };
+const AD_PILL = { pending: 'paused', approved: 'active', rejected: 'expired' };
+const isLiveAd = (ad) =>
+  ad.review_status === 'approved' &&
+  ad.payment_status === 'paid' &&
+  ad.active &&
+  (!ad.ends_at || new Date(ad.ends_at) > new Date());
+
+function AdEditor({ ad, onClose, onSaved, notify }) {
+  const [form, setForm] = useState({
+    title: ad.title || '',
+    advertiser_name: ad.advertiser_name || '',
+    target_url: ad.target_url || '',
+    ends_at: ad.ends_at ? ad.ends_at.slice(0, 10) : '',
+    active: !!ad.active,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async (e) => {
+    e.preventDefault();
+    setError('');
+    const title = form.title.trim();
+    if (title.length < 3) return setError('El título tiene que tener al menos 3 caracteres.');
+    const target = form.target_url.trim();
+    if (target && !/^https?:\/\/[^\s]+$/i.test(target)) return setError('El link tiene que empezar con http:// o https://.');
+    setBusy(true);
+    const { error: err } = await supabase.rpc('admin_update_ad_campaign', {
+      p_id: ad.id,
+      p: {
+        title,
+        advertiser_name: form.advertiser_name.trim() || null,
+        target_url: target || null,
+        ends_at: form.ends_at ? new Date(`${form.ends_at}T23:59:59`).toISOString() : null,
+        active: !!form.active,
+      },
+    });
+    setBusy(false);
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify('Anuncio actualizado');
+      onSaved?.();
+    }
+  };
+
+  return (
+    <div className="overlay" role="dialog" aria-modal="true" aria-label="Editar anuncio">
+      <form className="fsheet ad-editor" onSubmit={save}>
+        <div className="ads-form-head">
+          <h2 className="block-title">Editar anuncio</h2>
+          <button type="button" className="ad-close" onClick={onClose} aria-label="Cerrar">
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        {error && <p className="note err">{error}</p>}
+        <label className="field">
+          <span>Título</span>
+          <input value={form.title} maxLength={120} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>Anunciante</span>
+          <input value={form.advertiser_name} maxLength={120} onChange={(e) => setForm({ ...form, advertiser_name: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>Link de destino</span>
+          <input type="url" value={form.target_url} maxLength={500} onChange={(e) => setForm({ ...form, target_url: e.target.value })} placeholder="https://..." />
+        </label>
+        <label className="field">
+          <span>Vence el</span>
+          <input type="date" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} />
+          <small>Dejalo vacío para que no tenga vencimiento propio.</small>
+        </label>
+        <label className="switch">
+          <input className="sr" type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+          <span className="sw" aria-hidden="true" />
+          <span>
+            <b>Anuncio activo</b>
+            <small>{form.active ? 'Puede mostrarse si está aprobado y pago.' : 'No se muestra aunque esté aprobado y pago.'}</small>
+          </span>
+        </label>
+        <div className="ads-editor-acts">
+          <button type="button" className="btn btn-line" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn btn-ink" disabled={busy}>
+            {busy ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AdsTab({ notify }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [busy, setBusy] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const { data, error: err } = await supabase.from('ad_campaigns').select('*').order('created_at', { ascending: false }).limit(500);
+    if (err) setError(friendlyError(err.message));
+    setItems(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return items.filter((ad) => {
+      const text = !term || [ad.title, ad.advertiser_name, ad.user_id].some((v) => (v || '').toLowerCase().includes(term));
+      if (!text) return false;
+      if (filter === 'pending_review') return ad.review_status === 'pending';
+      if (filter === 'pending_payment') return ad.review_status === 'approved' && ad.payment_status !== 'paid';
+      if (filter === 'live') return isLiveAd(ad);
+      if (filter === 'rejected') return ad.review_status === 'rejected';
+      return true;
+    });
+  }, [items, search, filter]);
+
+  const pendingReview = items.filter((ad) => ad.review_status === 'pending').length;
+  const pendingPayment = items.filter((ad) => ad.review_status === 'approved' && ad.payment_status !== 'paid').length;
+  const live = items.filter(isLiveAd).length;
+
+  const review = async (ad, status) => {
+    let note = null;
+    if (status === 'rejected') {
+      note = window.prompt('Motivo del rechazo (se le muestra al anunciante):', ad.review_note || '');
+      if (note === null) return;
+    }
+    setBusy(ad.id);
+    const { error: err } = await supabase.rpc('admin_review_ad_campaign', { p_id: ad.id, p_status: status, p_note: note });
+    setBusy(null);
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify(status === 'approved' ? 'Anuncio aprobado' : status === 'rejected' ? 'Anuncio rechazado' : 'Anuncio pendiente');
+      load();
+    }
+  };
+
+  const setPaid = async (ad, paid) => {
+    setBusy(ad.id);
+    const { error: err } = await supabase.rpc('admin_set_ad_payment', { p_id: ad.id, p_paid: paid });
+    setBusy(null);
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify(paid ? 'Pago acreditado' : 'Pago quitado');
+      load();
+    }
+  };
+
+  const toggleActive = async (ad) => {
+    setBusy(ad.id);
+    const { error: err } = await supabase.rpc('admin_update_ad_campaign', { p_id: ad.id, p: { active: !ad.active } });
+    setBusy(null);
+    if (err) setError(friendlyError(err.message));
+    else {
+      notify(ad.active ? 'Anuncio pausado' : 'Anuncio activado');
+      load();
+    }
+  };
+
+  const remove = async (ad) => {
+    if (!window.confirm(`¿Eliminar el anuncio "${ad.title}"? Se borra también el video.`)) return;
+    setBusy(ad.id);
+    const { data: path, error: err } = await supabase.rpc('admin_delete_ad_campaign', { p_id: ad.id });
+    setBusy(null);
+    if (err) {
+      setError(friendlyError(err.message));
+      return;
+    }
+    if (path) await supabase.storage.from(AD_VIDEO_BUCKET).remove([path]);
+    notify('Anuncio eliminado');
+    load();
+  };
+
+  return (
+    <>
+      {error && <p className="note err">{error}</p>}
+      <div className="admin-tools">
+        <label className="search">
+          <span className="sr">Buscar anuncios</span>
+          <input type="search" placeholder="Buscá por título, anunciante o usuario" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Search size={22} aria-hidden="true" />
+        </label>
+        <select className="fbtn" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar anuncios">
+          <option value="">Todos los anuncios</option>
+          <option value="pending_review">En revisión ({pendingReview})</option>
+          <option value="pending_payment">Aprobados sin pago ({pendingPayment})</option>
+          <option value="live">Mostrándose ({live})</option>
+          <option value="rejected">Rechazados</option>
+        </select>
+      </div>
+      <p className="count">
+        {filtered.length} de {items.length} · {pendingReview} por revisar · {pendingPayment} sin pago · {live} mostrándose
+      </p>
+
+      {loading ? (
+        <p className="count">Cargando…</p>
+      ) : filtered.length === 0 ? (
+        <Empty title="No hay anuncios" text="Cuando alguien envíe un video, va a aparecer acá para revisarlo." />
+      ) : (
+        <div className="admin-ads">
+          {filtered.map((ad) => (
+            <article className="admin-ad" key={ad.id}>
+              <video className="admin-ad-video" src={adVideoUrl(ad.video_path)} controls playsInline preload="metadata" />
+              <div className="admin-ad-body">
+                <div className="admin-ad-head">
+                  <b>{ad.title}</b>
+                  <span className={`pill ${AD_PILL[ad.review_status] || 'paused'}`}>{AD_REVIEW[ad.review_status] || ad.review_status}</span>
+                  <span className={`pill ${ad.payment_status === 'paid' ? 'active' : 'paused'}`}>{AD_PAY[ad.payment_status] || ad.payment_status}</span>
+                  {!ad.active && <span className="pill paused">Pausado</span>}
+                  {isLiveAd(ad) && <span className="pill active">Mostrándose</span>}
+                </div>
+                <p className="admin-ad-meta">
+                  {ad.advertiser_name || 'Sin anunciante'} · Usuario {String(ad.user_id).slice(0, 8)} ·{' '}
+                  {Number(ad.duration_seconds || 0).toLocaleString('es-AR', { maximumFractionDigits: 1 })} s · <b>{money(ad.amount)}</b>
+                </p>
+                <p className="admin-ad-meta">
+                  Creado {fmt(ad.created_at)} · {ad.ends_at ? `Vence ${fmt(ad.ends_at)}` : 'Sin vencimiento'}
+                  {ad.paid_at ? ` · Pagado ${fmt(ad.paid_at)}` : ''}
+                </p>
+                {ad.target_url && (
+                  <a className="admin-ad-link" href={ad.target_url} target="_blank" rel="noreferrer noopener">
+                    <ExternalLink size={14} aria-hidden="true" /> {ad.target_url}
+                  </a>
+                )}
+                {ad.review_note && <p className="note err">{ad.review_note}</p>}
+                <div className="admin-ad-acts">
+                  {ad.review_status !== 'approved' && (
+                    <button type="button" className="btn btn-success btn-xs" disabled={busy === ad.id} onClick={() => review(ad, 'approved')}>
+                      <CheckCircle2 size={14} aria-hidden="true" /> Aprobar
+                    </button>
+                  )}
+                  {ad.review_status !== 'rejected' && (
+                    <button type="button" className="btn btn-danger btn-xs" disabled={busy === ad.id} onClick={() => review(ad, 'rejected')}>
+                      Rechazar
+                    </button>
+                  )}
+                  {ad.payment_status !== 'paid' ? (
+                    <button type="button" className="btn btn-ink btn-xs" disabled={busy === ad.id} onClick={() => setPaid(ad, true)}>
+                      <CircleDollarSign size={14} aria-hidden="true" /> Acreditar pago
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-line btn-xs" disabled={busy === ad.id} onClick={() => setPaid(ad, false)}>
+                      Quitar pago
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-line btn-xs" disabled={busy === ad.id} onClick={() => toggleActive(ad)}>
+                    {ad.active ? <><Pause size={14} aria-hidden="true" /> Pausar</> : <><Play size={14} aria-hidden="true" /> Activar</>}
+                  </button>
+                  <button type="button" className="btn btn-line btn-xs" onClick={() => setEditing(ad)}>
+                    <Pencil size={14} aria-hidden="true" /> Editar
+                  </button>
+                  <button type="button" className="btn btn-danger btn-xs" disabled={busy === ad.id} onClick={() => remove(ad)}>
+                    <Trash2 size={14} aria-hidden="true" /> Eliminar
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <AdEditor
+          ad={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+          notify={notify}
+        />
+      )}
+    </>
+  );
+}
+
 export default function Admin({ notify, onSettingsSaved, currentUser, settings }) {
   const [tab, setTab] = useState('users');
   return (
@@ -625,6 +991,7 @@ export default function Admin({ notify, onSettingsSaved, currentUser, settings }
       {tab === 'config' && <SettingsTab notify={notify} onSaved={onSettingsSaved} />}
       {tab === 'jobs' && <ListingsTab key="jobs" kind="job" notify={notify} settings={settings} />}
       {tab === 'services' && <ListingsTab key="services" kind="service" notify={notify} settings={settings} />}
+      {tab === 'ads' && <AdsTab notify={notify} />}
       {tab === 'cvs' && <ResumesTab notify={notify} />}
       {tab === 'users' && <UsersPanel notify={notify} currentUser={currentUser} />}
       {tab === 'pagos' && <PaymentsTab />}

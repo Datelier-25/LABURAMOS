@@ -18,13 +18,16 @@ import MyPosts from './components/MyPosts';
 import PublishModal from './components/PublishModal';
 import ApplyModal from './components/ApplyModal';
 import Admin from './components/Admin';
+import MyAds from './components/MyAds';
+import AdGate from './components/AdGate';
 import Safety from './components/Safety';
 import Contacto from './components/Contacto';
 import ZoneWelcome from './components/ZoneWelcome';
 import ReportModal from './components/ReportModal';
 import { Footer } from './components/ui';
+import { pickRandomAd } from './lib/ads';
 
-const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'perfil', 'admin', 'seguridad', 'contacto'];
+const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'anuncios', 'perfil', 'admin', 'seguridad', 'contacto'];
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
 const PAY_RETURN = (() => {
   if (typeof window === 'undefined') return null;
@@ -73,6 +76,8 @@ const TITLES = {
   oficios: 'Oficios y servicios cerca tuyo · LaburamosApp',
   cv: 'Mi CV online · LaburamosApp',
   candidatos: 'Postulantes · LaburamosApp',
+  avisos: 'Mis avisos · LaburamosApp',
+  anuncios: 'Mis anuncios en video · LaburamosApp',
   perfil: 'Mi perfil · LaburamosApp',
   admin: 'Administración · LaburamosApp',
   seguridad: 'Consejos para operar seguro · LaburamosApp',
@@ -84,6 +89,8 @@ const DESCRIPTIONS = {
   oficios: 'Plomeros, electricistas, clases, limpieza y más. Encontrá a quién te haga el trabajo o anunciá tu oficio.',
   cv: 'Armá tu CV online con tus oficios y habilidades, y compartilo con los comercios que buscan gente.',
   candidatos: 'Personas que se postularon a tus avisos, con su CV y contacto directo por WhatsApp.',
+  avisos: 'Tus publicaciones y postulaciones en LaburamosApp.',
+  anuncios: 'Subí un video corto, revisá tus campañas y mirá cuándo se muestran en LaburamosApp.',
   perfil: 'Tus datos, tu foto y tu verificación en LaburamosApp.',
   admin: 'Panel de administración de LaburamosApp.',
   seguridad: 'Cómo cuidarte al buscar o publicar un trabajo: señales de alerta, pagos y referencias.',
@@ -104,6 +111,7 @@ export default function App() {
   const [zone, setZone, suggestZone, zoneChosen] = useZone();
   const [settings, reloadSettings] = useSettings();
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
+  const [adGate, setAdGate] = useState(null); // { ad, next } mientras se reproduce un anuncio
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
   const [applyFor, setApplyFor] = useState(null); // { job, applyChannel, applyUrl } mientras elige el CV
   const [menuOpen, setMenuOpen] = useState(false);
@@ -218,12 +226,14 @@ export default function App() {
   if (user?.role === 'company') links.push({ id: 'candidatos', label: 'Postulantes' });
   if (user) links.push({ id: 'perfil', label: 'Mi perfil' });
   if (user) links.push({ id: 'avisos', label: 'Mis avisos' });
+  if (user) links.push({ id: 'anuncios', label: 'Anuncios' });
   if (user?.isAdmin) links.push({ id: 'admin', label: 'Admin' });
 
   const allowed = (id) => {
     if (id === 'cv') return user?.role === 'worker';
     if (id === 'candidatos') return user?.role === 'company';
     if (id === 'avisos') return !!user;
+    if (id === 'anuncios') return !!user;
     if (id === 'perfil') return !!user;
     if (id === 'admin') return !!user?.isAdmin;
     return true;
@@ -297,11 +307,47 @@ export default function App() {
     toggleSavedSvc(id);
   };
 
+  // Antes de publicar, postularse o contactar, se muestra un anuncio al azar
+  // (si hay alguno aprobado, pago y vigente). Si no hay, la acción sigue directo.
+  const runWithAd = useCallback(
+    async (next) => {
+      if (!settings?.ads_enabled) {
+        next();
+        return;
+      }
+      const ad = await pickRandomAd();
+      if (!ad) {
+        next();
+        return;
+      }
+      setAdGate({ ad, next });
+    },
+    [settings?.ads_enabled]
+  );
+
   const openPublish = (type, intent = null) => {
     if (!user) return requireLogin();
     setMenuOpen(false);
-    setModalIntent(intent);
-    return setModal(type);
+    return runWithAd(() => {
+      setModalIntent(intent);
+      setModal(type);
+    });
+  };
+
+  // Contacto de un servicio: el anuncio se muestra antes de abrir WhatsApp.
+  // Se usa un enlace temporal para que la app no pierda la página actual:
+  // window.open con "noopener" devuelve null por especificación.
+  const openContact = (url) => {
+    if (!url) return;
+    runWithAd(() => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
   };
 
   // "Postularme": abre el paso donde se elige el CV (el de la app o un PDF).
@@ -313,10 +359,12 @@ export default function App() {
       notify('No podés postularte a un aviso propio.');
       return;
     }
-    setApplyFor({
-      job,
-      applyChannel: target?.channel === 'email' ? 'email' : 'whatsapp',
-      applyUrl: target?.url || null,
+    runWithAd(() => {
+      setApplyFor({
+        job,
+        applyChannel: target?.channel === 'email' ? 'email' : 'whatsapp',
+        applyUrl: target?.url || null,
+      });
     });
   };
 
@@ -369,7 +417,7 @@ export default function App() {
   }
 
   const defaultPublish = user?.role === 'company' ? 'job' : 'service';
-  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, saved, onSave: toggleSavedGated, savedSvc, onSaveSvc: toggleSavedSvcGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
+  const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, onContact: openContact, saved, onSave: toggleSavedGated, savedSvc, onSaveSvc: toggleSavedSvcGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
   const zoneKey = `${zone.city}|${zone.province}`;
 
   return (
@@ -395,6 +443,7 @@ export default function App() {
         {view === 'candidatos' && user && <Candidates user={user} notify={notify} />}
         {view === 'admin' && user?.isAdmin && <Admin notify={notify} onSettingsSaved={reloadSettings} currentUser={user} settings={settings} />}
         {view === 'avisos' && user && <MyPosts key={refreshKey} user={user} settings={settings} onPublish={openPublish} notify={notify} />}
+        {view === 'anuncios' && user && <MyAds user={user} settings={settings} notify={notify} />}
         {view === 'perfil' && user && <Profile user={user} notify={notify} onUpdated={(patch) => setProfile((p) => ({ ...p, ...patch }))} />}
         {view === 'seguridad' && <Safety go={go} />}
         {view === 'contacto' && <Contacto settings={settings} notify={notify} />}
@@ -451,6 +500,19 @@ export default function App() {
       )}
 
       {reportFor && <ReportModal report={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
+
+      {adGate && (
+        <AdGate
+          ad={adGate.ad}
+          skipSeconds={settings?.ads_skip_seconds}
+          onDone={() => {
+            const next = adGate.next;
+            setAdGate(null);
+            next?.();
+          }}
+          onCancel={() => setAdGate(null)}
+        />
+      )}
 
       <div className={`toast${toast.show ? ' show' : ''}`} role="status" aria-live="polite">
         <i aria-hidden="true" />

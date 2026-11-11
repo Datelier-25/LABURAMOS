@@ -342,7 +342,7 @@ export default function JobSign({
 }
 
 // Tarjeta de servicio. "ofrece": la vidriera de un oficio o negocio. "busca": un pedido de trabajo.
-export function ServiceCard({ service, user, settings, onLogin, preview = false, onReport, saved = false, onSave, onChanged }) {
+export function ServiceCard({ service, user, settings, onLogin, onContact, preview = false, onReport, saved = false, onSave, onChanged }) {
   const intent = intentOf(service);
   const isAsk = intent === 'busca';
   const [open, setOpen] = useState(false);
@@ -380,7 +380,11 @@ export function ServiceCard({ service, user, settings, onLogin, preview = false,
   let cta;
   if (preview) cta = <span className="card-cta as-text">{ctaLabel}</span>;
   else if (user)
-    cta = (
+    cta = onContact ? (
+      <button type="button" className="card-cta" onClick={() => onContact(waLink(service.phone, message))}>
+        {ctaLabel}
+      </button>
+    ) : (
       <a className="card-cta" href={waLink(service.phone, message)} target="_blank" rel="noreferrer">
         {ctaLabel}
       </a>

@@ -16,6 +16,8 @@ const PAY = ${JSON.stringify(PAY)};
 const now = Date.now();
 const iso = (d) => new Date(now - d * 3600e3).toISOString();
 const later = new Date(now + 20 * 86400e3).toISOString();
+// Video de ejemplo para probar el anuncio y las tarjetas sin subir archivos.
+const SAMPLE_VIDEO = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 const DATA = {
   jobs: [
     { id: 'j1', title: 'Se busca vendedor/a', company_name: 'Comercio El Sol', category: 'Comercio', job_type: 'Part-time', salary: '$450.000', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Atención al público, reposición y caja. Lunes a sábado por la mañana.', status: 'active', expires_at: later, created_at: iso(3), is_urgent: true, company_id: 'c1', requirement_items: [{ text: 'Experiencia previa en atención al público', required: true }, { text: 'Secundario completo', required: false }], apply_channel: 'whatsapp' },
@@ -37,7 +39,13 @@ const DATA = {
     { id: 'a1', job_id: 'j1', worker_id: 'w1', company_id: 'me', created_at: iso(4), jobs: { title: 'Se busca vendedor/a', location: 'Bragado' } },
     { id: 'a2', job_id: 'j2', worker_id: 'w9', company_id: 'me', created_at: iso(30), jobs: { title: 'Ayudante de cocina', location: 'Bragado' } },
   ],
-  app_settings: [{ id: 1, cv_paid_enabled: PAY !== 'off', cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 45, service_days: 20 }],
+  app_settings: [{ id: 1, cv_paid_enabled: PAY !== 'off', cv_price: 3000, cv_mode: 'por_dias', cv_days: 30, job_days: 45, service_days: 20, premium_enabled: false, premium_price: 3000, premium_days: 30, premium_include_links: true, premium_include_photos: true, free_links_limit: 1, premium_links_limit: 3, free_photos_limit: 5, premium_photos_limit: 10, instagram_url: 'https://instagram.com/laburamosapp', ads_enabled: true, ads_price_per_second: 100, ads_max_seconds: 30, ads_min_seconds: 5, ads_days: 30, ads_skip_seconds: 5, ads_max_per_user: 3 }],
+  ad_campaigns: [
+    { id: 'ad1', user_id: 'me', title: 'Tu comercio en video', advertiser_name: 'Comercio El Sol', video_path: SAMPLE_VIDEO, video_mime: 'video/mp4', video_size: 1048576, duration_seconds: 12, amount: 1200, review_status: 'approved', review_note: null, payment_status: 'paid', payment_ref: null, paid_at: iso(20), active: true, starts_at: iso(20), ends_at: later, target_url: 'https://example.com', created_at: iso(30) },
+    { id: 'ad2', user_id: 'me', title: 'Clases de guitarra', advertiser_name: 'Prof. Gómez', video_path: SAMPLE_VIDEO, video_mime: 'video/mp4', video_size: 524288, duration_seconds: 8, amount: 800, review_status: 'pending', review_note: null, payment_status: 'pending', payment_ref: null, paid_at: null, active: true, starts_at: null, ends_at: null, target_url: null, created_at: iso(2) },
+    { id: 'ad3', user_id: 'me', title: 'Oferta de verano', advertiser_name: 'Kiosco Central', video_path: SAMPLE_VIDEO, video_mime: 'video/mp4', video_size: 786432, duration_seconds: 6, amount: 600, review_status: 'approved', review_note: null, payment_status: 'pending', payment_ref: null, paid_at: null, active: true, starts_at: null, ends_at: null, target_url: null, created_at: iso(10) },
+    { id: 'ad4', user_id: 'me', title: 'Prueba rechazada', advertiser_name: '', video_path: SAMPLE_VIDEO, video_mime: 'video/mp4', video_size: 655360, duration_seconds: 10, amount: 1000, review_status: 'rejected', review_note: 'El video no cumple con las normas de publicidad.', payment_status: 'pending', payment_ref: null, paid_at: null, active: false, starts_at: null, ends_at: null, target_url: null, created_at: iso(40) },
+  ],
   cv_purchases: [
     { id: 'p1', user_id: 'a1b2c3d4-0000', status: 'approved', amount: 3000, mode: 'por_dias', days: 30, created_at: iso(5) },
     { id: 'p2', user_id: 'e5f6a7b8-0000', status: 'pending', amount: 3000, mode: 'por_dias', days: 30, created_at: iso(1) },
@@ -72,9 +80,26 @@ function builder(table) {
 export function createClient() {
   return {
     from: builder,
-    rpc: async (name) => {
+    rpc: async (name, args) => {
       if (name === 'cv_access') return { data: { paid_enabled: PAY !== 'off', price: 3000, mode: 'por_dias', days: 30, has_access: PAY === 'paid', access_mode: 'por_dias', valid_until: new Date(now + 25 * 86400e3).toISOString() }, error: null };
       if (name === 'consume_cv_download') return { data: PAY !== 'on', error: null };
+      if (name === 'pick_random_ad') {
+        const ad = (DATA.ad_campaigns || []).find((a) => a.review_status === 'approved' && a.payment_status === 'paid' && a.active && (!a.ends_at || new Date(a.ends_at) > new Date()));
+        if (!ad) return { data: null, error: null };
+        const { id, title, advertiser_name, video_path, duration_seconds, target_url, ends_at } = ad;
+        return { data: { id, title, advertiser_name, video_path, duration_seconds, target_url, ends_at }, error: null };
+      }
+      if (name === 'submit_ad_campaign') {
+        const seconds = Number(args?.p_duration_seconds || 0);
+        return { data: { amount: Math.round(seconds * 100 * 100) / 100, duration_seconds: seconds }, error: null };
+      }
+      if (name === 'admin_review_ad_campaign' || name === 'admin_set_ad_payment' || name === 'admin_update_ad_campaign') {
+        return { data: null, error: null };
+      }
+      if (name === 'admin_delete_ad_campaign') {
+        const ad = (DATA.ad_campaigns || []).find((a) => a.id === args?.p_id);
+        return { data: ad ? ad.video_path : null, error: null };
+      }
       return { data: null, error: null };
     },
     functions: { invoke: async () => ({ data: null, error: { context: { json: async () => ({ error: 'pago_no_configurado' }) } } }) },
@@ -87,7 +112,7 @@ export function createClient() {
       signInWithPassword: async () => ({ error: null }),
       resetPasswordForEmail: async () => ({ error: null }),
     },
-    storage: { from: () => ({ upload: async () => ({ error: null }), remove: async () => ({ error: null }), createSignedUrl: async () => ({ data: { signedUrl: '/marca/isotipo.png' } }), getPublicUrl: () => ({ data: { publicUrl: '/marca/isotipo.png' } }) }) },
+    storage: { from: () => ({ upload: async () => ({ error: null }), remove: async () => ({ error: null }), createSignedUrl: async () => ({ data: { signedUrl: '/marca/isotipo.png' } }), getPublicUrl: (p) => ({ data: { publicUrl: /^(https?:|blob:|data:)/.test(p) ? p : '/marca/isotipo.png' } }) }) },
   };
 }`;
 const mockUrl = URL.createObjectURL(new Blob([mock], { type: 'text/javascript' }));

@@ -20,6 +20,13 @@ export const DEFAULT_SETTINGS = {
   premium_links_limit: 3,
   free_photos_limit: 5,
   premium_photos_limit: 10,
+  ads_enabled: true,
+  ads_price_per_second: 100,
+  ads_max_seconds: 30,
+  ads_min_seconds: 5,
+  ads_days: 30,
+  ads_skip_seconds: 5,
+  ads_max_per_user: 3,
 };
 
 export function useSettings() {

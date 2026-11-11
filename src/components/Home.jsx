@@ -62,7 +62,7 @@ function SignStack({ items, total, onMore }) {
   );
 }
 
-export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, saved, onSave, savedSvc, onSaveSvc, onReport, deep }) {
+export default function Home({ user, zone, setZone, settings, go, onPublish, onLogin, onApply, onContact, saved, onSave, savedSvc, onSaveSvc, onReport, deep }) {
   const [data, setData] = useState({ jobs: [], services: [], jobsN: 0, servN: 0, loading: true, error: false });
   const [applied, setApplied] = useState(null); // Set de job_id a los que ya postuló el usuario
 
@@ -275,7 +275,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
         ) : (
           <div className="scards">
             {services.map((s) => (
-              <ServiceCard key={s.id} service={s} user={user} settings={settings} onLogin={onLogin} onReport={onReport} saved={savedSvc.includes(s.id)} onSave={onSaveSvc} />
+              <ServiceCard key={s.id} service={s} user={user} settings={settings} onLogin={onLogin} onContact={onContact} onReport={onReport} saved={savedSvc.includes(s.id)} onSave={onSaveSvc} />
             ))}
           </div>
         )}
