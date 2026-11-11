@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import useSaved from './lib/useSaved';
@@ -23,9 +23,11 @@ import AdGate from './components/AdGate';
 import Safety from './components/Safety';
 import Contacto from './components/Contacto';
 import ZoneWelcome from './components/ZoneWelcome';
+import WelcomeBanner from './components/WelcomeBanner';
 import ReportModal from './components/ReportModal';
 import { Footer } from './components/ui';
 import { pickRandomAd } from './lib/ads';
+import { welcomeImageList } from './lib/welcome';
 
 const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'anuncios', 'perfil', 'admin', 'seguridad', 'contacto'];
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
@@ -104,12 +106,15 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [zoneOpen, setZoneOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const welcomeShown = useRef(false);
   const [reportFor, setReportFor] = useState(null);
   const [recovery, setRecovery] = useState(STARTED_IN_RECOVERY);
   const [rawView, setRawView] = useState(readView);
   const [deep, setDeep] = useState(readDeep);
   const [zone, setZone, suggestZone, zoneChosen] = useZone();
   const [settings, reloadSettings] = useSettings();
+  const welcomeImages = useMemo(() => welcomeImageList(settings?.welcome_images), [settings?.welcome_images]);
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
   const [adGate, setAdGate] = useState(null); // { ad, next } mientras se reproduce un anuncio
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
@@ -375,17 +380,30 @@ export default function App() {
     go('avisos');
   };
 
+  // Cartel de bienvenida: se muestra una vez por carga, si el administrador lo
+  // activó y hay imágenes. Si la bienvenida de zona ya se abrió, el cartel pasa
+  // primero y la zona se vuelve a ofrecer cuando se cierra.
+  useEffect(() => {
+    if (booting || welcomeShown.current) return undefined;
+    if (!settings?.welcome_enabled || welcomeImages.length === 0) return undefined;
+    if (authOpen || recovery || modal || applyFor) return undefined;
+    welcomeShown.current = true;
+    setZoneOpen(false);
+    setWelcomeOpen(true);
+    return undefined;
+  }, [booting, settings?.welcome_enabled, welcomeImages.length, authOpen, recovery, modal, applyFor]);
+
   // Pregunta la zona en la primera visita pública. Quien no vaya a elegir (o
   // elige "ver todo") se queda con toda la Argentina. Las vistas informativas
   // no la preguntan.
   useEffect(() => {
     const informational = view === 'seguridad' || view === 'contacto';
-    if (booting || user || zoneChosen || authOpen || modal || applyFor || informational) return undefined;
+    if (booting || user || zoneChosen || authOpen || modal || applyFor || welcomeOpen || informational) return undefined;
     // Si la zona ya fue elegida o el usuario está navegando, no abrimos el modal
     if (zoneChosen || zone?.city || zone?.province) return undefined;
     const t = setTimeout(() => setZoneOpen(true), 900);
     return () => clearTimeout(t);
-  }, [booting, user, zoneChosen, authOpen, modal, applyFor, view, zone?.city, zone?.province]);
+  }, [booting, user, zoneChosen, authOpen, modal, applyFor, welcomeOpen, view, zone?.city, zone?.province]);
 
   if (booting) return <div style={{ minHeight: '100svh', display: 'grid', placeItems: 'center' }}>Cargando…</div>;
   if (recovery)
@@ -500,6 +518,10 @@ export default function App() {
       )}
 
       {reportFor && <ReportModal report={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
+
+      {welcomeOpen && welcomeImages.length > 0 && (
+        <WelcomeBanner images={welcomeImages} onClose={() => setWelcomeOpen(false)} />
+      )}
 
       {adGate && (
         <AdGate

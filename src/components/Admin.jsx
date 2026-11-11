@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, CircleDollarSign, Crown, ExternalLink, FileText, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleDollarSign, Crown, ExternalLink, FileText, ImagePlus, Pause, Pencil, Play, Search, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { PAY_MODES as MODES, friendlyError, money } from '../lib/utils';
 import { Empty } from './ui';
@@ -8,6 +8,8 @@ import UsersPanel from './UsersPanel';
 import EditListing from './EditListing';
 import { isPremium } from '../lib/premium';
 import { AD_VIDEO_BUCKET, adVideoUrl } from '../lib/ads';
+import { WELCOME_BUCKET, WELCOME_MAX_FILE_MB, WELCOME_MAX_IMAGES, welcomeImageUrl } from '../lib/welcome';
+import { compressImage } from '../lib/photos';
 
 const STATUS = { approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado' };
 const LISTING_STATUS = { active: 'Activo', paused: 'Pausado', filled: 'Cubierto', expired: 'Vencido' };
@@ -24,11 +26,121 @@ const TABS = [
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
 const stateOf = (item) => (item.status === 'active' && new Date(item.expires_at) < new Date() ? 'expired' : item.status);
 
+// ---------- cartel de bienvenida: imágenes ----------
+function WelcomeImagesField({ value, onChange, onRemove }) {
+  const list = Array.isArray(value) ? value : [];
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const addFiles = async (files) => {
+    const picked = Array.from(files || []);
+    if (!picked.length) return;
+    setError('');
+    const room = WELCOME_MAX_IMAGES - list.length;
+    if (room <= 0) {
+      setError(`Ya tenés el máximo de ${WELCOME_MAX_IMAGES} imágenes. Quitá alguna para subir otra.`);
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+    if (picked.length > room) {
+      setError(`Podés sumar ${room} imagen${room === 1 ? '' : 'es'} más.`);
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+
+    setBusy(true);
+    const paths = [];
+    for (const file of picked) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        setError('Solo se aceptan imágenes JPG, PNG o WebP.');
+        continue;
+      }
+      if (file.size > WELCOME_MAX_FILE_MB * 1024 * 1024) {
+        setError(`Cada imagen puede pesar hasta ${WELCOME_MAX_FILE_MB} MB.`);
+        continue;
+      }
+      try {
+        const blob = await compressImage(file, 1600, 0.86);
+        const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const path = `welcome/${stamp}.jpg`;
+        const { error: upErr } = await supabase.storage.from(WELCOME_BUCKET).upload(path, blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '31536000',
+          upsert: false,
+        });
+        if (upErr) throw upErr;
+        paths.push(path);
+      } catch (e) {
+        setError(friendlyError(e.message || 'No se pudo subir la imagen.'));
+      }
+    }
+    if (paths.length) onChange([...list, ...paths]);
+    setBusy(false);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const move = (index, dir) => {
+    const next = [...list];
+    const to = index + dir;
+    if (to < 0 || to >= next.length) return;
+    [next[index], next[to]] = [next[to], next[index]];
+    onChange(next);
+  };
+
+  return (
+    <div className="welcome-field">
+      <div className="welcome-upload">
+        <label className={`btn btn-line welcome-pick${busy ? ' is-busy' : ''}`}>
+          <ImagePlus size={18} aria-hidden="true" />
+          {busy ? 'Subiendo…' : 'Subir imágenes'}
+          <input
+            ref={inputRef}
+            className="sr"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            disabled={busy}
+            onChange={(e) => addFiles(e.target.files)}
+          />
+        </label>
+        <span className="welcome-count">
+          {list.length} de {WELCOME_MAX_IMAGES}
+        </span>
+      </div>
+      <p className="welcome-help">JPG, PNG o WebP de hasta {WELCOME_MAX_FILE_MB} MB. Se achican solas antes de subirlas y se muestran completas dentro de un recuadro fijo.</p>
+      {error && <p className="note err">{error}</p>}
+      {list.length > 0 && (
+        <div className="welcome-grid">
+          {list.map((path, i) => (
+            <figure className="welcome-thumb" key={`${path}-${i}`}>
+              <span className="welcome-thumb-num">{i + 1}</span>
+              <img src={welcomeImageUrl(path)} alt={`Imagen ${i + 1} del cartel`} />
+              <div className="welcome-thumb-acts">
+                <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover antes">
+                  <ArrowLeft size={16} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => move(i, 1)} disabled={i === list.length - 1} aria-label="Mover después">
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => onRemove(path)} aria-label="Quitar imagen">
+                  <Trash2 size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </figure>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- configuración ----------
 function SettingsTab({ notify, onSaved }) {
   const [cfg, setCfg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [welcomeDelete, setWelcomeDelete] = useState([]);
 
   useEffect(() => {
     supabase
@@ -47,6 +159,8 @@ function SettingsTab({ notify, onSaved }) {
           service_days: 30,
           contact_email: 'laburamosapp@gmail.com',
           instagram_url: 'https://instagram.com/laburamosapp',
+          welcome_enabled: false,
+          welcome_images: [],
           premium_enabled: false,
           premium_price: 3000,
           premium_days: 30,
@@ -71,6 +185,18 @@ function SettingsTab({ notify, onSaved }) {
   const set = (patch) => setCfg((c) => ({ ...c, ...patch }));
   const num = (v) => Number(String(v).replace(',', '.'));
 
+  // La imagen sale de la lista al guardar; recién ahí se borra del bucket para
+  // no dejar una referencia rota si el administrador cancela los cambios.
+  const removeWelcomeImage = (path) => {
+    setCfg((c) => ({
+      ...c,
+      welcome_images: (Array.isArray(c.welcome_images) ? c.welcome_images : []).filter((p) => p !== path),
+    }));
+    if (!/^(https?:|blob:|data:|\/)/i.test(path)) {
+      setWelcomeDelete((list) => (list.includes(path) ? list : [...list, path]));
+    }
+  };
+
   const save = async (e) => {
     e.preventDefault();
     setError('');
@@ -84,6 +210,7 @@ function SettingsTab({ notify, onSaved }) {
     const adsDays = num(cfg.ads_days);
     const adsSkip = num(cfg.ads_skip_seconds);
     const adsPerUser = num(cfg.ads_max_per_user);
+    const welcomeImages = (Array.isArray(cfg.welcome_images) ? cfg.welcome_images : []).filter((p) => typeof p === 'string' && p.trim());
     if (!(price > 0) || price > 1000000) return setError('Poné un precio mayor a $0.');
     if (!(premiumPrice >= 0) || premiumPrice > 1000000) return setError('El precio del premium tiene que ser $0 o más.');
     if (days.some((d) => !(d >= 1 && d <= 365))) return setError('Los días tienen que estar entre 1 y 365.');
@@ -96,6 +223,7 @@ function SettingsTab({ notify, onSaved }) {
     if (!(adsDays >= 1 && adsDays <= 365)) return setError('Los días de campaña tienen que estar entre 1 y 365.');
     if (!(adsSkip >= 0 && adsSkip <= adsMax)) return setError('Los segundos para continuar tienen que estar entre 0 y la duración máxima.');
     if (!(adsPerUser >= 1 && adsPerUser <= 20)) return setError('Los anuncios por usuario tienen que estar entre 1 y 20.');
+    if (cfg.welcome_enabled && !welcomeImages.length) return setError('Para activar el cartel de bienvenida, subí al menos una imagen.');
     setSaving(true);
     const { error: err } = await supabase
       .from('app_settings')
@@ -108,6 +236,8 @@ function SettingsTab({ notify, onSaved }) {
         service_days: days[2],
         contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
         instagram_url: cfg.instagram_url?.trim() || 'https://instagram.com/laburamosapp',
+        welcome_enabled: !!cfg.welcome_enabled,
+        welcome_images: welcomeImages,
         premium_enabled: cfg.premium_enabled,
         premium_price: premiumPrice,
         premium_days: days[3],
@@ -130,6 +260,10 @@ function SettingsTab({ notify, onSaved }) {
     setSaving(false);
     if (err) setError(friendlyError(err.message));
     else {
+      if (welcomeDelete.length) {
+        void supabase.storage.from(WELCOME_BUCKET).remove(welcomeDelete);
+        setWelcomeDelete([]);
+      }
       notify('Configuración guardada');
       onSaved?.();
     }
@@ -155,6 +289,24 @@ function SettingsTab({ notify, onSaved }) {
         <input type="url" value={cfg.instagram_url || ''} onChange={(e) => set({ instagram_url: e.target.value })} placeholder="https://instagram.com/laburamosapp" />
         <small>Ejemplo: https://instagram.com/laburamosapp</small>
       </div>
+
+      <h2 className="block-title">Cartel de bienvenida</h2>
+      <p className="lede">
+        Es lo primero que ve quien entra a la app. Ideal para novedades, promociones o publicidad. Podés subir una imagen o varias: si hay más de una, se van alternando solas dentro del mismo recuadro. Cada persona lo cierra con la cruz y sigue navegando normalmente.
+      </p>
+      <label className="switch">
+        <input className="sr" type="checkbox" checked={cfg.welcome_enabled} onChange={(e) => set({ welcome_enabled: e.target.checked })} />
+        <span className="sw" aria-hidden="true" />
+        <span>
+          <b>Mostrar el cartel al entrar</b>
+          <small>{cfg.welcome_enabled ? 'Se muestra una vez cada vez que se abre la app.' : 'El cartel está desactivado: no se muestra aunque haya imágenes cargadas.'}</small>
+        </span>
+      </label>
+      <WelcomeImagesField
+        value={cfg.welcome_images}
+        onChange={(welcome_images) => set({ welcome_images })}
+        onRemove={removeWelcomeImage}
+      />
 
       <h2 className="block-title">Duración de las publicaciones</h2>
       <p className="lede">Se aplica a lo que se publique o renueve de ahora en adelante. Para cambiar una publicación puntual, editala en su pestaña.</p>
