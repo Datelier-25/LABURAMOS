@@ -1,34 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Megaphone, Play, Volume2, VolumeX, X } from 'lucide-react';
 import { lockScroll } from '../lib/scrollLock';
-import { adVideoUrl } from '../lib/ads';
+import { adImageUrl, adVideoUrl, registerAdEvent } from '../lib/ads';
+import useFocusTrap from '../lib/useFocusTrap';
 
-// Ventana que reproduce el anuncio antes de seguir con la acción.
-// El botón Continuar se habilita a los segundos configurados (o al terminar).
+// Ventana que muestra el anuncio antes de seguir con la acción.
+// - Video: se reproduce y "Continuar" se habilita a los segundos configurados o al terminar.
+// - Imagen: se muestra durante la duración de la campaña (ads_image_seconds) y después se habilita "Continuar".
+// El foco queda dentro de la ventana mientras está abierta.
 export default function AdGate({ ad, skipSeconds = 5, onDone, onCancel }) {
+  const isImage = ad?.media_type === 'image';
+  const total = isImage
+    ? Math.max(1, Math.round(Number(ad?.duration_seconds) || 8))
+    : Math.max(0, Math.round(Number(skipSeconds) || 0));
+
   const videoRef = useRef(null);
+  const overlayRef = useRef(null);
+  useFocusTrap(overlayRef);
   const [muted, setMuted] = useState(true);
   const [blocked, setBlocked] = useState(false);
-  const [remaining, setRemaining] = useState(Math.max(0, Math.round(Number(skipSeconds) || 0)));
+  const [remaining, setRemaining] = useState(total);
   const [progress, setProgress] = useState(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => lockScroll(), []);
 
-  // Cuenta regresiva para habilitar Continuar.
+  // Una vista por apertura (la base descarta repetidos del mismo usuario en 10 minutos)
+  useEffect(() => {
+    registerAdEvent(ad?.id, 'shown');
+  }, [ad?.id]);
+
+  // Cuenta regresiva para habilitar Continuar (y progreso para las imágenes).
   useEffect(() => {
     if (remaining <= 0) return undefined;
     const t = window.setTimeout(() => setRemaining((n) => Math.max(0, n - 1)), 1000);
     return () => window.clearTimeout(t);
   }, [remaining]);
 
+  useEffect(() => {
+    if (!isImage) return;
+    setProgress(total ? Math.min(100, ((total - remaining) / total) * 100) : 100);
+  }, [isImage, remaining, total]);
+
   // Intento de reproducción automática (silenciado para que el navegador lo permita).
   useEffect(() => {
+    if (isImage) return;
     const video = videoRef.current;
     if (!video) return;
     const play = video.play();
     if (play?.catch) play.catch(() => setBlocked(true));
-  }, []);
+  }, [isImage]);
 
   // Escape cancela la acción, igual que la cruz.
   useEffect(() => {
@@ -64,9 +85,10 @@ export default function AdGate({ ad, skipSeconds = 5, onDone, onCancel }) {
   const canContinue = remaining <= 0;
   const title = ad?.title || 'Anuncio';
   const advertiser = ad?.advertiser_name;
+  const mediaUrl = isImage ? adImageUrl(ad?.image_path) : adVideoUrl(ad?.video_path);
 
   return (
-    <div className="ad-overlay" role="dialog" aria-modal="true" aria-label="Anuncio">
+    <div ref={overlayRef} className="ad-overlay" role="dialog" aria-modal="true" aria-label={`Anuncio: ${title}`}>
       <div className="ad-box">
         <div className="ad-head">
           <span className="ad-tag">
@@ -82,29 +104,35 @@ export default function AdGate({ ad, skipSeconds = 5, onDone, onCancel }) {
         </div>
 
         <div className="ad-stage">
-          {!failed ? (
+          {failed ? (
+            <div className="ad-fallback">
+              <Megaphone size={44} aria-hidden="true" />
+              <b>{title}</b>
+              {advertiser && <span>{advertiser}</span>}
+              <small>No pudimos mostrar el anuncio en este dispositivo.</small>
+            </div>
+          ) : isImage ? (
+            <img className="ad-image" src={mediaUrl} alt={title} onError={() => setFailed(true)} />
+          ) : (
             <video
               ref={videoRef}
               className="ad-video"
-              src={adVideoUrl(ad?.video_path)}
+              src={mediaUrl}
               autoPlay
               muted={muted}
               playsInline
               preload="auto"
               onTimeUpdate={onTime}
-              onEnded={() => setProgress(100)}
+              onEnded={() => {
+                // Si el video termina antes del tiempo de espera, no dejamos al usuario esperando en vacío
+                setProgress(100);
+                setRemaining(0);
+              }}
               onError={() => setFailed(true)}
             />
-          ) : (
-            <div className="ad-fallback">
-              <Megaphone size={44} aria-hidden="true" />
-              <b>{title}</b>
-              {advertiser && <span>{advertiser}</span>}
-              <small>No pudimos reproducir el video en este dispositivo.</small>
-            </div>
           )}
 
-          {blocked && !failed && (
+          {blocked && !failed && !isImage && (
             <button type="button" className="ad-play" onClick={play}>
               <Play size={26} aria-hidden="true" /> Reproducir anuncio
             </button>
@@ -114,7 +142,7 @@ export default function AdGate({ ad, skipSeconds = 5, onDone, onCancel }) {
             <i style={{ width: `${progress}%` }} />
           </div>
 
-          {!failed && (
+          {!failed && !isImage && (
             <button type="button" className="ad-sound" onClick={toggleSound} aria-label={muted ? 'Activar sonido' : 'Silenciar anuncio'}>
               {muted ? <VolumeX size={17} aria-hidden="true" /> : <Volume2 size={17} aria-hidden="true" />}
               {muted ? 'Activar sonido' : 'Silenciar'}
@@ -128,7 +156,7 @@ export default function AdGate({ ad, skipSeconds = 5, onDone, onCancel }) {
           </span>
           <div className="ad-actions">
             {ad?.target_url && (
-              <a className="btn btn-line btn-sm" href={ad.target_url} target="_blank" rel="noreferrer noopener">
+              <a className="btn btn-line btn-sm" href={ad.target_url} target="_blank" rel="noreferrer noopener" onClick={() => registerAdEvent(ad.id, 'clicked')}>
                 <ExternalLink size={15} aria-hidden="true" /> Conocer más
               </a>
             )}

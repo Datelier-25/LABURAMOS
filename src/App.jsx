@@ -26,10 +26,13 @@ import ZoneWelcome from './components/ZoneWelcome';
 import WelcomeBanner from './components/WelcomeBanner';
 import ReportModal from './components/ReportModal';
 import { Footer } from './components/ui';
-import { pickRandomAd } from './lib/ads';
+import { adCooldownActive, markAdShown, pickRandomAd } from './lib/ads';
 import { welcomeImageList } from './lib/welcome';
 
 const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'anuncios', 'perfil', 'admin', 'seguridad', 'contacto'];
+// Cada cuántas horas vuelve a aparecer el cartel de bienvenida en el mismo navegador (0 = siempre)
+const WELCOME_COOLDOWN_HOURS = 0;
+const WELCOME_SEEN_KEY = 'laburamos_bienvenida_vista';
 // Vuelta de Mercado Pago después de pagar la descarga del CV: /?pago=cv&status=approved...
 const PAY_RETURN = (() => {
   if (typeof window === 'undefined') return null;
@@ -316,7 +319,8 @@ export default function App() {
   // (si hay alguno aprobado, pago y vigente). Si no hay, la acción sigue directo.
   const runWithAd = useCallback(
     async (next) => {
-      if (!settings?.ads_enabled) {
+      // Si hace poco se mostró un anuncio en este navegador, la acción sigue sin video.
+      if (!settings?.ads_enabled || adCooldownActive()) {
         next();
         return;
       }
@@ -325,18 +329,18 @@ export default function App() {
         next();
         return;
       }
+      markAdShown();
       setAdGate({ ad, next });
     },
     [settings?.ads_enabled]
   );
 
+  // Abrir el formulario de publicar no muestra anuncio: el anuncio aparece después de guardar (ver handleCreated).
   const openPublish = (type, intent = null) => {
     if (!user) return requireLogin();
     setMenuOpen(false);
-    return runWithAd(() => {
-      setModalIntent(intent);
-      setModal(type);
-    });
+    setModalIntent(intent);
+    setModal(type);
   };
 
   // Contacto de un servicio: el anuncio se muestra antes de abrir WhatsApp.
@@ -373,11 +377,15 @@ export default function App() {
     });
   };
 
+  // Se llama cuando el aviso ya quedó guardado. El anuncio (si corresponde) se muestra
+  // ahora, y al cerrarlo recién ahí se avisa y se lleva a "Mis avisos".
   const handleCreated = () => {
     setModal(null);
     setRefreshKey((k) => k + 1);
-    notify('Publicado');
-    go('avisos');
+    runWithAd(() => {
+      notify('Publicado');
+      go('avisos');
+    });
   };
 
   // Cartel de bienvenida: se muestra una vez por carga, si el administrador lo
@@ -388,6 +396,14 @@ export default function App() {
     if (!settings?.welcome_enabled || welcomeImages.length === 0) return undefined;
     if (authOpen || recovery || modal || applyFor) return undefined;
     welcomeShown.current = true;
+    // No lo repetimos en cada recarga: se muestra una vez cada WELCOME_COOLDOWN_HOURS por navegador.
+    try {
+      const last = Number(localStorage.getItem(WELCOME_SEEN_KEY) || 0);
+      if (last && Date.now() - last < WELCOME_COOLDOWN_HOURS * 3600 * 1000) return undefined;
+      localStorage.setItem(WELCOME_SEEN_KEY, String(Date.now()));
+    } catch {
+      /* sin almacenamiento (modo privado): se muestra igual */
+    }
     setZoneOpen(false);
     setWelcomeOpen(true);
     return undefined;

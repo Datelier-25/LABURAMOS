@@ -7,7 +7,7 @@ import { CvModal } from './Candidates';
 import UsersPanel from './UsersPanel';
 import EditListing from './EditListing';
 import { isPremium } from '../lib/premium';
-import { AD_VIDEO_BUCKET, adVideoUrl } from '../lib/ads';
+import { AD_IMAGE_BUCKET, AD_VIDEO_BUCKET, adImageUrl, adVideoUrl } from '../lib/ads';
 import { WELCOME_BUCKET, WELCOME_MAX_FILE_MB, WELCOME_MAX_IMAGES, welcomeImageUrl } from '../lib/welcome';
 import { compressImage } from '../lib/photos';
 
@@ -172,6 +172,8 @@ function SettingsTab({ notify, onSaved }) {
           premium_photos_limit: 10,
           ads_enabled: true,
           ads_price_per_second: 100,
+          ads_price_image: 5000,
+          ads_image_seconds: 8,
           ads_max_seconds: 30,
           ads_min_seconds: 5,
           ads_days: 30,
@@ -205,6 +207,8 @@ function SettingsTab({ notify, onSaved }) {
     const days = [num(cfg.cv_days), num(cfg.job_days), num(cfg.service_days), num(cfg.premium_days)];
     const limits = [num(cfg.free_links_limit), num(cfg.premium_links_limit), num(cfg.free_photos_limit), num(cfg.premium_photos_limit)];
     const adsPrice = num(cfg.ads_price_per_second);
+    const adsPriceImage = num(cfg.ads_price_image);
+    const adsImageSeconds = num(cfg.ads_image_seconds);
     const adsMax = num(cfg.ads_max_seconds);
     const adsMin = num(cfg.ads_min_seconds);
     const adsDays = num(cfg.ads_days);
@@ -218,6 +222,8 @@ function SettingsTab({ notify, onSaved }) {
     if (limits[1] < limits[0]) return setError('El premium no puede permitir menos links que el plan gratis.');
     if (limits[3] < limits[2]) return setError('El premium no puede permitir menos fotos que el plan gratis.');
     if (!(adsPrice > 0) || adsPrice > 1000000) return setError('El precio por segundo de los anuncios tiene que ser mayor a $0.');
+    if (!(adsPriceImage > 0) || adsPriceImage > 10000000) return setError('El precio de la campaña de imagen tiene que ser mayor a $0.');
+    if (!(adsImageSeconds >= 3 && adsImageSeconds <= 30)) return setError('Los segundos de una imagen en pantalla tienen que estar entre 3 y 30.');
     if (!(adsMax >= 5 && adsMax <= 30)) return setError('La duración máxima de los anuncios tiene que estar entre 5 y 30 segundos.');
     if (!(adsMin >= 1 && adsMin <= adsMax)) return setError('La duración mínima de los anuncios tiene que estar entre 1 y la máxima.');
     if (!(adsDays >= 1 && adsDays <= 365)) return setError('Los días de campaña tienen que estar entre 1 y 365.');
@@ -249,6 +255,8 @@ function SettingsTab({ notify, onSaved }) {
         premium_photos_limit: limits[3],
         ads_enabled: cfg.ads_enabled,
         ads_price_per_second: adsPrice,
+        ads_price_image: adsPriceImage,
+        ads_image_seconds: adsImageSeconds,
         ads_max_seconds: adsMax,
         ads_min_seconds: adsMin,
         ads_days: adsDays,
@@ -421,9 +429,9 @@ function SettingsTab({ notify, onSaved }) {
         </div>
       </div>
 
-      <h2 className="block-title">Anuncios en video</h2>
+      <h2 className="block-title">Anuncios</h2>
       <p className="lede">
-        Videos de hasta 30 segundos que se muestran en forma aleatoria antes de publicar, postularse o contactar a un servicio. El cobro se acredita a mano desde la pestaña “Anuncios”.
+        Los anuncios se muestran antes de publicar, postularse o contactar. Pueden ser videos cortos o imágenes. El cobro se acredita a mano desde la pestaña “Anuncios”.
       </p>
       <label className="switch">
         <input className="sr" type="checkbox" checked={cfg.ads_enabled} onChange={(e) => set({ ads_enabled: e.target.checked })} />
@@ -433,42 +441,65 @@ function SettingsTab({ notify, onSaved }) {
           <small>{cfg.ads_enabled ? 'Los usuarios ven un anuncio antes de publicar, postularse o contactar.' : 'Los anuncios están desactivados: no se muestran ni se pueden crear nuevos.'}</small>
         </span>
       </label>
-      <div className="two">
-        <label className="field">
-          <span>Precio por segundo (en pesos)</span>
-          <input inputMode="decimal" value={cfg.ads_price_per_second} onChange={(e) => set({ ads_price_per_second: e.target.value.replace(/[^\d.,]/g, '') })} />
-        </label>
-        <label className="field">
-          <span>Duración de la campaña (días)</span>
-          <input inputMode="numeric" value={cfg.ads_days} onChange={(e) => set({ ads_days: e.target.value.replace(/\D/g, '') })} />
-        </label>
+
+      <div className="ads-cfg-grid">
+        <section className="ads-cfg-card">
+          <h3>Precios</h3>
+          <label className="field">
+            <span>Video: precio por segundo ($)</span>
+            <input inputMode="decimal" value={cfg.ads_price_per_second} onChange={(e) => set({ ads_price_per_second: e.target.value.replace(/[^\d.,]/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Imagen: precio fijo por campaña ($)</span>
+            <input inputMode="decimal" value={cfg.ads_price_image} onChange={(e) => set({ ads_price_image: e.target.value.replace(/[^\d.,]/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Días de campaña</span>
+            <input inputMode="numeric" value={cfg.ads_days} onChange={(e) => set({ ads_days: e.target.value.replace(/\D/g, '') })} />
+          </label>
+          <div className="ads-cfg-examples" aria-live="polite">
+            <div>
+              <small>Video de {cfg.ads_max_seconds || 0} s</small>
+              <b>{money(Number(String(cfg.ads_price_per_second).replace(',', '.')) * Number(cfg.ads_max_seconds || 0))}</b>
+            </div>
+            <div>
+              <small>Imagen</small>
+              <b>{money(Number(String(cfg.ads_price_image).replace(',', '.')) || 0)}</b>
+            </div>
+          </div>
+        </section>
+
+        <section className="ads-cfg-card">
+          <h3>Duración</h3>
+          <label className="field">
+            <span>Video: duración mínima (s)</span>
+            <input inputMode="numeric" value={cfg.ads_min_seconds} onChange={(e) => set({ ads_min_seconds: e.target.value.replace(/\D/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Video: duración máxima (s)</span>
+            <input inputMode="numeric" value={cfg.ads_max_seconds} onChange={(e) => set({ ads_max_seconds: e.target.value.replace(/\D/g, '') })} />
+          </label>
+          <label className="field">
+            <span>Imagen: segundos en pantalla</span>
+            <input inputMode="numeric" value={cfg.ads_image_seconds} onChange={(e) => set({ ads_image_seconds: e.target.value.replace(/\D/g, '') })} />
+            <small>Tiempo que se ve la imagen antes de poder continuar.</small>
+          </label>
+        </section>
+
+        <section className="ads-cfg-card">
+          <h3>Reglas</h3>
+          <label className="field">
+            <span>Segundos para poder continuar</span>
+            <input inputMode="numeric" value={cfg.ads_skip_seconds} onChange={(e) => set({ ads_skip_seconds: e.target.value.replace(/\D/g, '') })} />
+            <small>Cuenta regresiva en videos, antes de habilitar “Continuar”.</small>
+          </label>
+          <label className="field">
+            <span>Anuncios activos por usuario</span>
+            <input inputMode="numeric" value={cfg.ads_max_per_user} onChange={(e) => set({ ads_max_per_user: e.target.value.replace(/\D/g, '') })} />
+            <small>Cuenta los anuncios pendientes o aprobados que no vencieron.</small>
+          </label>
+        </section>
       </div>
-      <div className="two">
-        <label className="field">
-          <span>Duración mínima del video (segundos)</span>
-          <input inputMode="numeric" value={cfg.ads_min_seconds} onChange={(e) => set({ ads_min_seconds: e.target.value.replace(/\D/g, '') })} />
-        </label>
-        <label className="field">
-          <span>Duración máxima del video (segundos)</span>
-          <input inputMode="numeric" value={cfg.ads_max_seconds} onChange={(e) => set({ ads_max_seconds: e.target.value.replace(/\D/g, '') })} />
-        </label>
-      </div>
-      <div className="two">
-        <label className="field">
-          <span>Segundos para poder continuar</span>
-          <input inputMode="numeric" value={cfg.ads_skip_seconds} onChange={(e) => set({ ads_skip_seconds: e.target.value.replace(/\D/g, '') })} />
-          <small>Cuenta regresiva antes de habilitar el botón “Continuar”.</small>
-        </label>
-        <label className="field">
-          <span>Anuncios activos por usuario</span>
-          <input inputMode="numeric" value={cfg.ads_max_per_user} onChange={(e) => set({ ads_max_per_user: e.target.value.replace(/\D/g, '') })} />
-          <small>Cuenta los anuncios pendientes o aprobados que no vencieron.</small>
-        </label>
-      </div>
-      <p className="ads-admin-hint">
-        <CircleDollarSign size={18} aria-hidden="true" />
-        Precio de ejemplo: {money(Number(String(cfg.ads_price_per_second).replace(',', '.')) * Number(cfg.ads_max_seconds || 0))} por un video de {cfg.ads_max_seconds || 0} segundos.
-      </p>
 
       <button className="btn btn-ink btn-lg" disabled={saving}>
         {saving ? 'Guardando…' : 'Guardar configuración'}
@@ -836,7 +867,7 @@ function ReportsTab({ notify }) {
 // ---------- anuncios en video ----------
 const AD_REVIEW = { pending: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado' };
 const AD_PAY = { pending: 'Sin pago', paid: 'Pagado' };
-const AD_PILL = { pending: 'paused', approved: 'active', rejected: 'expired' };
+const AD_PILL = { pending: 'pending', approved: 'active', rejected: 'expired' };
 const isLiveAd = (ad) =>
   ad.review_status === 'approved' &&
   ad.payment_status === 'paid' &&
@@ -1008,13 +1039,15 @@ function AdsTab({ notify }) {
   const remove = async (ad) => {
     if (!window.confirm(`¿Eliminar el anuncio "${ad.title}"? Se borra también el video.`)) return;
     setBusy(ad.id);
-    const { data: path, error: err } = await supabase.rpc('admin_delete_ad_campaign', { p_id: ad.id });
+    const { data: files, error: err } = await supabase.rpc('admin_delete_ad_campaign', { p_id: ad.id });
     setBusy(null);
     if (err) {
       setError(friendlyError(err.message));
       return;
     }
-    if (path) await supabase.storage.from(AD_VIDEO_BUCKET).remove([path]);
+    // Borra el archivo del bucket que corresponde (video o imagen)
+    if (files?.video_path) await supabase.storage.from(AD_VIDEO_BUCKET).remove([files.video_path]);
+    if (files?.image_path) await supabase.storage.from(AD_IMAGE_BUCKET).remove([files.image_path]);
     notify('Anuncio eliminado');
     load();
   };
@@ -1043,12 +1076,16 @@ function AdsTab({ notify }) {
       {loading ? (
         <p className="count">Cargando…</p>
       ) : filtered.length === 0 ? (
-        <Empty title="No hay anuncios" text="Cuando alguien envíe un video, va a aparecer acá para revisarlo." />
+        <Empty title="No hay anuncios" text="Cuando alguien envíe un video o una imagen, va a aparecer acá para revisarlo." />
       ) : (
         <div className="admin-ads">
           {filtered.map((ad) => (
             <article className="admin-ad" key={ad.id}>
-              <video className="admin-ad-video" src={adVideoUrl(ad.video_path)} controls playsInline preload="metadata" />
+              {ad.media_type === 'image' ? (
+                <img className="admin-ad-video admin-ad-img" src={adImageUrl(ad.image_path)} alt={ad.title} />
+              ) : (
+                <video className="admin-ad-video" src={adVideoUrl(ad.video_path)} controls playsInline preload="metadata" />
+              )}
               <div className="admin-ad-body">
                 <div className="admin-ad-head">
                   <b>{ad.title}</b>

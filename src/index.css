@@ -606,7 +606,8 @@ button.brand:hover .logo { transform: translateY(-2px) rotate(-1deg); }
 /* trama de marcas de agua mientras se arma el CV (no se imprime: el PDF sale de .cv-print) */
 .cv-tiles {
   position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0.22;
-  background-image: url('/marca/marca-agua.png'), url('/marca/marca-agua.png');
+  /* marca-agua.png no existe en public/: usamos el isotipo que sí está */
+  background-image: url('/marca/isotipo.png'), url('/marca/isotipo.png');
   background-size: 340px 210px, 340px 210px; background-position: 0 0, 170px 105px; background-repeat: repeat;
 }
 .cv-pay { flex-basis: 100%; margin: -4px 0 0; text-align: right; font-size: 0.88rem; font-weight: 600; color: var(--muted); }
@@ -1698,4 +1699,160 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   .welcome-card { max-width: 90vw; max-height: calc(100svh - 72px); }
   .welcome-image { max-width: 90vw; max-height: calc(100svh - 72px); border-radius: 16px; }
   .welcome-close { width: 42px; height: 42px; top: -46px; right: 0; }
+}
+
+/* ---------- ajustes de celular (revisión de diseño) ---------- */
+/* "Ingresar" y "Crear cuenta" se veían en la barra superior de celular: una regla posterior (.btn, línea ~1478)
+   pisaba display:none de .hide-m y la barra desbordaba (455 px en pantalla de 375 px). */
+@media (max-width: 860px) {
+  .nav .hide-m { display: none !important; }
+  /* el botón flotante "Publicar" tapaba la última tarjeta: dejamos aire al final del contenido */
+  main { padding-bottom: 96px; }
+}
+
+/* ---------- mejoras de diseño: áreas táctiles y texto legible ---------- */
+/* Texto de metadatos: 11–12 px era difícil de leer sobre las tarjetas */
+.when { font-size: 0.8rem; }
+.rep-empty, .rep-ver { font-size: 0.8rem; }
+.pill-label-tiny { font-size: 0.78rem; }
+
+/* Áreas de toque: los enlaces y acciones de tarjetas medían 23–36 px de alto (recomendado: 44 px) */
+@media (max-width: 640px) {
+  .btn { min-height: 44px; }
+  .more { display: inline-flex; align-items: center; min-height: 44px; }
+  .sign button, .ficha button, .row button { min-height: 40px; }
+  .foot-links button, .foot-instagram { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
+/* ---------- RESTAURACIÓN DE BOTONES (decisión de diseño, reversible) ----------
+   Una definición posterior de .btn (sección de administración, ~línea 1478) pisaba la
+   forma pastilla de 48 px de la web pública: botones de 32 px con esquinas de 9 px.
+   Este bloque restaura la forma original. Para volver al estilo anterior, borrar desde
+   este comentario hasta el final del archivo. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 48px; padding: 0 22px; border: 0; border-radius: 999px;
+  font-size: 1rem; font-weight: 700; white-space: nowrap;
+}
+.btn-sm { height: 38px; padding: 0 16px; font-size: 0.92rem; }
+.btn-lg { height: 58px; padding: 0 30px; font-size: 1.08rem; }
+@media (max-width: 640px) {
+  .btn { min-height: 44px; }
+}
+
+/* ---------- anuncios y cartel de bienvenida: mejoras de uso ---------- */
+.welcome-card:focus { outline: none; }
+.welcome-nav {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 999px;
+  background: rgba(9, 12, 35, 0.72); line-height: 1;
+}
+.welcome-arrow {
+  width: 38px; height: 38px; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: transparent; color: #fff; transition: background 0.15s;
+}
+.welcome-arrow:hover { background: rgba(255, 255, 255, 0.16); }
+.welcome-arrow:focus-visible, .welcome-dot:focus-visible, .ad-close:focus-visible, .ad-sound:focus-visible, .ad-play:focus-visible {
+  outline: 3px solid var(--sun); outline-offset: 2px;
+}
+.welcome-dots { display: flex; align-items: center; gap: 6px; padding: 0 4px; }
+.welcome-dot {
+  width: 10px; height: 10px; padding: 0; border: 0; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45); transition: width 0.2s, background 0.2s;
+}
+.welcome-dot.on { width: 26px; background: var(--sun); }
+/* en celular el área de toque de los puntos llega a 30 px sin cambiar su dibujo */
+@media (max-width: 640px) {
+  .welcome-dot { position: relative; }
+  .welcome-dot::after { content: ''; position: absolute; inset: -10px -8px; }
+}
+.ad-tag { font-size: 0.78rem; }
+.ad-close, .ad-play { min-height: 44px; }
+
+/* ---------- anuncios: estado pendiente en ámbar ---------- */
+.pill.pending { background: #fff1d6; color: #8a5a00; }
+
+/* ---------- anuncios: estadísticas de la campaña ---------- */
+.ad-card-stats { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0; font-weight: 600; color: var(--ink); }
+.ad-card-stats b { font-size: 1.1rem; font-weight: 800; color: var(--ultra); }
+.ad-card-stats span { color: var(--muted); }
+.ad-card-stats small { flex-basis: 100%; color: var(--muted); font-size: 0.8rem; }
+
+/* ---------- perfil: paneles ---------- */
+.profile-page { padding-bottom: 40px; }
+.profile-hero {
+  display: grid; grid-template-columns: auto 1fr minmax(220px, 300px); gap: 20px; align-items: center;
+  padding: clamp(20px, 3vw, 30px); margin-top: 12px; border-radius: 28px; background: var(--ink); color: #fff;
+}
+.profile-avatar {
+  width: 96px; height: 96px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: var(--ultra); color: #fff; border: 3px solid var(--sun);
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-hero .page-title { color: #fff; font-size: clamp(2rem, 4.4vw, 3rem); }
+.profile-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.profile-mail { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: #c9cdf0; font-weight: 600; overflow-wrap: anywhere; }
+.profile-progress { display: grid; gap: 8px; }
+.profile-progress-top { font-weight: 600; color: #c9cdf0; }
+.profile-progress-top b { color: var(--sun); font-size: 1.3rem; }
+.profile-bar { display: block; height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+.profile-bar i { display: block; height: 100%; background: var(--sun); border-radius: 99px; transition: width 0.4s var(--ease-out); }
+.profile-checks { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; font-size: 0.9rem; color: #9aa3d6; }
+.profile-checks li.ok { color: #bff3cf; font-weight: 600; }
+
+.profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; align-items: start; }
+.panel-card { display: grid; gap: 10px; align-content: start; padding: 22px; border-radius: 24px; background: var(--mist); border: 2px solid transparent; }
+.panel-card .field { margin-bottom: 4px; }
+.panel-wide { grid-column: 1 / -1; }
+.panel-title { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 800; font-stretch: 80%; letter-spacing: -0.01em; margin: 0; }
+.panel-title svg { color: var(--ultra); }
+.panel-text { color: var(--ink); font-weight: 500; }
+.panel-hint { margin: 0; color: var(--muted); font-size: 0.88rem; font-weight: 600; }
+.panel-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.panel-danger { background: #fff5f3; border-color: #ffc9bd; }
+.panel-danger .panel-title svg { color: #b42318; }
+.panel-danger .note { margin: 0; }
+
+.avatar-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.avatar-big { position: relative; width: 84px; height: 84px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #fff; color: var(--muted); border: 2px solid var(--line); flex: none; }
+.avatar-big img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avatar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.avatar-pick { cursor: pointer; }
+
+.confirm-overlay { position: fixed; inset: 0; z-index: 260; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(9, 12, 35, 0.7); animation: fade 0.2s; }
+.confirm-box { position: relative; width: min(480px, 100%); padding: 28px; border-radius: 26px; background: #fff; color: var(--ink); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6); animation: pop 0.3s var(--ease-pop); }
+.confirm-box h2 { font-size: 1.7rem; font-weight: 800; font-stretch: 78%; letter-spacing: -0.02em; margin: 0 0 8px; }
+.confirm-box > p { margin: 0 0 6px; color: var(--muted); font-weight: 600; }
+.confirm-list { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 4px; font-weight: 600; }
+.confirm-x { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--mist); display: grid; place-items: center; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.confirm-actions .btn:disabled { opacity: 0.5; }
+
+@media (max-width: 900px) {
+  .profile-hero { grid-template-columns: auto 1fr; }
+  .profile-progress { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .profile-hero { grid-template-columns: 1fr; text-align: left; }
+}
+
+/* ---------- anuncios: elegir formato (video / imagen) ---------- */
+.ads-kind { display: flex; margin: 4px 0 14px; }
+.ads-kind button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.ad-card-img { object-fit: contain; }
+.ads-preview-img { object-fit: contain; background: #000; width: 100%; max-height: 300px; border-radius: 16px; }
+
+/* ---------- admin: configuración de anuncios en tarjetas ---------- */
+.ads-cfg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0 22px; }
+.ads-cfg-card { display: grid; gap: 4px; align-content: start; padding: 20px; border-radius: 22px; background: var(--mist); min-width: 0; }
+.ads-cfg-card h3 { font-size: 1.2rem; font-weight: 800; font-stretch: 80%; letter-spacing: -0.01em; margin: 0 0 6px; }
+.ads-cfg-card .field { margin-bottom: 8px; }
+.ads-cfg-examples { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.ads-cfg-examples > div { display: grid; gap: 2px; padding: 12px; border-radius: 16px; background: #fff; }
+.ads-cfg-examples small { color: var(--muted); font-weight: 700; }
+.ads-cfg-examples b { font-size: 1.15rem; font-weight: 800; color: var(--ultra); }
+.admin-ad-img { object-fit: contain; background: #000; }
+@media (max-width: 980px) {
+  .ads-cfg-grid { grid-template-columns: 1fr; }
 }

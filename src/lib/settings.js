@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = {
   premium_photos_limit: 10,
   ads_enabled: true,
   ads_price_per_second: 100,
+  ads_price_image: 5000,
+  ads_image_seconds: 8,
   ads_max_seconds: 30,
   ads_min_seconds: 5,
   ads_days: 30,

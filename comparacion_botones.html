@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Comparación de botones · antes / después</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #0F1242; --ultra: #405ae5; --sun: #FFC21A; }
+  body { margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; color: var(--ink); background: #fff; padding: 32px; }
+  h1 { font-size: 1.6rem; margin: 0 0 6px; }
+  p.lede { margin: 0 0 28px; color: #586088; max-width: 70ch; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .panel { border: 2px solid #dcdfec; border-radius: 20px; padding: 22px; }
+  .panel h2 { font-size: 1.1rem; margin: 0 0 4px; }
+  .panel small { color: #586088; display: block; margin-bottom: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .dark { background: var(--ink); padding: 16px; border-radius: 14px; }
+
+  /* ANTES: definición de la sección de administración (gana sobre la pública) */
+  .antes .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 32px; padding: 0 12px; border: 1px solid transparent; border-radius: 9px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+  .antes .btn-ink { background: var(--ink); color: #fff; }
+  .antes .btn-sun { background: var(--sun); color: var(--ink); }
+  .antes .btn-line { background: #fff; color: var(--ink); border-color: var(--ink); }
+  .antes .btn-lg { height: 32px; font-size: 0.8rem; }
+
+  /* DESPUÉS: forma pastilla de la web pública (restaurada) */
+  .despues .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border: 0; border-radius: 999px; font-size: 1rem; font-weight: 700; white-space: nowrap; }
+  .despues .btn-ink { background: var(--ink); color: #fff; }
+  .despues .btn-sun { background: var(--sun); color: var(--ink); }
+  .despues .btn-line { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+  .despues .btn-sm { height: 38px; padding: 0 16px; font-size: 0.92rem; }
+  .despues .btn-lg { height: 58px; padding: 0 30px; font-size: 1.08rem; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 28px; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #dcdfec; }
+  th { color: #586088; font-weight: 700; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Botones de la web pública: antes y después</h1>
+  <p class="lede">Ambos paneles usan las mismas clases y textos. "Antes" muestra el estilo que gana hoy en la app por una definición posterior de <code>.btn</code>. "Después" es la forma pastilla de 48 px que el diseño pensaba para la web pública. Para revertir el cambio, borrar el bloque <em>RESTAURACIÓN DE BOTONES</em> al final de <code>src/index.css</code>.</p>
+
+  <div class="grid">
+    <section class="panel antes">
+      <h2>Antes</h2>
+      <small>Alto 32 px · esquinas de 9 px · texto 12.8 px</small>
+      <div class="dark row"><button class="btn btn-line">Ingresar</button><button class="btn btn-ink">Crear cuenta</button></div>
+      <div class="row"><button class="btn btn-line">Ver todos</button><button class="btn btn-line">Ver toda la guía</button></div>
+      <div class="row"><button class="btn btn-ink btn-lg">Publicar un aviso</button><button class="btn btn-sun">Publicar</button></div>
+    </section>
+
+    <section class="panel despues">
+      <h2>Después</h2>
+      <small>Alto 48 px · pastilla · texto 16 px (en celular, mínimo 44 px de alto)</small>
+      <div class="dark row"><button class="btn btn-line btn-sm">Ingresar</button><button class="btn btn-ink btn-sm">Crear cuenta</button></div>
+      <div class="row"><button class="btn btn-line btn-sm">Ver todos</button><button class="btn btn-line btn-sm">Ver toda la guía</button></div>
+      <div class="row"><button class="btn btn-ink btn-lg">Publicar un aviso</button><button class="btn btn-sun">Publicar</button></div>
+    </section>
+  </div>
+
+  <table>
+    <tr><th>Medida (medida en la vista previa)</th><th>Antes</th><th>Después</th></tr>
+    <tr><td>Alto del botón "Ver todos"</td><td>32 px</td><td>38 px (versión chica) / 48 px</td></tr>
+    <tr><td>Esquinas</td><td>9 px (rectangular)</td><td>999 px (pastilla)</td></tr>
+    <tr><td>Tamaño de texto</td><td>12.8 px</td><td>14.7 px (chico) / 16 px</td></tr>
+    <tr><td>Botón "Publicar un aviso" (CTA)</td><td>32 px</td><td>58 px</td></tr>
+    <tr><td>Celular (ancho ≤ 640 px)</td><td>32 px</td><td>mínimo 44 px</td></tr>
+  </table>
+</body>
+</html>
