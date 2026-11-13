@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3, ImageIcon, Plus, ShieldCheck, Trash2, Video, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3, Eye, EyeOff, ImageIcon, Plus, ShieldCheck, Trash2, Video, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError, money } from '../lib/utils';
 import {
@@ -33,8 +33,9 @@ const isImage = (ad) => ad?.media_type === 'image';
 
 function statusNote(ad) {
   if (ad.review_status === 'rejected') return 'El anuncio no fue aprobado.';
-  if (ad.review_status === 'pending') return `Estamos revisando el ${isImage(ad) ? 'imagen' : 'video'}. Te avisamos cuando esté aprobado.`;
+  if (ad.review_status === 'pending') return `Estamos revisando ${isImage(ad) ? 'la imagen' : 'el video'}. Te avisamos cuando esté aprobado.`;
   if (ad.payment_status !== 'paid') return 'Está aprobado. Falta acreditar el pago para que empiece a mostrarse.';
+  if (ad.paused_by_user) return 'Ocultaste este anuncio. No se está mostrando hasta que toques “Mostrar”.';
   if (!ad.active) return 'El administrador pausó este anuncio.';
   if (ad.ends_at && new Date(ad.ends_at) < new Date()) return 'La campaña venció. Podés crear un anuncio nuevo.';
   return ad.ends_at ? `Se está mostrando hasta el ${fmtDate(ad.ends_at)}.` : 'Se está mostrando en la app.';
@@ -56,6 +57,7 @@ export default function MyAds({ user, settings, notify }) {
   const [probing, setProbing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [acting, setActing] = useState(''); // id de la campaña que se está ocultando o eliminando
   const [consent, setConsent] = useState({ terms: false, privacy: false });
   const fileRef = useRef(null);
   const previewUrl = useRef('');
@@ -67,6 +69,7 @@ export default function MyAds({ user, settings, notify }) {
       .from('ad_campaigns')
       .select('*')
       .eq('user_id', user.id)
+      .eq('hidden_by_user', false)
       .order('created_at', { ascending: false });
     if (err) setError(friendlyError(err.message));
     setAds(data || []);
@@ -253,15 +256,46 @@ export default function MyAds({ user, settings, notify }) {
     load();
   };
 
+  const togglePause = async (ad) => {
+    setError('');
+    setActing(ad.id);
+    const { error: err } = await supabase.rpc('set_my_ad_paused', { p_id: ad.id, p_paused: !ad.paused_by_user });
+    setActing('');
+    if (err) {
+      setError(friendlyError(err.message));
+      return;
+    }
+    notify(ad.paused_by_user ? 'Anuncio visible de nuevo' : 'Anuncio oculto');
+    load();
+  };
+
   const remove = async (ad) => {
+    // Las campañas pagas se dan de baja sin borrar el registro del pago.
+    if (ad.payment_status === 'paid') {
+      if (!window.confirm(`¿Eliminar el anuncio "${ad.title}" de tu lista?\n\nDeja de mostrarse y no lo vas a ver más. El registro del pago queda guardado.`)) return;
+      setActing(ad.id);
+      const { error: err } = await supabase.rpc('hide_my_ad', { p_id: ad.id });
+      setActing('');
+      if (err) {
+        setError(friendlyError(err.message));
+        return;
+      }
+      notify('Anuncio eliminado de tu lista');
+      load();
+      return;
+    }
+
     if (!window.confirm(`¿Eliminar el anuncio "${ad.title}"? No se puede deshacer.`)) return;
+    setActing(ad.id);
     const { error: err } = await supabase.from('ad_campaigns').delete().eq('id', ad.id);
     if (err) {
+      setActing('');
       setError(friendlyError(err.message));
       return;
     }
     if (isImage(ad)) await supabase.storage.from(AD_IMAGE_BUCKET).remove([ad.image_path]);
     else await supabase.storage.from(AD_VIDEO_BUCKET).remove([ad.video_path]);
+    setActing('');
     notify('Anuncio eliminado');
     load();
   };
@@ -451,7 +485,7 @@ export default function MyAds({ user, settings, notify }) {
       {loading ? (
         <p className="count">Cargando…</p>
       ) : ads.length === 0 ? (
-        <Empty title="Todavía no creaste ningún anuncio" text="Subí un video corto o una imagen y mostrala a quienes usan LaburamosApp.">
+        <Empty title="No tenés anuncios en tu lista" text="Subí un video corto o una imagen y mostrala a quienes usan LaburamosApp.">
           {cfg.enabled && (
             <button type="button" className="btn btn-ink" onClick={() => { resetForm(); setOpen(true); }}>
               <Plus size={18} aria-hidden="true" /> Crear anuncio
@@ -473,6 +507,7 @@ export default function MyAds({ user, settings, notify }) {
                   <span className="chip-s">{isImage(ad) ? 'Imagen' : 'Video'}</span>
                   <span className={`pill ${REVIEW_CLASS[ad.review_status] || 'paused'}`}>{REVIEW[ad.review_status] || ad.review_status}</span>
                   <span className={`pill ${ad.payment_status === 'paid' ? 'active' : 'pending'}`}>{PAYMENT[ad.payment_status] || ad.payment_status}</span>
+                  {ad.paused_by_user && <span className="pill paused">Oculto</span>}
                   {!ad.active && <span className="pill paused">Pausado</span>}
                 </div>
                 {ad.advertiser_name && <p className="ad-card-advertiser">{ad.advertiser_name}</p>}
@@ -503,13 +538,27 @@ export default function MyAds({ user, settings, notify }) {
                       Ver link
                     </a>
                   )}
-                  {ad.payment_status !== 'paid' ? (
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(ad)}>
-                      <Trash2 size={15} aria-hidden="true" /> Eliminar
+                  {ad.review_status === 'approved' && ad.payment_status === 'paid' && (!ad.ends_at || new Date(ad.ends_at) > new Date()) && (
+                    <button type="button" className="btn btn-line btn-sm" disabled={acting === ad.id} onClick={() => togglePause(ad)}>
+                      {ad.paused_by_user ? (
+                        <>
+                          <Eye size={15} aria-hidden="true" /> Mostrar
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff size={15} aria-hidden="true" /> Ocultar
+                        </>
+                      )}
                     </button>
-                  ) : (
-                    <span className="chip-s">Campaña paga: para cambios, escribinos desde Sugerencias.</span>
                   )}
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${ad.payment_status === 'paid' ? 'btn-line' : 'btn-danger'}`}
+                    disabled={acting === ad.id}
+                    onClick={() => remove(ad)}
+                  >
+                    <Trash2 size={15} aria-hidden="true" /> Eliminar
+                  </button>
                 </div>
               </div>
             </article>
