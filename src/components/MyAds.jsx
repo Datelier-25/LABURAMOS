@@ -20,6 +20,8 @@ import {
   validateAdImageFile,
 } from '../lib/ads';
 import { Empty } from './ui';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const REVIEW = { pending: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado' };
 const PAYMENT = { pending: 'Pago pendiente', paid: 'Pago acreditado' };
@@ -54,6 +56,7 @@ export default function MyAds({ user, settings, notify }) {
   const [probing, setProbing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const fileRef = useRef(null);
   const previewUrl = useRef('');
 
@@ -190,6 +193,10 @@ export default function MyAds({ user, settings, notify }) {
       setError('El link tiene que empezar con http:// o https://.');
       return;
     }
+    if (!consentReady(consent)) {
+      setError('Para enviar el anuncio, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
 
     setBusy(true);
     const isVid = kind === 'video';
@@ -234,6 +241,7 @@ export default function MyAds({ user, settings, notify }) {
     }
 
     setBusy(false);
+    void recordLegalConsent('anuncio');
     setOpen(false);
     resetForm();
     setResult(
@@ -425,6 +433,13 @@ export default function MyAds({ user, settings, notify }) {
               </span>
             ))}
           </p>
+
+          <p className="sheet-note">
+            Subí solo imágenes o videos propios o con permiso de las personas que aparecen. El anunciante es responsable del contenido y
+            de los derechos de imagen.
+          </p>
+
+          <LegalConsent value={consent} onChange={setConsent} compact />
 
           <button className="btn btn-ink btn-lg" disabled={busy || probing || !file}>
             {busy ? 'Subiendo…' : 'Enviar para revisión'}

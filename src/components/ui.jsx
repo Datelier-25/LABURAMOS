@@ -3,6 +3,7 @@ import { lockScroll } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Eye, EyeOff, LocateFixed, SlidersHorizontal, X } from 'lucide-react';
 import { initials } from '../lib/utils';
+import { LEGAL_DOCS, LEGAL_LINKS, openCookieSettings } from '../lib/legal';
 
 export function SkeletonGrid({ n = 6 }) {
   return (
@@ -360,6 +361,17 @@ export function Footer({ go, links, settings }) {
             </a>
           </div>
         </div>
+        <nav className="foot-legal" aria-label="Documentos legales">
+          {LEGAL_LINKS.map((doc) => (
+            <button key={doc.id} type="button" onClick={() => go(LEGAL_DOCS[doc.id].path.slice(1))}>
+              {doc.label}
+            </button>
+          ))}
+          <button type="button" onClick={openCookieSettings}>
+            Configurar cookies
+          </button>
+          <span>© {new Date().getFullYear()} LaburamosApp</span>
+        </nav>
       </div>
     </footer>
   );

@@ -3,6 +3,8 @@ import { AlertTriangle, BadgeCheck, Camera, KeyRound, Mail, ShieldAlert, Trash2,
 import { supabase } from '../supabaseClient';
 import { cleanPhone, friendlyError, isValidPhone } from '../lib/utils';
 import AvatarCropper from './AvatarCropper';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 // Carpetas del usuario en cada bucket que hay que vaciar al eliminar la cuenta
 const USER_BUCKETS = ['avatars', 'cv-photos', 'ad-videos', 'ad-images'];
@@ -26,6 +28,7 @@ export default function Profile({ user, notify, onUpdated }) {
   const [deleteText, setDeleteText] = useState('');
   const [activeAds, setActiveAds] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
 
   useEffect(() => {
     let off = false;
@@ -82,6 +85,10 @@ export default function Profile({ user, notify, onUpdated }) {
       setError('Ingresá un WhatsApp válido: código de área y número, sin 0 ni 15.');
       return;
     }
+    if (!consentReady(consent)) {
+      setError('Para guardar tus datos, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
     setSaving(true);
     const phone = form.phone ? cleanPhone(form.phone) : null;
     const next = {
@@ -97,6 +104,7 @@ export default function Profile({ user, notify, onUpdated }) {
       return;
     }
     setSaved({ full_name: next.full_name || '', city: next.city || '', province: next.province || '', phone: phone || '' });
+    void recordLegalConsent('perfil');
     notify('Perfil actualizado');
     onUpdated?.(next);
   };
@@ -326,6 +334,8 @@ export default function Profile({ user, notify, onUpdated }) {
               <input value={form.province} onChange={(e) => set({ province: e.target.value })} placeholder="Buenos Aires" />
             </label>
           </div>
+          <LegalConsent value={consent} onChange={setConsent} compact />
+          <p className="panel-hint">Pedimos solo tu nombre, WhatsApp y zona para que puedan contactarte. No pedimos DNI ni domicilio.</p>
           <div className="panel-actions">
             <button type="submit" className="btn btn-ink" disabled={saving || !dirty}>
               {saving ? 'Guardando…' : 'Guardar cambios'}

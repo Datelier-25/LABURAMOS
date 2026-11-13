@@ -11,6 +11,8 @@ import EmotePicker from './EmotePicker';
 import LinkFields from './LinkFields';
 import RequirementItems from './RequirementItems';
 import { PlaceField } from './Place';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 // Localidad inicial: la del perfil; si no, la zona elegida (si es una localidad)
 const startPlace = (user, zone) => {
@@ -26,6 +28,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
   const isJob = type === 'job';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const [form, setForm] = useState({
     intent: startIntent || 'ofrece',
     title: '',
@@ -169,6 +172,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       setError('Ingresá un email válido para recibir las postulaciones.');
       return;
     }
+    if (!consentReady(consent)) {
+      setError('Para publicar, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
     setLoading(true);
     const phone = cleanPhone(form.phone);
     const requirementItems = isJob ? cleanRequirementItems(form.requirement_items) : [];
@@ -217,6 +224,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       setError(friendlyError(err.message));
       setLoading(false);
     } else {
+      void recordLegalConsent(isJob ? 'publicar-aviso' : 'publicar-servicio');
       onCreated(type);
     }
   };
@@ -515,6 +523,11 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
               Consejos para operar seguro
             </button>
           </p>
+          <p className="sheet-note">
+            Si subís fotos o videos, confirmá que son tuyos o que tenés permiso de las personas que aparecen. No subas imágenes de
+            otras personas sin su consentimiento.
+          </p>
+          <LegalConsent value={consent} onChange={setConsent} compact />
           <button className="btn btn-ink btn-lg btn-block" disabled={loading}>
             {loading ? 'Publicando…' : 'Publicar'}
           </button>

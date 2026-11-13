@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { Check, Flag, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const REASONS = [
   { id: 'aviso_falso', label: 'Aviso falso o engañoso' },
@@ -24,6 +26,7 @@ export default function ReportModal({ report, onClose, notify }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -48,6 +51,10 @@ export default function ReportModal({ report, onClose, notify }) {
       return;
     }
     if (busy) return;
+    if (!consentReady(consent)) {
+      setError('Para enviar la denuncia, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
     setBusy(true);
     setError('');
     const text = [
@@ -70,6 +77,7 @@ export default function ReportModal({ report, onClose, notify }) {
       return;
     }
     setSent(true);
+    void recordLegalConsent('denuncia-aviso');
     notify('Denuncia enviada. Gracias por avisar.');
   };
 
@@ -133,6 +141,7 @@ export default function ReportModal({ report, onClose, notify }) {
               </div>
 
               {error && <p className="note err">{error}</p>}
+              <LegalConsent value={consent} onChange={setConsent} compact />
               <button type="submit" className="btn btn-ink btn-block" disabled={busy}>
                 <Flag size={18} /> {busy ? 'Enviando…' : 'Enviar denuncia'}
               </button>

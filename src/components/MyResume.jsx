@@ -25,6 +25,8 @@ import { BG_COLORS, TITLE_COLORS, themeVars } from '../lib/cvTheme';
 import { PlaceField } from './Place';
 import CvPrint from './CvPrint';
 import { MAX_SKILLS, PHOTO_BUCKET, emptyEdu, emptyExp, resumeToForm, useSignedPhoto } from '../lib/cv';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
 
@@ -123,6 +125,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const [skillDraft, setSkillDraft] = useState('');
   const [skillTab, setSkillTab] = useState(SKILL_GROUPS[0].id);
   const [tool, setTool] = useState(null); // 'ideas' | 'skills' | null
@@ -332,6 +335,10 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
       setError('Elegí tu localidad.');
       return false;
     }
+    if (!consentReady(consent)) {
+      setError('Para guardar el CV, aceptá los Términos y la Política de Privacidad.');
+      return false;
+    }
     if (!isValidPhone(form.phone)) {
       setError('Ingresá un WhatsApp válido: código de área y número, sin 0 ni 15. Ejemplo: 2342112233');
       return false;
@@ -369,6 +376,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
       return false;
     }
     set({ education, experience });
+    void recordLegalConsent('cv');
     if (!quiet) notify('CV guardado');
     return true;
   };
@@ -551,6 +559,14 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="cv-consent">
+          <LegalConsent value={consent} onChange={setConsent} compact />
+          <p className="cv-hint">
+            Completá solo lo que quieras mostrar. La fecha de nacimiento, el barrio y el correo son opcionales. Si subís una foto,
+            confirmá que es tuya o que tenés permiso para usarla.
+          </p>
         </div>
 
         {/* Herramientas fuera de la hoja: ideas para la presentación y habilidades */}
@@ -748,13 +764,13 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
             <div className="cv-block">
               <h3>Datos</h3>
               <label className="cv-line">
-                <span>Nacimiento</span>
+                <span>Nacimiento (opcional)</span>
                 <Ed type="date" value={form.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ birth_date: e.target.value })} />
               </label>
               {age !== null && <p className="cv-age">{age} años</p>}
               <PlaceField value={form.place} onChange={(place) => set({ place })} />
               <label className="cv-line">
-                <span>Barrio</span>
+                <span>Barrio (opcional)</span>
                 <Ed placeholder="Centro, Barrio Norte…" value={form.neighborhood} onChange={(e) => set({ neighborhood: e.target.value })} maxLength={60} />
               </label>
               <small className="cv-hint">
@@ -772,7 +788,7 @@ export default function MyResume({ user, zone, notify, payReturn = null }) {
               </label>
               <label className="cv-line">
                 <span>
-                  <Mail size={14} aria-hidden="true" /> Correo
+                  <Mail size={14} aria-hidden="true" /> Correo (opcional)
                 </span>
                 <Ed type="email" placeholder="tu@correo.com" value={form.email} onChange={(e) => set({ email: e.target.value })} />
               </label>

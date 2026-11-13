@@ -3,6 +3,8 @@ import { lockScroll } from '../lib/scrollLock';
 import { FileText, Loader2, Mail, MessageCircle, ShieldCheck, UserRound, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const MAX_PDF = 5 * 1024 * 1024;
 
@@ -14,6 +16,7 @@ export default function ApplyModal({ job, user, applyChannel = 'whatsapp', apply
   const [resume, setResume] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const input = useRef(null);
   const byEmail = applyChannel === 'email';
 
@@ -63,6 +66,7 @@ export default function ApplyModal({ job, user, applyChannel = 'whatsapp', apply
     e.preventDefault();
     if (sending) return;
     if (mode === 'file' && !file) return setError('Elegí un PDF o usá tu CV de LaburamosApp.');
+    if (!consentReady(consent)) return setError('Para postularte, aceptá los Términos y la Política de Privacidad.');
 
     // La pestaña se abre dentro del clic para que el navegador no la bloquee.
     // Con email no hace falta: al final se abre el cliente de correo.
@@ -114,6 +118,7 @@ export default function ApplyModal({ job, user, applyChannel = 'whatsapp', apply
       }
 
       notify?.(path ? 'Postulación enviada con tu CV en PDF.' : 'Postulación enviada. Tu CV ya está en Postulantes.');
+      void recordLegalConsent('postulacion');
       onDone?.();
       onClose();
       goContact();
@@ -207,6 +212,8 @@ export default function ApplyModal({ job, user, applyChannel = 'whatsapp', apply
             ? `Este aviso recibe postulaciones por email${job.apply_email ? ` (${job.apply_email})` : ''}.`
             : 'Este aviso recibe postulaciones por WhatsApp.'}
         </p>
+
+        <LegalConsent value={consent} onChange={setConsent} compact />
 
         <div className="apply-acts">
           <button type="button" className="btn btn-line" onClick={onClose} disabled={sending}>

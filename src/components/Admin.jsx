@@ -159,6 +159,11 @@ function SettingsTab({ notify, onSaved }) {
           service_days: 30,
           contact_email: 'laburamosapp@gmail.com',
           instagram_url: 'https://instagram.com/laburamosapp',
+          legal_business_name: '',
+          legal_cuit: '',
+          legal_address: '',
+          legal_email: 'laburamosapp@gmail.com',
+          legal_last_update: '',
           welcome_enabled: false,
           welcome_images: [],
           premium_enabled: false,
@@ -242,6 +247,11 @@ function SettingsTab({ notify, onSaved }) {
         service_days: days[2],
         contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
         instagram_url: cfg.instagram_url?.trim() || 'https://instagram.com/laburamosapp',
+        legal_business_name: cfg.legal_business_name?.trim() || null,
+        legal_cuit: cfg.legal_cuit?.trim() || null,
+        legal_address: cfg.legal_address?.trim() || null,
+        legal_email: cfg.legal_email?.trim() || cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
+        legal_last_update: cfg.legal_last_update || null,
         welcome_enabled: !!cfg.welcome_enabled,
         welcome_images: welcomeImages,
         premium_enabled: cfg.premium_enabled,
@@ -296,6 +306,36 @@ function SettingsTab({ notify, onSaved }) {
         <span>Instagram oficial</span>
         <input type="url" value={cfg.instagram_url || ''} onChange={(e) => set({ instagram_url: e.target.value })} placeholder="https://instagram.com/laburamosapp" />
         <small>Ejemplo: https://instagram.com/laburamosapp</small>
+      </div>
+
+      <h2 className="block-title">Datos legales</h2>
+      <p className="lede">
+        Se muestran en los Términos, la Política de Privacidad y la Política de Reembolsos. Completá razón social o nombre del
+        responsable, CUIT y domicilio para que los documentos identifiquen al operador.
+      </p>
+      <div className="two">
+        <label className="field">
+          <span>Nombre o razón social</span>
+          <input value={cfg.legal_business_name || ''} onChange={(e) => set({ legal_business_name: e.target.value })} placeholder="Ej: LaburamosApp" />
+        </label>
+        <label className="field">
+          <span>CUIT</span>
+          <input value={cfg.legal_cuit || ''} onChange={(e) => set({ legal_cuit: e.target.value })} placeholder="20-12345678-9" inputMode="numeric" />
+        </label>
+      </div>
+      <label className="field">
+        <span>Domicilio legal</span>
+        <input value={cfg.legal_address || ''} onChange={(e) => set({ legal_address: e.target.value })} placeholder="Calle, número, localidad, provincia" />
+      </label>
+      <div className="two">
+        <label className="field">
+          <span>Correo legal</span>
+          <input type="email" value={cfg.legal_email || ''} onChange={(e) => set({ legal_email: e.target.value })} placeholder="laburamosapp@gmail.com" />
+        </label>
+        <label className="field">
+          <span>Última actualización de los documentos</span>
+          <input type="date" value={cfg.legal_last_update || ''} onChange={(e) => set({ legal_last_update: e.target.value })} />
+        </label>
       </div>
 
       <h2 className="block-title">Cartel de bienvenida</h2>

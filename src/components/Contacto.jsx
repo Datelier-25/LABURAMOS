@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Check, Flag, Lightbulb, Send } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const TYPES = [
   { id: 'sugerencia', label: 'Sugerencia' },
@@ -16,6 +18,7 @@ export default function Contacto({ user, settings, notify }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -39,6 +42,10 @@ export default function Contacto({ user, settings, notify }) {
       setError('Contá el mensaje antes de enviarlo.');
       return;
     }
+    if (!consentReady(consent)) {
+      setError('Para enviar el mensaje, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
     setBusy(true);
     setError('');
     const { error: err } = await supabase.rpc('create_report', { p_type: type, p_job_id: jobId || null, p_service_id: null, p_message: message.trim() });
@@ -50,6 +57,7 @@ export default function Contacto({ user, settings, notify }) {
     setSent(true);
     setMessage('');
     setJobId('');
+    void recordLegalConsent(type === 'denuncia' ? 'contacto-denuncia' : 'contacto-sugerencia');
     notify('Gracias. Tu mensaje llegó al equipo de LaburamosApp.');
   };
 
@@ -113,6 +121,8 @@ export default function Contacto({ user, settings, notify }) {
           <span>{type === 'denuncia' ? 'Contanos qué pasó' : 'Contanos tu idea'}</span>
           <textarea required minLength={10} maxLength={2000} placeholder="Contá el contexto: qué aviso, qué oferta, qué te molestó…" value={message} onChange={(e) => setMessage(e.target.value)} />
         </div>
+
+        <LegalConsent value={consent} onChange={setConsent} compact />
 
         <button type="submit" className="btn btn-ink" disabled={busy}>
           <Send size={18} /> {busy ? 'Enviando…' : 'Enviar al equipo'}

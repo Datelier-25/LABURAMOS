@@ -25,11 +25,15 @@ import Contacto from './components/Contacto';
 import ZoneWelcome from './components/ZoneWelcome';
 import WelcomeBanner from './components/WelcomeBanner';
 import ReportModal from './components/ReportModal';
+import Legal from './components/Legal';
+import CookieConsent from './components/CookieConsent';
 import { Footer } from './components/ui';
 import { adCooldownActive, markAdShown, pickRandomAd } from './lib/ads';
 import { welcomeImageList } from './lib/welcome';
 
-const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'anuncios', 'perfil', 'admin', 'seguridad', 'contacto'];
+const VIEWS = ['home', 'laburos', 'oficios', 'cv', 'candidatos', 'avisos', 'anuncios', 'perfil', 'admin', 'seguridad', 'contacto', 'terminos', 'privacidad', 'cookies', 'reembolsos'];
+// Cada ruta legal se corresponde con un documento de src/components/Legal.jsx
+const LEGAL_VIEWS = { terminos: 'terms', privacidad: 'privacy', cookies: 'cookies', reembolsos: 'refund' };
 // Cada cuántas horas vuelve a aparecer el cartel de bienvenida en el mismo navegador (0 = siempre)
 const WELCOME_COOLDOWN_HOURS = 0;
 const WELCOME_SEEN_KEY = 'laburamos_bienvenida_vista';
@@ -87,6 +91,10 @@ const TITLES = {
   admin: 'Administración · LaburamosApp',
   seguridad: 'Consejos para operar seguro · LaburamosApp',
   contacto: 'Sugerencias y denuncias · LaburamosApp',
+  terminos: 'Términos y Condiciones · LaburamosApp',
+  privacidad: 'Política de Privacidad · LaburamosApp',
+  cookies: 'Política de Cookies · LaburamosApp',
+  reembolsos: 'Reembolsos y arrepentimiento · LaburamosApp',
 };
 const DESCRIPTIONS = {
   home: 'Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos y el contacto es directo por WhatsApp.',
@@ -100,6 +108,10 @@ const DESCRIPTIONS = {
   admin: 'Panel de administración de LaburamosApp.',
   seguridad: 'Cómo cuidarte al buscar o publicar un trabajo: señales de alerta, pagos y referencias.',
   contacto: 'Enviá sugerencias, recomendaciones o denuncias sobre avisos y conductas a LaburamosApp.',
+  terminos: 'Condiciones de uso de LaburamosApp: cuentas, publicaciones, anuncios, pagos y responsabilidades.',
+  privacidad: 'Qué datos personales tratamos, para qué, por cuánto tiempo y cómo ejercer tus derechos.',
+  cookies: 'Qué almacenamiento usa LaburamosApp, para qué y cómo cambiar tus preferencias.',
+  reembolsos: 'Cómo pedir un reembolso o ejercer el derecho de arrepentimiento en compras y anuncios.',
 };
 
 export default function App() {
@@ -413,7 +425,7 @@ export default function App() {
   // elige "ver todo") se queda con toda la Argentina. Las vistas informativas
   // no la preguntan.
   useEffect(() => {
-    const informational = view === 'seguridad' || view === 'contacto';
+    const informational = view === 'seguridad' || view === 'contacto' || !!LEGAL_VIEWS[view];
     if (booting || user || zoneChosen || authOpen || modal || applyFor || welcomeOpen || informational) return undefined;
     // Si la zona ya fue elegida o el usuario está navegando, no abrimos el modal
     if (zoneChosen || zone?.city || zone?.province) return undefined;
@@ -481,6 +493,7 @@ export default function App() {
         {view === 'perfil' && user && <Profile user={user} notify={notify} onUpdated={(patch) => setProfile((p) => ({ ...p, ...patch }))} />}
         {view === 'seguridad' && <Safety go={go} />}
         {view === 'contacto' && <Contacto settings={settings} notify={notify} />}
+        {LEGAL_VIEWS[view] && <Legal doc={LEGAL_VIEWS[view]} settings={settings} go={go} />}
       </main>
 
       <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }, { id: 'contacto', label: 'Sugerencias / Denuncias' }]} settings={settings} />
@@ -535,6 +548,7 @@ export default function App() {
 
       {reportFor && <ReportModal report={reportFor} onClose={() => setReportFor(null)} notify={notify} />}
 
+      <CookieConsent suppressBanner={welcomeOpen || authOpen} />
       {welcomeOpen && welcomeImages.length > 0 && (
         <WelcomeBanner images={welcomeImages} onClose={() => setWelcomeOpen(false)} />
       )}

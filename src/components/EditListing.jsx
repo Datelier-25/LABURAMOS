@@ -18,6 +18,8 @@ import { useSettings } from '../lib/settings';
 import EmotePicker from './EmotePicker';
 import LinkFields from './LinkFields';
 import RequirementItems from './RequirementItems';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const clean = (value) => {
   const text = String(value ?? '').trim();
@@ -63,6 +65,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
   const set = (patch) => setF((x) => ({ ...x, ...patch }));
   const [links, setLinks] = useState(() => (item.links || []).filter(Boolean));
 
@@ -223,6 +226,10 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       setError('Ingresá un email válido para recibir las postulaciones.');
       return;
     }
+    if (!consentReady(consent)) {
+      setError('Para guardar los cambios, aceptá los Términos y la Política de Privacidad.');
+      return;
+    }
     setSaving(true);
     onBusyChange?.(true);
     const common = {
@@ -280,6 +287,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       // Storage puede impedirlo: la publicación igual deja de mostrarlo.
       if (photosToDelete.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(photosToDelete);
       if (coversToDelete.length) void supabase.storage.from(SERVICE_PHOTO_BUCKET).remove(coversToDelete);
+      void recordLegalConsent('editar-aviso');
       onSaved?.(kind, item.id);
       onClose?.();
     } catch (err) { setError(friendlyError(err.message)); }
@@ -536,6 +544,13 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           <span>WhatsApp</span>
           <input inputMode="tel" value={f.phone} onChange={(e) => set({ phone: e.target.value })} />
         </label>
+
+        {!isJob && (
+          <p className="sheet-note">
+            Las fotos que quedan publicadas tienen que ser tuyas o contar con permiso de las personas que aparecen.
+          </p>
+        )}
+        <LegalConsent value={consent} onChange={setConsent} compact />
 
         <button className="btn btn-ink btn-lg btn-block" disabled={saving || photoBusy}>
           {saving ? 'Guardando…' : photoBusy ? 'Subiendo foto…' : 'Guardar cambios'}

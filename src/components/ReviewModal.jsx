@@ -3,6 +3,8 @@ import { ShieldCheck, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { friendlyError } from '../lib/utils';
 import { scoreLabel, scoreTone } from './Reputation';
+import LegalConsent from './LegalConsent';
+import { consentReady, recordLegalConsent } from '../lib/legal';
 
 // Calificar a la otra parte de una postulación (empresa ↔ persona).
 // Se puntúan tres aspectos del trabajo, de 1 a 5. El puntaje público (0-100)
@@ -19,6 +21,7 @@ export default function ReviewModal({ applicationId, targetName, targetKind = 'p
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -33,6 +36,7 @@ export default function ReviewModal({ applicationId, targetName, targetKind = 'p
   const save = async (e) => {
     e.preventDefault();
     if (!complete) return setError('Puntuá los tres aspectos (1 a 5).');
+    if (!consentReady(consent)) return setError('Para publicar la calificación, aceptá los Términos y la Política de Privacidad.');
     setSaving(true);
     setError('');
     const { error: err } = await supabase.from('reviews').insert({
@@ -44,7 +48,10 @@ export default function ReviewModal({ applicationId, targetName, targetKind = 'p
     });
     setSaving(false);
     if (err) setError(friendlyError(err.message));
-    else onDone?.();
+    else {
+      void recordLegalConsent('calificacion');
+      onDone?.();
+    }
   };
 
   return (
@@ -112,6 +119,8 @@ export default function ReviewModal({ applicationId, targetName, targetKind = 'p
           />
         </label>
         <p className="note">Se publica con tu puntaje, sin tus datos personales. No se puede editar después.</p>
+
+        <LegalConsent value={consent} onChange={setConsent} compact />
 
         <button className="btn btn-ink btn-lg btn-block" disabled={saving || !complete}>
           {saving ? 'Enviando…' : 'Publicar calificación'}

@@ -4,6 +4,8 @@ import { friendlyError } from '../lib/utils';
 import JobSign from './Sign';
 import Logo from './Logo';
 import { PasswordField } from './ui';
+import LegalConsent from './LegalConsent';
+import { consentReady, registrationLegalData } from '../lib/legal';
 import { PlaceField } from './Place';
 
 export default function AuthScreen({ onGuest, initialMode = 'login' }) {
@@ -11,6 +13,7 @@ export default function AuthScreen({ onGuest, initialMode = 'login' }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'ok' | 'err', text }
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'worker', place: null });
+  const [consent, setConsent] = useState({ terms: false, privacy: false });
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const switchMode = (next) => {
@@ -30,11 +33,25 @@ export default function AuthScreen({ onGuest, initialMode = 'login' }) {
         setLoading(false);
         return;
       }
+      if (!consentReady(consent)) {
+        setMessage({ type: 'err', text: 'Para crear la cuenta tenés que aceptar los Términos y la Política de Privacidad.' });
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
-        // El trigger de la base lee estos datos para crear el perfil
-        options: { data: { full_name: form.name.trim(), role: form.role, city: form.place.city, province: form.place.province } },
+        // El trigger de la base lee estos datos para crear el perfil y dejar
+        // registrada la aceptación de los documentos legales.
+        options: {
+          data: {
+            full_name: form.name.trim(),
+            role: form.role,
+            city: form.place.city,
+            province: form.place.province,
+            ...registrationLegalData(),
+          },
+        },
       });
       if (error) {
         setMessage({ type: 'err', text: friendlyError(error.message) });
@@ -126,6 +143,8 @@ export default function AuthScreen({ onGuest, initialMode = 'login' }) {
                   <input required value={form.name} onChange={(e) => set({ name: e.target.value })} autoComplete="name" />
                 </label>
                 <PlaceField value={form.place} onChange={(place) => set({ place })} required />
+                <LegalConsent value={consent} onChange={setConsent} />
+                <p className="panel-hint">Pedimos solo lo necesario para crear tu cuenta y mostrarte avisos de tu zona.</p>
               </>
             )}
 
