@@ -29,6 +29,7 @@ export default function Profile({ user, notify, onUpdated }) {
   const [activeAds, setActiveAds] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const [consent, setConsent] = useState({ terms: false, privacy: false });
+  const [consentSaved, setConsentSaved] = useState(false);
 
   useEffect(() => {
     let off = false;
@@ -66,6 +67,10 @@ export default function Profile({ user, notify, onUpdated }) {
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const dirty = useMemo(() => Object.keys(saved).some((k) => (form[k] || '') !== (saved[k] || '')), [form, saved]);
+  // Aceptar los documentos también habilita el guardado: si no hubo cambios en
+  // los datos, el botón igual tiene que dejar registrar el consentimiento.
+  const consentOk = consentReady(consent);
+  const canSave = dirty || (consentOk && !consentSaved);
 
   // Progreso del perfil: qué tan completo está y qué le falta
   const checklist = [
@@ -104,6 +109,7 @@ export default function Profile({ user, notify, onUpdated }) {
       return;
     }
     setSaved({ full_name: next.full_name || '', city: next.city || '', province: next.province || '', phone: phone || '' });
+    setConsentSaved(true);
     void recordLegalConsent('perfil');
     notify('Perfil actualizado');
     onUpdated?.(next);
@@ -334,13 +340,30 @@ export default function Profile({ user, notify, onUpdated }) {
               <input value={form.province} onChange={(e) => set({ province: e.target.value })} placeholder="Buenos Aires" />
             </label>
           </div>
-          <LegalConsent value={consent} onChange={setConsent} compact />
+          <LegalConsent
+            value={consent}
+            onChange={(next) => {
+              setConsent(next);
+              setConsentSaved(false);
+            }}
+            compact
+          />
           <p className="panel-hint">Pedimos solo tu nombre, WhatsApp y zona para que puedan contactarte. No pedimos DNI ni domicilio.</p>
           <div className="panel-actions">
-            <button type="submit" className="btn btn-ink" disabled={saving || !dirty}>
+            <button type="submit" className="btn btn-ink" disabled={saving || !canSave}>
               {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            {dirty && !saving && <span className="panel-hint">Tenés cambios sin guardar.</span>}
+            {!saving && (
+              <span className="panel-hint">
+                {dirty
+                  ? 'Tenés cambios sin guardar.'
+                  : consentSaved
+                    ? 'Aceptación registrada.'
+                    : consentOk
+                      ? 'Guardá para registrar tu aceptación.'
+                      : ''}
+              </span>
+            )}
           </div>
         </form>
 
