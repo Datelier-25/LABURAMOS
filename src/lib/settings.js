@@ -29,6 +29,8 @@ export const DEFAULT_SETTINGS = {
   premium_links_limit: 3,
   free_photos_limit: 5,
   premium_photos_limit: 10,
+  max_jobs_per_user: 3,
+  max_services_per_user: 3,
   ads_enabled: true,
   ads_price_per_second: 100,
   ads_price_image: 5000,

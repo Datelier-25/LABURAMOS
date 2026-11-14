@@ -157,6 +157,8 @@ function SettingsTab({ notify, onSaved }) {
           cv_days: 30,
           job_days: 30,
           service_days: 30,
+          max_jobs_per_user: 3,
+          max_services_per_user: 3,
           contact_email: 'laburamosapp@gmail.com',
           instagram_url: 'https://instagram.com/laburamosapp',
           legal_business_name: '',
@@ -213,6 +215,7 @@ function SettingsTab({ notify, onSaved }) {
     const premiumPrice = num(cfg.premium_price);
     const days = [num(cfg.cv_days), num(cfg.job_days), num(cfg.service_days), num(cfg.premium_days)];
     const limits = [num(cfg.free_links_limit), num(cfg.premium_links_limit), num(cfg.free_photos_limit), num(cfg.premium_photos_limit)];
+    const pubLimits = [num(cfg.max_jobs_per_user), num(cfg.max_services_per_user)];
     const adsPrice = num(cfg.ads_price_per_second);
     const adsPriceImage = num(cfg.ads_price_image);
     const adsImageSeconds = num(cfg.ads_image_seconds);
@@ -226,6 +229,7 @@ function SettingsTab({ notify, onSaved }) {
     if (!(premiumPrice >= 0) || premiumPrice > 1000000) return setError('El precio del premium tiene que ser $0 o más.');
     if (days.some((d) => !(d >= 1 && d <= 365))) return setError('Los días tienen que estar entre 1 y 365.');
     if (limits.some((n) => !(n >= 0 && n <= 20))) return setError('Los límites de links y fotos tienen que estar entre 0 y 20.');
+    if (pubLimits.some((n) => !(n >= 1 && n <= 50))) return setError('El límite de publicaciones por usuario tiene que estar entre 1 y 50.');
     if (limits[1] < limits[0]) return setError('El premium no puede permitir menos links que el plan gratis.');
     if (limits[3] < limits[2]) return setError('El premium no puede permitir menos fotos que el plan gratis.');
     if (!(adsPrice > 0) || adsPrice > 1000000) return setError('El precio por segundo de los anuncios tiene que ser mayor a $0.');
@@ -247,6 +251,8 @@ function SettingsTab({ notify, onSaved }) {
         cv_days: days[0],
         job_days: days[1],
         service_days: days[2],
+        max_jobs_per_user: pubLimits[0],
+        max_services_per_user: pubLimits[1],
         contact_email: cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
         instagram_url: cfg.instagram_url?.trim() || 'https://instagram.com/laburamosapp',
         legal_business_name: cfg.legal_business_name?.trim() || null,
@@ -390,6 +396,21 @@ function SettingsTab({ notify, onSaved }) {
         <label className="field">
           <span>Servicios y pedidos (días)</span>
           <input inputMode="numeric" value={cfg.service_days} onChange={(e) => set({ service_days: e.target.value.replace(/\D/g, '') })} />
+        </label>
+      </div>
+
+      <h2 className="block-title">Límite de publicaciones por usuario</h2>
+      <p className="lede">Cantidad máxima de publicaciones activas y vigentes que cada persona puede tener al mismo tiempo, por tipo.</p>
+      <div className="two">
+        <label className="field">
+          <span>Búsquedas laborales (avisos de empleo)</span>
+          <input inputMode="numeric" value={cfg.max_jobs_per_user} onChange={(e) => set({ max_jobs_per_user: e.target.value.replace(/\D/g, '') })} />
+          <small>Máximo de avisos de empleo publicados por usuario.</small>
+        </label>
+        <label className="field">
+          <span>Servicios y pedidos</span>
+          <input inputMode="numeric" value={cfg.max_services_per_user} onChange={(e) => set({ max_services_per_user: e.target.value.replace(/\D/g, '') })} />
+          <small>Máximo de publicaciones de oficios/servicios por usuario.</small>
         </label>
       </div>
 

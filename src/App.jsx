@@ -134,6 +134,7 @@ export default function App() {
   const [adGate, setAdGate] = useState(null); // { ad, next } mientras se reproduce un anuncio
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
   const [applyFor, setApplyFor] = useState(null); // { job } mientras elige el CV
+  const [publishPick, setPublishPick] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ text: '', show: false });
@@ -351,8 +352,15 @@ export default function App() {
   const openPublish = (type, intent = null) => {
     if (!user) return requireLogin();
     setMenuOpen(false);
+    setPublishPick(false);
     setModalIntent(intent);
     setModal(type);
+  };
+
+  const openPublishChooser = () => {
+    if (!user) return requireLogin();
+    setMenuOpen(false);
+    setPublishPick(true);
   };
 
   // Contacto de un servicio: el anuncio se muestra antes de abrir WhatsApp.
@@ -462,7 +470,6 @@ export default function App() {
     );
   }
 
-  const defaultPublish = user?.role === 'company' ? 'job' : 'service';
   const common = { user, zone, setZone, settings, onPublish: openPublish, onLogin: requireLogin, onApply: openApply, onContact: openContact, saved, onSave: toggleSavedGated, savedSvc, onSaveSvc: toggleSavedSvcGated, onPrune: pruneSaved, deep: deep && deep.id ? deep : null, onReport: (jobOrService) => setReportFor(jobOrService) };
   const zoneKey = `${zone.city}|${zone.province}`;
 
@@ -476,7 +483,7 @@ export default function App() {
         links={links}
         onLogout={handleLogout}
         onLogin={(mode) => requireLogin(mode)}
-        onPublish={() => openPublish(defaultPublish)}
+        onPublish={openPublishChooser}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
       />
@@ -498,10 +505,36 @@ export default function App() {
 
       <Footer go={go} links={[...links, { id: 'seguridad', label: 'Consejos de seguridad' }, { id: 'contacto', label: 'Sugerencias / Denuncias' }]} settings={settings} />
 
-      {!modal && (
-        <button className="fab" onClick={() => openPublish(defaultPublish)} aria-label="Publicar un aviso">
+      {!modal && !publishPick && (
+        <button className="fab" onClick={openPublishChooser} aria-label="Publicar">
           <Plus size={22} /> Publicar
         </button>
+      )}
+
+      {publishPick && (
+        <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && setPublishPick(false)}>
+          <div className="sheet publish-pick" role="dialog" aria-modal="true" aria-label="¿Qué querés publicar?">
+            <button type="button" className="x" onClick={() => setPublishPick(false)} aria-label="Cerrar">
+              <X size={20} />
+            </button>
+            <h2>¿Qué querés publicar?</h2>
+            <p className="lede">Elegí el tipo de publicación.</p>
+            <div className="tiles publish-pick-tiles">
+              <button type="button" className="tile" onClick={() => openPublish('service', 'ofrece')}>
+                <b>Ofrecer un servicio u oficio</b>
+                <small>Mostrá lo que sabés hacer para que te contacten.</small>
+              </button>
+              <button type="button" className="tile" onClick={() => openPublish('service', 'busca')}>
+                <b>Buscar un servicio u oficio</b>
+                <small>Contá qué necesitás y que te contacten quienes lo hagan.</small>
+              </button>
+              <button type="button" className="tile" onClick={() => openPublish('job')}>
+                <b>Búsqueda laboral</b>
+                <small>Publicá un aviso de empleo para recibir postulaciones.</small>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {modal && <PublishModal type={modal} intent={modalIntent} user={user} zone={zone} settings={settings} onClose={() => setModal(null)} onCreated={handleCreated} onSafety={() => { setModal(null); go('seguridad'); }} />}

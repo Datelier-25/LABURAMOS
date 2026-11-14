@@ -118,8 +118,12 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
   // Estado y vencimiento se cambian con funciones de la base, que validan que el aviso sea tuyo
   const handleStatus = async (kind, id, status, message) => {
     const { error: err } = await supabase.rpc('set_listing_status', { p_kind: kind, p_id: id, p_status: status });
-    if (err) setError(friendlyError(err.message));
-    else {
+    if (err) {
+      const msg = (err.message || '').includes('limite_publicaciones')
+        ? `Ya alcanzaste el límite de ${kind === 'job' ? 'búsquedas laborales' : 'servicios'} activas. Pausá o eliminá otra publicación para poder reactivar esta.`
+        : friendlyError(err.message);
+      setError(msg);
+    } else {
       notify(message);
       load();
     }
@@ -127,8 +131,12 @@ export default function MyPosts({ user, settings, onPublish, notify }) {
 
   const handleRenew = async (kind, id, message) => {
     const { error: err } = await supabase.rpc('renew_listing', { p_kind: kind, p_id: id });
-    if (err) setError(friendlyError(err.message));
-    else {
+    if (err) {
+      const msg = (err.message || '').includes('limite_publicaciones')
+        ? `Ya alcanzaste el límite de ${kind === 'job' ? 'búsquedas laborales' : 'servicios'} activas. Pausá o eliminá otra publicación para poder renovar esta.`
+        : friendlyError(err.message);
+      setError(msg);
+    } else {
       notify(message);
       load();
     }

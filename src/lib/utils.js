@@ -189,6 +189,7 @@ export function friendlyError(message = '') {
   if (m.includes('email_invalido')) return 'Revisá el email: tiene que ser una dirección válida.';
   if (m.includes('requisito')) return 'Revisá los requisitos: cada uno tiene que tener un texto de hasta 200 caracteres.';
   if (m.includes('medio_invalido')) return 'Las postulaciones se reciben solo por email.';
+  if (m.includes('limite_publicaciones')) return 'Ya alcanzaste el límite de publicaciones activas. Pausá o eliminá una para poder publicar otra.';
   if (m.includes('no_encontrado')) return 'No encontramos esa publicación: puede que ya la hayan eliminado.';
   if (m.includes('phone')) return 'Revisá el número de WhatsApp.';
   if (m.includes('failed to fetch') || m.includes('network')) return 'Sin conexión. Revisá tu internet e intentá de nuevo.';

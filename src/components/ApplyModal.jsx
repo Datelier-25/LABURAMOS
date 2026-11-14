@@ -268,7 +268,7 @@ export default function ApplyModal({ job, user, onClose, onDone, onEditCv, notif
 
       <div className="apply-confirm-info">
         <p>Se enviará {mode === 'app' ? 'tu CV de LaburamosApp' : 'tu PDF adjunto'} tal como lo tenés cargado ahora.</p>
-        <p>El correo sale desde <b>LaburamosApp</b> con tu email como <b>Responder a</b>, para que puedan contestarte directo.</p>
+        <p>El correo sale desde <b>LaburamosApp</b> con tu email como <b>Responder a</b>.</p>
       </div>
 
       <div className="field">

@@ -220,7 +220,10 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
         });
 
     if (err) {
-      setError(friendlyError(err.message));
+      const msg = (err.message || '').includes('limite_publicaciones')
+        ? `Ya alcanzaste el límite de ${isJob ? 'búsquedas laborales' : 'publicaciones de servicios'} activas. Pausá o eliminá una para poder publicar otra.`
+        : friendlyError(err.message);
+      setError(msg);
       setLoading(false);
     } else {
       void recordLegalConsent(isJob ? 'publicar-aviso' : 'publicar-servicio');
