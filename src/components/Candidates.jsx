@@ -240,6 +240,7 @@ export default function Candidates({ user, notify }) {
               const waAllowed = cur !== 'email';
               const emAllowed = cur !== 'whatsapp';
               const cvPdf = !!a.cv_path;
+              const mailStatus = a.email_sent_at ? 'correo enviado' : a.email_error ? 'correo con error' : 'correo pendiente';
               const name = r?.full_name || a.worker_name || 'Postulante';
               const phone = r?.phone || a.worker_phone || '';
               const mailto = a.email
@@ -254,12 +255,12 @@ export default function Candidates({ user, notify }) {
                   title={name}
                   by={
                     r
-                      ? [r.profession, age !== null && `${age} años`, r.city, cvPdf ? 'CV en PDF adjunto' : null, `se postuló ${timeAgo(a.created_at)}`]
+                      ? [r.profession, age !== null && `${age} años`, r.city, cvPdf ? 'CV en PDF adjunto' : null, `se postuló ${timeAgo(a.created_at)}`, mailStatus]
                           .filter(Boolean)
                           .join(' · ')
                       : cvPdf
-                        ? ['CV en PDF adjunto', `se postuló ${timeAgo(a.created_at)}`].join(' · ')
-                        : 'CV visible para comercios verificados'
+                        ? ['CV en PDF adjunto', `se postuló ${timeAgo(a.created_at)}`, mailStatus].join(' · ')
+                        : `CV visible para comercios verificados · ${mailStatus}`
                   }
                   desc={r?.summary}
                   extra={<Reputation data={rep[a.worker_id]} />}
@@ -316,7 +317,7 @@ export default function Candidates({ user, notify }) {
                             className="btn btn-line"
                             onClick={() => resendEmail(a)}
                             disabled={resending === a.id}
-                            title={a.email_sent_at ? 'Volver a enviar el correo de la postulación' : 'Enviar el correo de la postulación a tu casilla'}
+                            title={a.email_sent_at ? 'Volver a enviar el correo de la postulación' : 'Enviar el correo de la postulación a la casilla del aviso'}
                           >
                             <Send size={18} />{' '}
                             {resending === a.id ? 'Enviando…' : a.email_sent_at ? 'Reenviar correo' : 'Enviar correo'}

@@ -234,7 +234,12 @@ Deno.serve(async (req) => {
   ]);
 
   if (!job) return json({ error: 'aviso_no_encontrado' }, 404);
-  if (!job.apply_email) return json({ error: 'aviso_sin_email' }, 422);
+  if (!job.apply_email) {
+    // El aviso quedó sin correo (avisos viejos). Se registra para que el
+    // administrador o el dueño sepan por qué no salió el correo.
+    await admin.from('applications').update({ email_error: 'aviso_sin_email' }).eq('id', app.id);
+    return json({ error: 'aviso_sin_email' }, 422);
+  }
 
   const from = clean(settings?.application_email_from) || 'laburamosapp@gmail.com';
   const appName = clean(settings?.application_email_name) || 'LaburamosApp';

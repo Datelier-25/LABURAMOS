@@ -275,6 +275,12 @@ export default function JobSign({
             </span>
           </p>
         )}
+        {open && !job.apply_email && (
+          <p className="apply-channel">
+            <Mail size={15} aria-hidden="true" />
+            <span>Este aviso todavía no tiene un correo para recibir postulaciones.</span>
+          </p>
+        )}
         {open && <ListingLinks links={links} />}
         {interactive && (
           <button type="button" className="more" onClick={() => setOpen(!open)} aria-expanded={open}>
@@ -300,9 +306,18 @@ export default function JobSign({
                 <button type="button" className="card-cta" disabled>
                   Ya postulaste
                 </button>
-              ) : (
+              ) : job.apply_email ? (
                 <button type="button" className="card-cta" onClick={apply} disabled={applying}>
                   {applying ? 'Enviando…' : 'Postularme'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="card-cta"
+                  disabled
+                  title="El aviso todavía no tiene un correo para recibir postulaciones"
+                >
+                  Sin correo de postulación
                 </button>
               )
             ) : (
