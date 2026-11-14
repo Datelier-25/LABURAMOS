@@ -56,7 +56,6 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       : item.requirements
         ? [{ text: item.requirements, required: false }]
         : [],
-    apply_channel: item.apply_channel === 'email' ? 'email' : 'whatsapp',
     apply_email: item.apply_email || '',
     phone: item.phone || '',
     icon: item.icon || '',
@@ -222,7 +221,7 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
       setError(`Esta publicación permite hasta ${limits.photos} fotos. Quitá las que sobren para guardar.`);
       return;
     }
-    if (isJob && f.apply_channel === 'email' && !isValidEmail(f.apply_email)) {
+    if (isJob && !isValidEmail(f.apply_email)) {
       setError('Ingresá un email válido para recibir las postulaciones.');
       return;
     }
@@ -254,8 +253,8 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
           province: f.province,
           requirement_items: cleanRequirementItems(f.requirement_items),
           requirements: cleanRequirementItems(f.requirement_items).map((req) => req.text).join(' · ') || null,
-          apply_channel: f.apply_channel,
-          apply_email: f.apply_channel === 'email' ? f.apply_email.trim() : null,
+          apply_channel: 'email',
+          apply_email: f.apply_email.trim() || null,
         }
       : {
           ...common,
@@ -488,38 +487,15 @@ export default function EditListing({ kind, item, onClose, onSaved, embedded = f
               />
             </div>
             <div className="field">
-              <span>¿Dónde se reciben las postulaciones?</span>
-              <div className="tiles">
-                <button
-                  type="button"
-                  className={`tile${f.apply_channel === 'whatsapp' ? ' on' : ''}`}
-                  onClick={() => set({ apply_channel: 'whatsapp' })}
-                  aria-pressed={f.apply_channel === 'whatsapp'}
-                >
-                  <b>WhatsApp</b>
-                  <small>Al número del aviso</small>
-                </button>
-                <button
-                  type="button"
-                  className={`tile${f.apply_channel === 'email' ? ' on' : ''}`}
-                  onClick={() => set({ apply_channel: 'email' })}
-                  aria-pressed={f.apply_channel === 'email'}
-                >
-                  <b>Email</b>
-                  <small>A un correo que indiques</small>
-                </button>
-              </div>
-              {f.apply_channel === 'email' && (
-                <label className="field">
-                  <span>Email para postulaciones</span>
-                  <input
-                    type="email"
-                    placeholder="rrhh@tuempresa.com"
-                    value={f.apply_email}
-                    onChange={(e) => set({ apply_email: e.target.value })}
-                  />
-                </label>
-              )}
+              <span>Email para recibir postulaciones</span>
+              <input
+                type="email"
+                required
+                placeholder="rrhh@tuempresa.com"
+                value={f.apply_email}
+                onChange={(e) => set({ apply_email: e.target.value })}
+              />
+              <small>Las postulaciones llegan a este correo. El postulante adjunta su CV y se envía desde la app.</small>
             </div>
           </>
         )}

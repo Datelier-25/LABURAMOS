@@ -44,7 +44,6 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     price: '',
     description: '',
     requirement_items: [{ text: '', required: false }],
-    apply_channel: 'whatsapp',
     apply_email: '',
     phone: user.phone || '',
     place: startPlace(user, zone),
@@ -168,7 +167,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
       setError(`Podés cargar hasta ${limits.links} ${limits.links === 1 ? 'link' : 'links'}.`);
       return;
     }
-    if (isJob && form.apply_channel === 'email' && !isValidEmail(form.apply_email)) {
+    if (isJob && !isValidEmail(form.apply_email)) {
       setError('Ingresá un email válido para recibir las postulaciones.');
       return;
     }
@@ -193,8 +192,8 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           description: form.description.trim(),
           requirement_items: requirementItems,
           requirements: requirementItems.map((req) => req.text).join(' · ') || null,
-          apply_channel: form.apply_channel,
-          apply_email: form.apply_channel === 'email' ? form.apply_email.trim() : null,
+          apply_channel: 'email',
+          apply_email: form.apply_email.trim() || null,
           salary: publishedSalary,
           pay_type: publishedPayType,
           schedule: form.schedule.trim() || null,
@@ -243,7 +242,7 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
     icon: form.icon.trim() || null,
     links: form.links.map(normalizeLink).filter(Boolean),
     requirement_items: cleanRequirementItems(form.requirement_items),
-    apply_channel: form.apply_channel,
+    apply_channel: 'email',
     apply_email: form.apply_email.trim() || null,
   };
   const previewService = {
@@ -407,40 +406,15 @@ export default function PublishModal({ type, intent: startIntent = null, user, z
           )}
           {isJob && (
             <div className="field">
-              <span>¿Dónde querés recibir las postulaciones?</span>
-              <div className="tiles">
-                <button
-                  type="button"
-                  className={`tile${form.apply_channel === 'whatsapp' ? ' on' : ''}`}
-                  onClick={() => set({ apply_channel: 'whatsapp' })}
-                  aria-pressed={form.apply_channel === 'whatsapp'}
-                >
-                  <b>WhatsApp</b>
-                  <small>Te escriben al número del aviso</small>
-                </button>
-                <button
-                  type="button"
-                  className={`tile${form.apply_channel === 'email' ? ' on' : ''}`}
-                  onClick={() => set({ apply_channel: 'email' })}
-                  aria-pressed={form.apply_channel === 'email'}
-                >
-                  <b>Email</b>
-                  <small>Las postulaciones llegan a tu correo</small>
-                </button>
-              </div>
-              {form.apply_channel === 'email' && (
-                <label className="field">
-                  <span>Email para postulaciones</span>
-                  <input
-                    type="email"
-                    required
-                    placeholder="rrhh@tuempresa.com"
-                    value={form.apply_email}
-                    onChange={(e) => set({ apply_email: e.target.value })}
-                  />
-                </label>
-              )}
-              <small>Las y los postulantes cargan su CV en la app y después se abre el contacto que elijas.</small>
+              <span>Email para recibir postulaciones</span>
+              <input
+                type="email"
+                required
+                placeholder="rrhh@tuempresa.com"
+                value={form.apply_email}
+                onChange={(e) => set({ apply_email: e.target.value })}
+              />
+              <small>Las postulaciones llegan a este correo. El postulante adjunta su CV y se envía desde la app.</small>
             </div>
           )}
           <div className="field">

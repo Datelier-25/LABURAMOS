@@ -188,7 +188,7 @@ export function friendlyError(message = '') {
   if (m.includes('aviso_no_disponible')) return 'Este aviso ya no está disponible.';
   if (m.includes('email_invalido')) return 'Revisá el email: tiene que ser una dirección válida.';
   if (m.includes('requisito')) return 'Revisá los requisitos: cada uno tiene que tener un texto de hasta 200 caracteres.';
-  if (m.includes('medio_invalido')) return 'Elegí WhatsApp o email para recibir las postulaciones.';
+  if (m.includes('medio_invalido')) return 'Las postulaciones se reciben solo por email.';
   if (m.includes('no_encontrado')) return 'No encontramos esa publicación: puede que ya la hayan eliminado.';
   if (m.includes('phone')) return 'Revisá el número de WhatsApp.';
   if (m.includes('failed to fetch') || m.includes('network')) return 'Sin conexión. Revisá tu internet e intentá de nuevo.';

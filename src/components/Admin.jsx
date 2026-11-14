@@ -164,6 +164,8 @@ function SettingsTab({ notify, onSaved }) {
           legal_address: '',
           legal_email: 'laburamosapp@gmail.com',
           legal_last_update: '',
+          application_email_from: 'laburamosapp@gmail.com',
+          application_email_name: 'LaburamosApp',
           welcome_enabled: false,
           welcome_images: [],
           premium_enabled: false,
@@ -252,6 +254,8 @@ function SettingsTab({ notify, onSaved }) {
         legal_address: cfg.legal_address?.trim() || null,
         legal_email: cfg.legal_email?.trim() || cfg.contact_email?.trim() || 'laburamosapp@gmail.com',
         legal_last_update: cfg.legal_last_update || null,
+        application_email_from: cfg.application_email_from?.trim() || 'laburamosapp@gmail.com',
+        application_email_name: cfg.application_email_name?.trim() || 'LaburamosApp',
         welcome_enabled: !!cfg.welcome_enabled,
         welcome_images: welcomeImages,
         premium_enabled: cfg.premium_enabled,
@@ -335,6 +339,22 @@ function SettingsTab({ notify, onSaved }) {
         <label className="field">
           <span>Última actualización de los documentos</span>
           <input type="date" value={cfg.legal_last_update || ''} onChange={(e) => set({ legal_last_update: e.target.value })} />
+        </label>
+      </div>
+
+      <h2 className="block-title">Correo de postulaciones</h2>
+      <p className="lede">
+        Configuración del remitente cuando se envía una postulación por email. El correo se envía desde esta dirección (tu dominio verificado en Resend/SendGrid/Brevo) con Reply-To al postulante.
+      </p>
+      <div className="two">
+        <label className="field">
+          <span>Remitente (From)</span>
+          <input type="email" value={cfg.application_email_from || ''} onChange={(e) => set({ application_email_from: e.target.value })} placeholder="laburamosapp@gmail.com" />
+        </label>
+        <label className="field">
+          <span>Nombre visible (Display Name)</span>
+          <input value={cfg.application_email_name || ''} onChange={(e) => set({ application_email_name: e.target.value })} placeholder="LaburamosApp" />
+          <small>Se muestra como: "LaburamosApp - Juan Pérez" al empleador.</small>
         </label>
       </div>
 

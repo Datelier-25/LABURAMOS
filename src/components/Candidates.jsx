@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { lockScroll } from '../lib/scrollLock';
-import { FileText, Mail, Phone, Search, ShieldCheck, X } from 'lucide-react';
+import { FileText, Mail, Phone, Search, Send, ShieldCheck, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ageFrom, friendlyError, plural, timeAgo, toneFromName, waLink } from '../lib/utils';
 import { resumeToForm, useSignedPhoto } from '../lib/cv';
@@ -50,6 +50,7 @@ export default function Candidates({ user, notify }) {
   const [requesting, setRequesting] = useState(false);
   const [channels, setChannels] = useState({});
   const [cvBusy, setCvBusy] = useState('');
+  const [resending, setResending] = useState('');
 
   const verified = !!user?.isVerified;
   const requested = !!user?.verificationRequested;
@@ -59,7 +60,7 @@ export default function Candidates({ user, notify }) {
     setError('');
     const { data, error: err } = await supabase
       .from('applications')
-      .select('id, created_at, worker_id, job_id, email, cv_contact, cv_kind, cv_path, cv_name, worker_name, worker_phone, jobs(title, location)')
+      .select('id, created_at, worker_id, job_id, email, cv_contact, cv_kind, cv_path, cv_name, worker_name, worker_phone, email_sent_at, email_error, jobs(title, location)')
       .order('created_at', { ascending: false });
     if (err) {
       setError(friendlyError(err.message));
@@ -106,6 +107,22 @@ export default function Candidates({ user, notify }) {
       setChannels((m) => ({ ...m, [applicationId]: channel }));
       notify?.('Vía de recepción guardada');
     }
+  };
+
+  // Reenvía el correo de la postulación (si el proveedor no estaba configurado
+  // cuando la persona se postuló, o si el envío falló).
+  const resendEmail = async (a) => {
+    setResending(a.id);
+    const { data, error: err } = await supabase.functions.invoke('send_application_email', {
+      body: { application_id: a.id },
+    });
+    setResending('');
+    if (err || data?.error) {
+      notify?.('No se pudo enviar el correo. Revisá la configuración del proveedor.');
+      return;
+    }
+    notify?.('Correo de la postulación enviado.');
+    load();
   };
 
   // El CV puede venir armado en la app (tabla resumes) o como PDF adjunto en la
@@ -294,6 +311,16 @@ export default function Candidates({ user, notify }) {
                               <Mail size={18} /> Enviar por Gmail
                             </a>
                           )}
+                          <button
+                            type="button"
+                            className="btn btn-line"
+                            onClick={() => resendEmail(a)}
+                            disabled={resending === a.id}
+                            title={a.email_sent_at ? 'Volver a enviar el correo de la postulación' : 'Enviar el correo de la postulación a tu casilla'}
+                          >
+                            <Send size={18} />{' '}
+                            {resending === a.id ? 'Enviando…' : a.email_sent_at ? 'Reenviar correo' : 'Enviar correo'}
+                          </button>
                         </>
                       ) : null}
                     </div>

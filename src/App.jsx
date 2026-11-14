@@ -133,7 +133,7 @@ export default function App() {
   const [modal, setModal] = useState(null); // 'job' | 'service' | null
   const [adGate, setAdGate] = useState(null); // { ad, next } mientras se reproduce un anuncio
   const [modalIntent, setModalIntent] = useState(null); // servicios: 'ofrece' | 'busca' | null (que elija)
-  const [applyFor, setApplyFor] = useState(null); // { job, applyChannel, applyUrl } mientras elige el CV
+  const [applyFor, setApplyFor] = useState(null); // { job } mientras elige el CV
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ text: '', show: false });
@@ -372,20 +372,20 @@ export default function App() {
   };
 
   // "Postularme": abre el paso donde se elige el CV (el de la app o un PDF).
-  // El envío y la apertura del contacto (WhatsApp o email) se hacen en ApplyModal.
-  const openApply = (job, target) => {
+  // El envío se hace por email desde la app (remitente configurado en Admin).
+  const openApply = (job, _target) => {
     if (!user) return requireLogin();
     if (!job?.id) return;
     if (job.company_id === user.id) {
       notify('No podés postularte a un aviso propio.');
       return;
     }
+    if (!job.apply_email) {
+      notify('Este aviso todavía no tiene un correo para recibir postulaciones.');
+      return;
+    }
     runWithAd(() => {
-      setApplyFor({
-        job,
-        applyChannel: target?.channel === 'email' ? 'email' : 'whatsapp',
-        applyUrl: target?.url || null,
-      });
+      setApplyFor({ job });
     });
   };
 
@@ -510,8 +510,6 @@ export default function App() {
         <ApplyModal
           job={applyFor.job}
           user={user}
-          applyChannel={applyFor.applyChannel}
-          applyUrl={applyFor.applyUrl}
           notify={notify}
           onClose={() => setApplyFor(null)}
           onDone={() => setApplyFor(null)}

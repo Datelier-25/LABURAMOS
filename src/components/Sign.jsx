@@ -16,7 +16,7 @@ import {
   ThumbsUp,
   User,
 } from 'lucide-react';
-import { emojiOf, intentOf, mailtoLink, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
+import { emojiOf, intentOf, shareListing, timeAgo, toneOf, waLink } from '../lib/utils';
 import { emoteUrl, plateEmote } from '../lib/emotes';
 import { servicePhotoUrl } from '../lib/photos';
 import { isPremium, linkKind, linkLabel, listingLimits, visibleLinks } from '../lib/premium';
@@ -157,15 +157,6 @@ export default function JobSign({
   const premium = isPremium(job);
   const links = interactive || preview ? visibleLinks(job, settings) : [];
   const requirements = requirementList(job);
-  const applyByEmail = job.apply_channel === 'email' && !!job.apply_email;
-  const message = `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''}${user?.role === 'worker' ? ' Mi CV lo ves en LaburamosApp, en Postulantes.' : ''}`;
-  const applyUrl = applyByEmail
-    ? mailtoLink(
-        job.apply_email,
-        `Postulación: ${job.title} · LaburamosApp`,
-        `Hola, vi tu aviso de "${job.title}" en LaburamosApp y me interesa.${user ? ` Soy ${user.name}.` : ''} Mi CV está en Postulantes de LaburamosApp.`
-      )
-    : waLink(job.phone, message);
   const emote = plateEmote(job);
   const salaryText = String(job.salary || '').trim();
   const payLabel = !salaryText
@@ -199,7 +190,7 @@ export default function JobSign({
     if (!onApply || applying) return;
     setApplying(true);
     try {
-      await onApply(job, { channel: applyByEmail ? 'email' : 'whatsapp', url: applyUrl });
+      await onApply(job);
     } finally {
       setApplying(false);
     }
@@ -276,16 +267,12 @@ export default function JobSign({
             </ul>
           </div>
         )}
-        {open && (
+        {open && job.apply_email && (
           <p className="apply-channel">
-            {applyByEmail ? <Mail size={15} aria-hidden="true" /> : <MessageCircle size={15} aria-hidden="true" />}
-            {applyByEmail ? (
-              <span>
-                Postulaciones por email: <a href={`mailto:${job.apply_email}`}>{job.apply_email}</a>
-              </span>
-            ) : (
-              <span>Postulaciones por WhatsApp</span>
-            )}
+            <Mail size={15} aria-hidden="true" />
+            <span>
+              Postulaciones por email: <a href={`mailto:${job.apply_email}`}>{job.apply_email}</a>
+            </span>
           </p>
         )}
         {open && <ListingLinks links={links} />}

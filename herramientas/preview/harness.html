@@ -20,10 +20,10 @@ const later = new Date(now + 20 * 86400e3).toISOString();
 const SAMPLE_VIDEO = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 const DATA = {
   jobs: [
-    { id: 'j1', title: 'Se busca vendedor/a', company_name: 'Comercio El Sol', category: 'Comercio', job_type: 'Part-time', salary: '$450.000', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Atención al público, reposición y caja. Lunes a sábado por la mañana.', status: 'active', expires_at: later, created_at: iso(3), is_urgent: true, company_id: 'c1', requirement_items: [{ text: 'Experiencia previa en atención al público', required: true }, { text: 'Secundario completo', required: false }], apply_channel: 'whatsapp' },
+    { id: 'j1', title: 'Se busca vendedor/a', company_name: 'Comercio El Sol', category: 'Comercio', job_type: 'Part-time', salary: '$450.000', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Atención al público, reposición y caja. Lunes a sábado por la mañana.', status: 'active', expires_at: later, created_at: iso(3), is_urgent: true, company_id: 'c1', requirement_items: [{ text: 'Experiencia previa en atención al público', required: true }, { text: 'Secundario completo', required: false }], apply_channel: 'email', apply_email: 'rrhh@comercioelsol.com' },
     { id: 'j2', title: 'Ayudante de cocina', company_name: 'Parrilla Don Pepe', category: 'Gastronomía', job_type: 'Full-time', salary: '', location: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Turno noche, con experiencia.', status: 'active', expires_at: later, created_at: iso(30), is_urgent: false, company_id: 'c1', requirement_items: [{ text: 'Disponibilidad para turno noche', required: true }, { text: 'Curso de manipulación de alimentos', required: false }], apply_channel: 'email', apply_email: 'rrhh@parrilladonpepe.com' },
-    { id: 'j3', title: 'Peón rural', company_name: 'Estancia La Paz', category: 'Agro / Campo', job_type: 'Temporal', salary: 'A convenir', location: 'Mechita', province: 'Buenos Aires', phone: '2342112233', description: 'Cosecha gruesa, 3 meses.', status: 'active', expires_at: later, created_at: iso(70), is_urgent: false, company_id: 'c2' },
-    { id: 'j4', title: 'Chofer de reparto', company_name: 'Distribuidora Norte', category: 'Transporte', job_type: 'Full-time', salary: '$600.000', location: 'Córdoba', province: 'Córdoba', phone: '2342112233', description: 'Registro profesional.', status: 'active', expires_at: later, created_at: iso(5), is_urgent: false, company_id: 'c3' },
+    { id: 'j3', title: 'Peón rural', company_name: 'Estancia La Paz', category: 'Agro / Campo', job_type: 'Temporal', salary: 'A convenir', location: 'Mechita', province: 'Buenos Aires', phone: '2342112233', description: 'Cosecha gruesa, 3 meses.', status: 'active', expires_at: later, created_at: iso(70), is_urgent: false, company_id: 'c2', apply_channel: 'email', apply_email: 'rrhh@estancialapaz.com' },
+    { id: 'j4', title: 'Chofer de reparto', company_name: 'Distribuidora Norte', category: 'Transporte', job_type: 'Full-time', salary: '$600.000', location: 'Córdoba', province: 'Córdoba', phone: '2342112233', description: 'Registro profesional.', status: 'active', expires_at: later, created_at: iso(5), is_urgent: false, company_id: 'c3', apply_channel: 'email', apply_email: 'rrhh@distribuidoranorte.com' },
   ],
   services: [
     { id: 's1', intent: 'ofrece', title: 'Contador Público', provider_name: 'Facundo Ontivero', category: 'Profesionales', city: 'Bragado', province: 'Buenos Aires', phone: '2342112233', description: 'Monotributo, responsables inscriptos, certificaciones y balances.', status: 'active', expires_at: later, created_at: iso(10), owner_id: 'u1' },
@@ -80,11 +80,19 @@ function builder(table) {
     order() { return api; },
     limit(n) { st.limit = n; return api; },
     maybeSingle() { st.single = true; return api; },
-    insert() { return Promise.resolve({ error: null }); },
+    single() { st.single = true; return api; },
+    insert(row) { st.insertRow = row; return api; },
     update() { return api; },
     upsert() { return Promise.resolve({ error: null }); },
     delete() { st.remove = true; return api; },
     then(res, rej) {
+      if (st.insertRow) {
+        const created = { id: 'new-' + Math.random().toString(36).slice(2, 10), created_at: iso(0), ...st.insertRow };
+        DATA[table] = DATA[table] || [];
+        DATA[table].push(created);
+        const out = st.single ? { data: created, error: null } : { data: [created], error: null };
+        return Promise.resolve(out).then(res, rej);
+      }
       if (st.remove) {
         const rows = DATA[table] || [];
         const keep = rows.filter((r) => !st.filters.every((f) => f(r)));
@@ -141,6 +149,7 @@ export function createClient() {
           { ad_id: 'ad5', shown: 64, clicked: 9, last_shown: iso(2) },
         ], error: null };
       }
+      if (name === 'send_application_email') return { data: null, error: null };
       if (name === 'delete_my_account') return { data: null, error: null };
       if (name === 'record_legal_acceptance') return { data: null, error: null };
       if (name === 'admin_review_ad_campaign' || name === 'admin_set_ad_payment' || name === 'admin_update_ad_campaign') {
