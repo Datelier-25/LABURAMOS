@@ -267,18 +267,14 @@ export default function JobSign({
             </ul>
           </div>
         )}
-        {open && job.apply_email && (
+        {open && (
           <p className="apply-channel">
             <Mail size={15} aria-hidden="true" />
             <span>
-              Postulaciones por email: <a href={`mailto:${job.apply_email}`}>{job.apply_email}</a>
+              {job.apply_email
+                ? 'Las postulaciones se envían por email desde LaburamosApp: tu correo va como Responder a y la empresa te contesta directo.'
+                : 'Este aviso todavía no tiene un correo para recibir postulaciones.'}
             </span>
-          </p>
-        )}
-        {open && !job.apply_email && (
-          <p className="apply-channel">
-            <Mail size={15} aria-hidden="true" />
-            <span>Este aviso todavía no tiene un correo para recibir postulaciones.</span>
           </p>
         )}
         {open && <ListingLinks links={links} />}

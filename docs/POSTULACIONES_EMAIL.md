@@ -21,6 +21,36 @@ postulante. El flujo es:
 Así la empresa responde directo al postulante y el correo nunca se envía
 "haciéndose pasar" por un Gmail/Outlook personal.
 
+La dirección de la empresa **no se muestra** en la app: ni en el aviso ni en la
+pantalla de postulación. El texto siempre explica que el correo sale desde
+LaburamosApp y que el email del postulante va como `Responder a`.
+
+## Diseño del correo
+
+El HTML de la función usa la misma identidad que la app (`src/index.css`):
+
+- Encabezado navy `#0F1242` con el logotipo claro (`/marca/logotipo-claro.png`).
+- Título del aviso, empresa y mensaje del postulante con acento naranja `#FF6A00`.
+- Perfil en tabla de dos columnas con etiquetas en mayúsculas y gris `#586088`.
+- Bloque navy "Respondé este correo y le llega directo" con el email del postulante.
+- Botón naranja a `/candidatos` y pie gris `#F2F4F7`.
+
+Los estilos van inline porque los clientes de correo no cargan CSS externo. Las
+imágenes se sirven desde el dominio público de la app, así que `APP_URL` tiene
+que apuntar al sitio real para que el logo cargue.
+
+### Foto del remitente (avatar)
+
+El avatar que muestra Gmail junto al remitente **no lo controla el correo**: lo
+define la cuenta del remitente. Para que aparezca el logo:
+
+1. En la cuenta de Google del remitente (`laburamosapp@gmail.com`), cargar como
+   foto de perfil el isotipo de la app.
+2. Opcional: crear un Gravatar para esa misma dirección con el logo (lo usan
+   Apple Mail, Outlook.com y Thunderbird).
+3. A futuro, con dominio propio: publicar BIMI (requiere DMARC y, para el logo
+   en Gmail, un certificado VMC pago).
+
 ## Configuración en Admin
 
 En **Admin → Configuración → Correo de postulaciones** se definen:

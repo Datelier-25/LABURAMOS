@@ -884,6 +884,23 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .apply-edit { align-self: flex-start; border: 0; background: transparent; padding: 0; color: var(--ultra-deep); font-weight: 700; text-decoration: underline; font-size: 0.85rem; }
 .apply-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 0; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
 .apply-note svg { flex: none; margin-top: 2px; }
+.apply-quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 4px; }
+.apply-quick-chip {
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.apply-quick-chip:hover { border-color: var(--ink); }
+.apply-quick-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.apply-quick-chip:disabled { opacity: 0.6; }
+.apply-quick-hint { color: var(--muted); }
 .apply-acts { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 4px; }
 .cv-chip { margin: 4px 0 6px; }
 

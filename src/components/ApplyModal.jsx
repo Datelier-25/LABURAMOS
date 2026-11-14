@@ -7,6 +7,21 @@ import LegalConsent from './LegalConsent';
 import { consentReady, recordLegalConsent } from '../lib/legal';
 
 const MAX_PDF = 5 * 1024 * 1024;
+const MAX_COMMENT = 300;
+
+// Mensajes predeterminados para el comentario: se tocan y se suman al texto
+// (opcional, se pueden combinar con lo que escriba la persona).
+const QUICK_NOTES = [
+  'Tengo experiencia en el rubro.',
+  'Tengo disponibilidad full time.',
+  'Puedo empezar de inmediato.',
+  'Vivo cerca del lugar.',
+  'Tengo movilidad propia.',
+  'Es mi primera experiencia.',
+];
+
+const tidyComment = (text) =>
+  text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '');
 
 // Al postularse se puede mandar el CV armado en LaburamosApp o un PDF propio.
 // El PDF se sube al bucket privado "cvs" y la empresa lo abre desde Postulantes.
@@ -72,6 +87,15 @@ export default function ApplyModal({ job, user, onClose, onDone, onEditCv, notif
     if (!consentReady(consent)) return setError('Para postularte, aceptá los Términos y la Política de Privacidad.');
     setStep('confirm');
     setError('');
+  };
+
+  // Suma o quita un mensaje predeterminado del comentario.
+  const toggleQuick = (text) => {
+    setComment((cur) => {
+      if (cur.includes(text)) return tidyComment(cur.replace(text, ''));
+      const next = cur.trim() ? `${cur.trim()} ${text}` : text;
+      return next.length > MAX_COMMENT ? cur : next;
+    });
   };
 
   const submit = async (e) => {
@@ -210,7 +234,7 @@ export default function ApplyModal({ job, user, onClose, onDone, onEditCv, notif
         <ShieldCheck size={15} aria-hidden="true" /> Solo los comercios verificados pueden abrir tu CV. La postulación se envía por email desde la app.
       </p>
       <p className="note apply-note">
-        <Mail size={15} aria-hidden="true" /> Las postulaciones se envían por email a <b>{job.apply_email || 'la empresa'}</b>.
+        <Mail size={15} aria-hidden="true" /> El correo se envía desde <b>LaburamosApp</b> y tu email va como <b>Responder a</b>: la empresa te contesta directo sin que tu correo quede publicado.
       </p>
 
       <LegalConsent value={consent} onChange={setConsent} compact />
@@ -245,20 +269,38 @@ export default function ApplyModal({ job, user, onClose, onDone, onEditCv, notif
 
       <p className="note">
         Se enviará el perfil que tenés cargado actualmente ({mode === 'app' ? 'CV de LaburamosApp' : 'tu PDF'}).<br />
-        El correo llega a <b>{job.apply_email || 'la empresa'}</b> desde <b>LaburamosApp</b>, con tu email como{' '}
-        <b>Responder a</b>, así la empresa te contesta directo.
+        El correo le llega a <b>{job.company_name || 'la empresa'}</b> desde <b>LaburamosApp</b>, con tu email como{' '}
+        <b>Responder a</b>, así te contesta directo.
       </p>
 
       <div className="field">
         <span>Comentario breve para el empleador (opcional)</span>
+        <div className="apply-quick" role="group" aria-label="Mensajes predeterminados">
+          {QUICK_NOTES.map((text) => {
+            const on = comment.includes(text);
+            return (
+              <button
+                key={text}
+                type="button"
+                className={`apply-quick-chip${on ? ' on' : ''}`}
+                aria-pressed={on}
+                onClick={() => toggleQuick(text)}
+                disabled={sending}
+              >
+                {text}
+              </button>
+            );
+          })}
+        </div>
+        <small className="apply-quick-hint">Tocá las que te sirvan: se agregan al comentario.</small>
         <textarea
-          maxLength={300}
+          maxLength={MAX_COMMENT}
           placeholder="Ej: Tengo disponibilidad horaria completa y experiencia en el rubro…"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={3}
         />
-        <small>{comment.length}/300</small>
+        <small>{comment.length}/{MAX_COMMENT}</small>
       </div>
 
       {error && <p className="note err">{error}</p>}

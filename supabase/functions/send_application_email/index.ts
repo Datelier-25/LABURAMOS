@@ -42,15 +42,44 @@ const escapeHtml = (value: unknown) =>
 
 const clean = (value: unknown) => String(value ?? '').trim();
 
+// Paleta y tipografía de la marca (las mismas de src/index.css) para que el
+// correo se sienta parte de la app. Todo con estilos inline: los clientes de
+// correo no cargan CSS externo.
+const BRAND = {
+  ink: '#0F1242',
+  blue: '#405AE5',
+  sky: '#99C4EF',
+  orange: '#FF6A00',
+  mist: '#F2F4F7',
+  line: '#DCDFEC',
+  muted: '#586088',
+  paper: '#FFFFFF',
+};
+const FONT = 'Arial,Helvetica,sans-serif';
+
+const fieldRow = (label: string, value: string) => `<tr>
+      <td width="128" style="width:128px;padding:0 14px 12px 0;vertical-align:top;font:700 11px/1.5 ${FONT};letter-spacing:.06em;text-transform:uppercase;color:${BRAND.muted}">${label}</td>
+      <td style="padding:0 0 12px;vertical-align:top;font:400 14px/1.55 ${FONT};color:${BRAND.ink}">${value}</td>
+    </tr>`;
+
+const sectionTitle = (text: string) => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px">
+      <tr>
+        <td style="width:4px;height:16px;background:${BRAND.orange};border-radius:2px"></td>
+        <td style="padding-left:10px;font:700 11px/1.2 ${FONT};letter-spacing:.1em;text-transform:uppercase;color:${BRAND.ink}">${text}</td>
+      </tr>
+    </table>`;
+
 function resumeBlock(resume: Record<string, any> | null, app: Record<string, any>) {
   if (!resume) {
-    return `<p><b>${escapeHtml(app.worker_name || 'La persona')}</b> se postuló con su perfil de LaburamosApp.</p>`;
+    return `<p style="margin:0;font:400 14px/1.6 ${FONT};color:${BRAND.muted}">
+      <b style="color:${BRAND.ink}">${escapeHtml(app.worker_name || 'La persona')}</b> se postuló con su perfil de LaburamosApp.
+    </p>`;
   }
 
   const rows: string[] = [];
   const add = (label: string, value: unknown) => {
     const text = clean(value);
-    if (text) rows.push(`<tr><td style="padding:4px 12px 4px 0;color:#666">${label}</td><td>${escapeHtml(text)}</td></tr>`);
+    if (text) rows.push(fieldRow(label, escapeHtml(text).replaceAll('\n', '<br>')));
   };
 
   add('Nombre', resume.full_name || app.worker_name);
@@ -80,56 +109,136 @@ function resumeBlock(resume: Record<string, any> | null, app: Record<string, any
 
   const summary = clean(resume.summary);
   const summaryHtml = summary
-    ? `<p style="margin:16px 0;padding:12px 16px;background:#f5f5f3;border-radius:8px">${escapeHtml(summary).replaceAll('\n', '<br>')}</p>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:4px;background:${BRAND.mist};border-radius:14px">
+        <tr><td style="padding:14px 16px;font:400 14px/1.6 ${FONT};color:${BRAND.ink}">${escapeHtml(summary).replaceAll('\n', '<br>')}</td></tr>
+      </table>`
     : '';
 
   return `
-    <table style="border-collapse:collapse;font-size:14px">${rows.join('')}</table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">${rows.join('')}</table>
     ${summaryHtml}
-    <p style="font-size:13px;color:#666">CV completo en LaburamosApp, sección Postulantes.</p>
+    <p style="margin:14px 0 0;font:400 12px/1.5 ${FONT};color:${BRAND.muted}">CV completo en LaburamosApp, sección Postulantes.</p>
   `;
 }
 
 function buildHtml(app: Record<string, any>, job: Record<string, any>, resume: Record<string, any> | null) {
   const worker = clean(app.worker_name || resume?.full_name || 'Una persona');
   const comment = clean(app.worker_comment);
+  const company = clean(job.company_name);
   const appUrl = (clean(Deno.env.get('APP_URL')) || 'https://laburamosapp.laburos-y-oficios.workers.dev').replace(/\/+$/, '');
+  const logoUrl = `${appUrl}/marca/logotipo-claro.png`;
+  const candidatesUrl = `${appUrl}/candidatos`;
+  const replyEmail = clean(app.email || resume?.email) || 'su email';
+
+  const commentBlock = comment
+    ? `<tr>
+        <td style="padding:22px 28px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF6EF;border-left:4px solid ${BRAND.orange};border-radius:0 14px 14px 0">
+            <tr>
+              <td style="padding:14px 16px">
+                <p style="margin:0 0 6px;font:700 10px/1.4 ${FONT};letter-spacing:.1em;text-transform:uppercase;color:#B44A00">Mensaje del postulante</p>
+                <p style="margin:0;font:400 15px/1.6 ${FONT};color:${BRAND.ink}">${escapeHtml(comment).replaceAll('\n', '<br>')}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`
+    : '';
+
+  const attachBlock =
+    app.cv_kind === 'file'
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;background:${BRAND.mist};border:1px solid ${BRAND.line};border-radius:14px">
+          <tr>
+            <td style="padding:12px 16px;font:700 13px/1.5 ${FONT};color:${BRAND.ink}">📎 CV adjunto: <span style="font-weight:400;color:${BRAND.muted}">${escapeHtml(app.cv_name || 'CV en PDF')}</span></td>
+          </tr>
+        </table>`
+      : '';
 
   return `<!doctype html>
 <html lang="es">
-  <body style="margin:0;padding:24px;background:#f5f5f3;font-family:Arial,Helvetica,sans-serif;color:#1c1c1c">
-    <div style="max-width:620px;margin:0 auto;background:#fff;border-radius:14px;padding:28px">
-      <p style="margin:0 0 4px;font-size:13px;color:#666">LaburamosApp</p>
-      <h1 style="margin:0 0 16px;font-size:22px">Nueva postulación: ${escapeHtml(job.title)}</h1>
-      <p style="margin:0 0 20px;font-size:15px">
-        <b>${escapeHtml(worker)}</b> se postuló a <b>${escapeHtml(job.title)}</b>
-        ${job.company_name ? ` en <b>${escapeHtml(job.company_name)}</b>` : ''}.
-      </p>
-      ${
-        comment
-          ? `<div style="margin:0 0 20px;padding:12px 16px;border-left:3px solid #1c1c1c;background:#fafaf8">
-               <p style="margin:0 0 4px;font-size:12px;color:#666">Comentario para el empleador</p>
-               <p style="margin:0;font-size:15px">${escapeHtml(comment).replaceAll('\n', '<br>')}</p>
-             </div>`
-          : ''
-      }
-      <h2 style="margin:24px 0 8px;font-size:16px">Perfil del postulante</h2>
-      ${resumeBlock(resume, app)}
-      ${
-        app.cv_kind === 'file'
-          ? `<p style="margin:16px 0;font-size:14px">📎 Adjunto: <b>${escapeHtml(app.cv_name || 'CV en PDF')}</b></p>`
-          : ''
-      }
-      <hr style="border:0;border-top:1px solid #e6e6e2;margin:24px 0">
-      <p style="margin:0 0 8px;font-size:14px">
-        Para responderle, usá <b>Responder</b>: el correo va directo a
-        <b>${escapeHtml(app.email || 'su email')}</b>.
-      </p>
-      <p style="margin:0;font-size:12px;color:#777">
-        Este correo se envió desde LaburamosApp a pedido de la persona postulante.
-        Ver postulantes: <a href="${escapeHtml(appUrl)}/candidatos" style="color:#1c1c1c">${escapeHtml(appUrl)}/candidatos</a>
-      </p>
-    </div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Nueva postulación: ${escapeHtml(job.title)}</title>
+  </head>
+  <body style="margin:0;padding:0;background:${BRAND.mist}">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(worker)} se postuló a ${escapeHtml(job.title)}. Abrí el correo para ver su perfil y responderle.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.mist}">
+      <tr>
+        <td align="center" style="padding:28px 12px">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${BRAND.paper};border:1px solid ${BRAND.line};border-radius:20px;overflow:hidden">
+            <tr>
+              <td style="background:${BRAND.ink};padding:20px 28px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="${logoUrl}" width="150" height="19" alt="LaburamosApp" style="display:block;width:150px;height:auto;border:0;outline:none;text-decoration:none">
+                    </td>
+                    <td align="right" style="font:700 10px/1.2 ${FONT};letter-spacing:.14em;text-transform:uppercase;color:${BRAND.sky}">Nueva postulación</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 28px 0">
+                ${company ? `<p style="margin:0 0 8px;font:700 11px/1.4 ${FONT};letter-spacing:.1em;text-transform:uppercase;color:${BRAND.blue}">${escapeHtml(company)}</p>` : ''}
+                <h1 style="margin:0 0 14px;font:800 25px/1.22 ${FONT};color:${BRAND.ink}">${escapeHtml(job.title)}</h1>
+                <p style="margin:0;font:400 15px/1.6 ${FONT};color:${BRAND.ink}">
+                  <b>${escapeHtml(worker)}</b> se postuló a este aviso${company ? ` en <b>${escapeHtml(company)}</b>` : ''}.
+                </p>
+              </td>
+            </tr>
+            ${commentBlock}
+            <tr>
+              <td style="padding:26px 28px 0">
+                ${sectionTitle('Perfil del postulante')}
+                ${resumeBlock(resume, app)}
+                ${attachBlock}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:26px 28px 0">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.ink};border-radius:16px">
+                  <tr>
+                    <td style="padding:18px 20px">
+                      <p style="margin:0 0 4px;font:700 15px/1.4 ${FONT};color:#FFFFFF">Respondé este correo y le llega directo</p>
+                      <p style="margin:0;font:400 13px/1.6 ${FONT};color:${BRAND.sky}">Va a <b style="color:#FFFFFF">${escapeHtml(replyEmail)}</b>. No hace falta entrar a la app.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 28px 30px">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="background:${BRAND.orange};border-radius:999px">
+                      <a href="${candidatesUrl}" style="display:inline-block;padding:13px 24px;font:700 14px/1 ${FONT};color:${BRAND.ink};text-decoration:none">Ver la postulación completa</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:12px 0 0;font:400 12px/1.5 ${FONT};color:${BRAND.muted}">Ahí ves el CV completo, el archivo si adjuntó uno y todas tus postulaciones.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:${BRAND.mist};border-top:1px solid ${BRAND.line};padding:20px 28px">
+                <p style="margin:0 0 6px;font:700 12px/1.5 ${FONT};color:${BRAND.ink}">LaburamosApp</p>
+                <p style="margin:0;font:400 12px/1.6 ${FONT};color:${BRAND.muted}">
+                  Este correo se envió desde LaburamosApp a pedido de la persona postulante. El remitente es la app:
+                  al responder, la respuesta va al postulante.
+                </p>
+                <p style="margin:8px 0 0;font:400 12px/1.6 ${FONT};color:${BRAND.muted}">
+                  <a href="${appUrl}" style="color:${BRAND.blue};text-decoration:none">${appUrl}</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font:400 11px/1.5 ${FONT};color:${BRAND.muted}">Recibís este correo porque alguien se postuló a un aviso publicado en LaburamosApp.</p>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`;
 }
