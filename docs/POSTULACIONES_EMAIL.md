@@ -29,7 +29,7 @@ LaburamosApp y que el email del postulante va como `Responder a`.
 
 El HTML de la función usa la misma identidad que la app (`src/index.css`):
 
-- Encabezado navy `#0F1242` con el logotipo claro (`/marca/logotipo-claro.png`).
+- Encabezado navy `#0F1242` con el ícono de la app (`/marca/icono-l.png`) y el nombre LaburamosApp.
 - Título del aviso, empresa y mensaje del postulante con acento naranja `#FF6A00`.
 - Perfil en tabla de dos columnas con etiquetas en mayúsculas y gris `#586088`.
 - Bloque navy "Respondé este correo y le llega directo" con el email del postulante.

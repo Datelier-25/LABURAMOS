@@ -12,12 +12,11 @@ const MAX_COMMENT = 300;
 // Mensajes predeterminados para el comentario: se tocan y se suman al texto
 // (opcional, se pueden combinar con lo que escriba la persona).
 const QUICK_NOTES = [
-  'Tengo experiencia en el rubro.',
-  'Tengo disponibilidad full time.',
-  'Puedo empezar de inmediato.',
-  'Vivo cerca del lugar.',
-  'Tengo movilidad propia.',
-  'Es mi primera experiencia.',
+  'Hola, me interesa mucho este puesto y quisiera postularme.',
+  'Cuento con experiencia en tareas similares y ganas de sumar al equipo.',
+  'Me presento con muchas ganas de aprender y crecer en este puesto.',
+  'Tengo disponibilidad para incorporarme y adaptarme a lo que necesiten.',
+  'Quedo a disposición para una entrevista cuando les resulte conveniente.',
 ];
 
 const tidyComment = (text) =>
@@ -265,13 +264,12 @@ export default function ApplyModal({ job, user, onClose, onDone, onEditCv, notif
         {job.company_name ? ` · ${job.company_name}` : ''}
       </p>
 
-      <p className="apply-q">¿Estás seguro de enviar tu CV para <b>{job.title}</b> en <b>{job.company_name}</b>?</p>
+      <p className="apply-q">Vas a postularte a <b>{job.title}</b>{job.company_name ? <> en <b>{job.company_name}</b></> : ''}.</p>
 
-      <p className="note">
-        Se enviará el perfil que tenés cargado actualmente ({mode === 'app' ? 'CV de LaburamosApp' : 'tu PDF'}).<br />
-        El correo le llega a <b>{job.company_name || 'la empresa'}</b> desde <b>LaburamosApp</b>, con tu email como{' '}
-        <b>Responder a</b>, así te contesta directo.
-      </p>
+      <div className="apply-confirm-info">
+        <p>Se enviará {mode === 'app' ? 'tu CV de LaburamosApp' : 'tu PDF adjunto'} tal como lo tenés cargado ahora.</p>
+        <p>El correo sale desde <b>LaburamosApp</b> con tu email como <b>Responder a</b>, para que puedan contestarte directo.</p>
+      </div>
 
       <div className="field">
         <span>Comentario breve para el empleador (opcional)</span>

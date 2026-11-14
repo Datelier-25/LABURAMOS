@@ -890,10 +890,10 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
   border-radius: 999px;
   background: #fff;
   color: var(--ink);
-  padding: 6px 12px;
+  padding: 7px 13px;
   font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.3;
   text-align: left;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -901,6 +901,8 @@ textarea.ed { resize: vertical; min-height: 64px; line-height: 1.45; }
 .apply-quick-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .apply-quick-chip:disabled { opacity: 0.6; }
 .apply-quick-hint { color: var(--muted); }
+.apply-confirm-info { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--mist); }
+.apply-confirm-info p { margin: 0; font-size: 0.92rem; line-height: 1.45; color: var(--ink); }
 .apply-acts { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 4px; }
 .cv-chip { margin: 4px 0 6px; }
 

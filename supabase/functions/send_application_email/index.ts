@@ -126,7 +126,7 @@ function buildHtml(app: Record<string, any>, job: Record<string, any>, resume: R
   const comment = clean(app.worker_comment);
   const company = clean(job.company_name);
   const appUrl = (clean(Deno.env.get('APP_URL')) || 'https://laburamosapp.laburos-y-oficios.workers.dev').replace(/\/+$/, '');
-  const logoUrl = `${appUrl}/marca/logotipo-claro.png`;
+  const logoUrl = `${appUrl}/marca/icono-l.png`;
   const candidatesUrl = `${appUrl}/candidatos`;
   const replyEmail = clean(app.email || resume?.email) || 'su email';
 
@@ -170,11 +170,20 @@ function buildHtml(app: Record<string, any>, job: Record<string, any>, resume: R
         <td align="center" style="padding:28px 12px">
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${BRAND.paper};border:1px solid ${BRAND.line};border-radius:20px;overflow:hidden">
             <tr>
-              <td style="background:${BRAND.ink};padding:20px 28px">
+              <td style="background:${BRAND.ink};padding:18px 28px">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="${logoUrl}" width="150" height="19" alt="LaburamosApp" style="display:block;width:150px;height:auto;border:0;outline:none;text-decoration:none">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="vertical-align:middle">
+                            <img src="${logoUrl}" width="36" height="36" alt="LaburamosApp" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;border-radius:10px">
+                          </td>
+                          <td style="vertical-align:middle;padding-left:12px;font:800 22px/1 ${FONT};color:#FFFFFF;letter-spacing:-.02em">
+                            Laburamos<span style="color:${BRAND.orange}">App</span>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                     <td align="right" style="font:700 10px/1.2 ${FONT};letter-spacing:.14em;text-transform:uppercase;color:${BRAND.sky}">Nueva postulación</td>
                   </tr>
