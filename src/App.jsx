@@ -97,11 +97,11 @@ const TITLES = {
   reembolsos: 'Reembolsos y arrepentimiento · LaburamosApp',
 };
 const DESCRIPTIONS = {
-  home: 'Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos y el contacto es directo por WhatsApp.',
+  home: 'Laburos, oficios y changas cerca tuyo. Publicá tu aviso y recibí postulaciones con CV por email.',
   laburos: 'Ofertas de trabajo de comercios y vecinos, por rubro y localidad. Postulate y que vean tu CV.',
   oficios: 'Plomeros, electricistas, clases, limpieza y más. Encontrá a quién te haga el trabajo o anunciá tu oficio.',
   cv: 'Armá tu CV online con tus oficios y habilidades, y compartilo con los comercios que buscan gente.',
-  candidatos: 'Personas que se postularon a tus avisos, con su CV y contacto directo por WhatsApp.',
+  candidatos: 'Personas que se postularon a tus avisos, con su CV y su contacto para responderles.',
   avisos: 'Tus publicaciones y postulaciones en LaburamosApp.',
   anuncios: 'Subí un video corto, revisá tus campañas y mirá cuándo se muestran en LaburamosApp.',
   perfil: 'Tus datos, tu foto y tu verificación en LaburamosApp.',

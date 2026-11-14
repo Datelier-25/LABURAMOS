@@ -90,8 +90,9 @@ function Terms({ operator, go }) {
 
       <Section title="4. Cómo funciona el contacto">
         <p>
-          LaburamosApp acerca a quien busca trabajo, contrata o necesita un servicio con quien lo ofrece. El contacto es directo por
-          WhatsApp, correo o el canal que el aviso indique. <b>No somos parte del acuerdo</b>, no fijamos salarios, no cobramos
+          LaburamosApp acerca a quien busca trabajo, contrata o necesita un servicio con quien lo ofrece. Las postulaciones a los
+          avisos de trabajo se envían por email desde la app; para oficios y servicios, el contacto es directo por WhatsApp o el
+          canal que el aviso indique. <b>No somos parte del acuerdo</b>, no fijamos salarios, no cobramos
           comisiones por contratar y no garantizamos que una búsqueda termine en una contratación.
         </p>
         <p>

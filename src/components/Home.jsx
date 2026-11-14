@@ -163,7 +163,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
 
   const tickerItems = jobs.length
     ? jobs.map((j) => `Se busca: ${j.title} en ${j.company_name}`)
-    : ['Publicá tu aviso en un minuto', 'Contacto directo por WhatsApp', `Laburos y oficios en ${place}`, 'Tu cartel, a la vista de los vecinos'];
+    : ['Publicá tu aviso en un minuto', 'Postulaciones con CV por email', `Laburos y oficios en ${place}`, 'Tu cartel, a la vista de los vecinos'];
 
   return (
     <>
@@ -175,7 +175,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
               <span className="line"><span style={{ '--i': 1 }}>y changas en</span></span>
               <span className="line"><span style={{ '--i': 2 }}><ZonePicker zone={zone} setZone={setZone} /></span></span>
             </h1>
-            <p className="hero-sub">Avisos de comercios y vecinos en {place}. Escribís por WhatsApp y arreglás directo.</p>
+            <p className="hero-sub">Avisos de comercios y vecinos en {place}. Postulate a los laburos desde la app y escribile directo a los oficios.</p>
             <div className="paths">
               {paths.map((p) => (
                 <button key={p.label} className="path" onClick={p.onClick}>
@@ -308,7 +308,7 @@ export default function Home({ user, zone, setZone, settings, go, onPublish, onL
         <div className="cta">
           <div>
             <h2>Tu aviso, a la vista de {place}.</h2>
-            <p>Publicá una búsqueda en un minuto. Dura {settings?.job_days || 30} días y los candidatos te escriben directo a tu WhatsApp.</p>
+            <p>Publicá una búsqueda en un minuto. Dura {settings?.job_days || 30} días y las postulaciones te llegan por email con el CV.</p>
             <button className="btn btn-ink btn-lg" onClick={() => onPublish('job')}>
               <ArrowRight size={20} /> Publicar un aviso
             </button>

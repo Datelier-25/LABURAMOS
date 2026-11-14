@@ -82,7 +82,7 @@ export default function AuthScreen({ onGuest, initialMode = 'login' }) {
 
   const titles = {
     login: ['Qué bueno verte', 'Ingresá para postularte, armar tu CV o publicar avisos.'],
-    register: ['Creá tu cuenta', 'Tarda un minuto. Después contactás directo por WhatsApp.'],
+    register: ['Creá tu cuenta', 'Tarda un minuto. Después te postulás con tu CV o publicás tu aviso.'],
     forgot: ['Recuperá tu acceso', 'Escribí tu email y te mandamos un enlace para elegir una contraseña nueva.'],
   };
 

@@ -165,7 +165,7 @@ export default function Candidates({ user, notify }) {
       <header className="page-head">
         <div>
           <h1 className="page-title">Postulantes</h1>
-          <p className="lede">Personas que se postularon a tus avisos. Podés ver su CV y escribirles por WhatsApp.</p>
+          <p className="lede">Personas que se postularon a tus avisos. Podés ver su CV y responderles por email o WhatsApp.</p>
         </div>
         <Reputation data={{ is_verified: verified, rating: 0, reviews: 0 }} />
       </header>

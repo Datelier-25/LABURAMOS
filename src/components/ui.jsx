@@ -348,7 +348,7 @@ export function Footer({ go, links, settings }) {
           Laburamos<span>App</span>
         </p>
         <div className="foot-cols">
-          <p>Laburos, oficios y changas cerca tuyo. El contacto es directo por WhatsApp y los acuerdos los arreglás vos.</p>
+          <p>Laburos, oficios y changas cerca tuyo. Postulate con tu CV y arreglá los acuerdos directo con cada comercio.</p>
           <div className="foot-links">
             {links.map((l) => (
               <button key={l.id} onClick={() => go(l.id)}>

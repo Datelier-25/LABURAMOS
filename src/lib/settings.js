@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = {
   legal_cuit: '',
   legal_address: '',
   legal_email: 'laburamosapp@gmail.com',
-  legal_last_update: '2026-11-12',
+  legal_last_update: '2026-11-13',
   application_email_from: 'laburamosapp@gmail.com',
   application_email_name: 'LaburamosApp',
   welcome_enabled: false,

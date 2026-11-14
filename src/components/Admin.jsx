@@ -357,6 +357,10 @@ function SettingsTab({ notify, onSaved }) {
           <small>Se muestra como: "LaburamosApp - Juan Pérez" al empleador.</small>
         </label>
       </div>
+      <p className="panel-hint">
+        Para que los correos salgan, cargá <code>RESEND_API_KEY</code> o <code>BREVO_API_KEY</code> en los secretos de Supabase y
+        verificá este remitente en el proveedor. Mientras tanto, las postulaciones se guardan y se pueden reenviar desde Postulantes.
+      </p>
 
       <h2 className="block-title">Cartel de bienvenida</h2>
       <p className="lede">

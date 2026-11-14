@@ -93,7 +93,7 @@ function resumeBlock(resume: Record<string, any> | null, app: Record<string, any
 function buildHtml(app: Record<string, any>, job: Record<string, any>, resume: Record<string, any> | null) {
   const worker = clean(app.worker_name || resume?.full_name || 'Una persona');
   const comment = clean(app.worker_comment);
-  const appUrl = clean(Deno.env.get('APP_URL')) || 'https://laburamosapp.laburos-y-oficios.workers.dev';
+  const appUrl = (clean(Deno.env.get('APP_URL')) || 'https://laburamosapp.laburos-y-oficios.workers.dev').replace(/\/+$/, '');
 
   return `<!doctype html>
 <html lang="es">
@@ -127,7 +127,7 @@ function buildHtml(app: Record<string, any>, job: Record<string, any>, resume: R
       </p>
       <p style="margin:0;font-size:12px;color:#777">
         Este correo se envió desde LaburamosApp a pedido de la persona postulante.
-        Ver postulantes: <a href="${escapeHtml(appUrl)}" style="color:#1c1c1c">${escapeHtml(appUrl)}</a>
+        Ver postulantes: <a href="${escapeHtml(appUrl)}/candidatos" style="color:#1c1c1c">${escapeHtml(appUrl)}/candidatos</a>
       </p>
     </div>
   </body>

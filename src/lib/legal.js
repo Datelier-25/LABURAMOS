@@ -3,7 +3,7 @@
 // junto con cada aceptación para poder demostrar qué se aceptó y cuándo.
 import { supabase } from '../supabaseClient';
 
-export const LEGAL_VERSION = '2026-11-12';
+export const LEGAL_VERSION = '2026-11-13';
 
 export const LEGAL_DOCS = {
   terms: {

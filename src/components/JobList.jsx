@@ -113,7 +113,7 @@ export default function JobList({ user, zone, setZone, settings, onPublish, onLo
           <h1 className="page-title">
             Laburos en <ZonePicker dark zone={zone} setZone={setZone} />
           </h1>
-          <p className="lede">Ofertas de trabajo de comercios y vecinos en {place}. Postulate escribiendo directo a quien publica.</p>
+          <p className="lede">Ofertas de trabajo de comercios y vecinos en {place}. Elegí tu CV, confirmá y se lo enviamos por email a quien publica.</p>
         </div>
         <div className="head-acts">
           <button

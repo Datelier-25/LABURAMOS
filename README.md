@@ -1,6 +1,6 @@
 # LaburamosApp
 
-Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos, la gente se postula o contacta directo por WhatsApp, y cada persona arma su CV online (con descarga paga en PDF A4).
+Laburos, oficios y changas cerca tuyo. Comercios y vecinos publican avisos, la gente se postula con su CV (se envía por email) o contacta directo por WhatsApp a los oficios, y cada persona arma su CV online (con descarga paga en PDF A4).
 
 **Stack:** React 19 + Vite · Supabase (Postgres con RLS, Auth, Storage, Edge Functions) · Netlify · Mercado Pago (Checkout Pro) · API Georef (localidades de Argentina).
 

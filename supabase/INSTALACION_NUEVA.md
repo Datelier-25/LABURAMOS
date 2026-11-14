@@ -24,7 +24,13 @@ No uses la base de Workeo (`fbmsbbifkqyqmsdqyian`): su esquema no es compatible.
 
 **Opción rápida:** copiá y ejecutá
 `supabase/migrations/000_instalacion_completa.sql` una sola vez. Ese archivo
-junta las cuatro migraciones en orden.
+junta las primeras migraciones (001 a 005).
+
+Después, ejecutá **en orden** las migraciones `006` a `042` de
+`supabase/migrations/`, una por una. Agregan usuarios verificados, reseñas,
+anuncios, el cartel de bienvenida, los documentos legales, ocultar anuncios y
+las postulaciones por email. La más reciente es
+`042_postulaciones_email.sql`.
 
 **Opción por partes:** en **SQL Editor → New query**, ejecutá estos archivos
 **en este orden**, uno por uno:
@@ -132,6 +138,29 @@ No hace falta para esta etapa. Cuando el resto funcione:
    ```
 4. Activar el cobro desde Admin → Configuración y probar con usuarios de
    prueba de Mercado Pago.
+
+## 8. Postulaciones por email
+
+Las postulaciones se envían desde un remitente propio, con **Reply-To** al
+email del postulante. El envío lo hace la Edge Function
+`send_application_email`.
+
+1. Elegí un proveedor y verificá el remitente:
+   - [Resend](https://resend.com) → variable `RESEND_API_KEY`
+   - [Brevo](https://brevo.com) → variable `BREVO_API_KEY`
+2. Cargá la clave en Supabase → Edge Functions → Secrets (o con
+   `supabase secrets set RESEND_API_KEY=...`).
+3. Publicá la función:
+   ```bash
+   supabase functions deploy send_application_email
+   ```
+4. En **Admin → Configuración → Correo de postulaciones** definí el remitente
+   (`From`) y el nombre visible. El remitente tiene que estar verificado en el
+   proveedor.
+
+Sin proveedor configurado la postulación se guarda igual y queda con
+`email_error = 'proveedor_no_configurado'`. Se puede reenviar desde
+**Postulantes** cuando la clave esté cargada.
 
 ## Problemas frecuentes
 
